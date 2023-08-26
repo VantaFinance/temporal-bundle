@@ -1,0 +1,52 @@
+{
+    "name": "vanta/temporal-bundle",
+    "description": "Integration temporal with symfony",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vlad Shashkov",
+            "email": "v.shashkov@pos-credit.ru"
+        },
+        {
+            "name": "Vanta Team",
+            "homepage": "https://vanta.ru"
+        }
+    ],
+    "keywords": [
+        "temporal",
+        "symfony"
+    ],
+    "autoload": {
+        "psr-4": {
+            "Vanta\\Integration\\Symfony\\Temporal\\": "src/"
+        },
+        "files": [
+            "src/DependencyInjection/function.php"
+        ]
+    },
+    "require": {
+        "php": "^8.2",
+        "symfony/dependency-injection": "^6.3",
+        "symfony/http-kernel": "^6.3",
+        "symfony/runtime": "^6.3",
+        "temporal/sdk": "^2.5"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/runtime": false,
+            "phpstan/extension-installer": true,
+            "php-http/discovery": false
+        }
+    },
+    "require-dev": {
+        "symfony/serializer": "^6.3",
+        "doctrine/doctrine-bundle": "^2.10",
+        "doctrine/orm": "^2.15",
+        "phpstan/phpstan": "^1.10",
+        "friendsofphp/php-cs-fixer": "^3.22",
+        "phpstan/extension-installer": "^1.3",
+        "phpstan/phpstan-symfony": "^1.3",
+        "psr/log": "^3.0",
+        "sentry/sentry-symfony": "^4.10"
+    }
+}

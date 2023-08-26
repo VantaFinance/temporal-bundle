@@ -1,0 +1,23 @@
+{
+  "manifests": {
+    "vanta/temporal-bundle": {
+      "manifest": {
+        "bundles": {
+          "Vanta\\Integration\\Symfony\\Temporal\\TemporalBundle": ["all"]
+        },
+        "copy-from-recipe": {
+          "config/": "%CONFIG_DIR%/"
+        },
+        "copy-from-package": {
+          ".rr.temporal.yaml": ".rr.temporal.yaml",
+          "docker-compose-temporal.yml": "docker-compose-temporal.yml"
+        },
+        "env": {
+          "TEMPORAL_ADDRESS": "temporal:7233",
+          "RR_RPC": "tcp://rr_temporal:6001"
+        }
+      },
+      "ref": "f45737810001ad5101f424a7c365392c869b9cc3"
+    }
+  }
+}

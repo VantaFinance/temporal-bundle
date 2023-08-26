@@ -1,0 +1,7 @@
+parameters:
+	level: 9
+	paths:
+		- src
+
+	scanFiles:
+	    - vendor/symfony/dependency-injection/Loader/Configurator/ContainerConfigurator.php

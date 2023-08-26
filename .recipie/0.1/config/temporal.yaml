@@ -1,0 +1,28 @@
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+
+  workers:
+    default:
+      taskQueue: default
+      maxConcurrentActivityExecutionSize: 0
+      workerActivitiesPerSecond: 0
+      exceptionInterceptor: temporal.exception_interceptor
+      finalizers: [ ]
+      maxConcurrentLocalActivityExecutionSize: 0
+      workerLocalActivitiesPerSecond: 0
+      taskQueueActivitiesPerSecond: 0
+      maxConcurrentActivityTaskPollers: 0
+      maxConcurrentWorkflowTaskExecutionSize: 0
+      maxConcurrentWorkflowTaskPollers: 0
+      enableSessionWorker: false
+      sessionResourceId: null
+      maxConcurrentSessionExecutionSize: 1000
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter

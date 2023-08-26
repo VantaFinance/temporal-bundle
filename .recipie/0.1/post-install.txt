@@ -1,0 +1,1 @@
+ * Configure the <fg=green>workers/clients</> in <fg=green>config/packages/temporal.yaml</>

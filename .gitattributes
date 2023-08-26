@@ -1,0 +1,7 @@
+.php-cs-fixer.dist.php export-ignore
+.gitignore             export-ignore
+.gitlab-ci.yml         export-ignore
+Dockerfile.lint        export-ignore
+Makefile               export-ignore
+phpstan.neon           export-ignore
+.recipe                export-ignore
