@@ -1,0 +1,24 @@
+doctrine:
+  dbal:
+    connections:
+      default:
+        url: '%env(DATABASE_URL)%'
+  orm:
+    default_entity_manager: default
+    entity_managers:
+      default:
+        connection: default
+        mappings:
+          Main:
+            is_bundle: false
+            dir: '%kernel.project_dir%/tests/Functional/Doctrine/EntityDefault'
+            prefix: 'Vanta\Integration\Symfony\Temporal\Test\Functional\Doctrine\EntityDefault'
+            alias: Main
+      customer:
+        connection: default
+        mappings:
+          Customer:
+            is_bundle: false
+            dir: '%kernel.project_dir%/tests/Functional/Doctrine/EntityDefault'
+            prefix: 'Vanta\Integration\Symfony\Temporal\Test\Functional\Doctrine\EntityDefault'
+            alias: Customer

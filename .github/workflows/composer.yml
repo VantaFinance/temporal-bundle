@@ -1,0 +1,40 @@
+name: Composer CI
+on: [ push, pull_request ]
+
+jobs:
+  composer-validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ 8.2 ]
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: Validate
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: none
+      - run: composer validate --strict --ansi
+
+  composer-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ 8.2 ]
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: Install Infrastructure
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Install Dependence and audit
+        uses: ramsey/composer-install@v2
+        with:
+          composer-options: --optimize-autoloader
+      - run: composer audit

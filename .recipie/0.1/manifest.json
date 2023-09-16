@@ -5,19 +5,22 @@
         "bundles": {
           "Vanta\\Integration\\Symfony\\Temporal\\TemporalBundle": ["all"]
         },
-        "copy-from-recipe": {
-          "config/": "%CONFIG_DIR%/"
-        },
         "copy-from-package": {
           ".rr.temporal.yaml": ".rr.temporal.yaml",
-          "docker-compose-temporal.yml": "docker-compose-temporal.yml"
+          ".docker/docker-compose-temporal.yml": ".docker/docker-compose-temporal.yml",
+          ".docker/Dockerfile": ".docker/Dockerfile",
+          "temporal.yaml": "%CONFIG_DIR%/packages/temporal.yaml"
         },
+        "post-install-output": [
+          "  * Configure the <fg=green>workers/clients</> in <fg=green>config/packages/temporal.yaml</>",
+          "  * Configure the <fg=green>docker</> in dir <fg=green>.docker/</>"
+        ],
         "env": {
           "TEMPORAL_ADDRESS": "temporal:7233",
           "RR_RPC": "tcp://rr_temporal:6001"
         }
       },
-      "ref": "f45737810001ad5101f424a7c365392c869b9cc3"
+      "ref": "3a1f8a7e2a44c46ff3cc741709b4ed2057a78ed0"
     }
   }
 }

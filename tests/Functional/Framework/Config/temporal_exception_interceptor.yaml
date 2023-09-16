@@ -1,0 +1,74 @@
+temporal:
+  defaultClient: bar
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+      maxConcurrentActivityExecutionSize: 0
+      workerActivitiesPerSecond: 0
+      maxConcurrentLocalActivityExecutionSize: 0
+      workerLocalActivitiesPerSecond: 0
+      taskQueueActivitiesPerSecond: 0
+      maxConcurrentActivityTaskPollers: 0
+      maxConcurrentWorkflowTaskExecutionSize: 0
+      maxConcurrentWorkflowTaskPollers: 0
+      enableSessionWorker: false
+      sessionResourceId: null
+      maxConcurrentSessionExecutionSize: 1000
+
+    foo:
+      taskQueue: foo
+      exceptionInterceptor: temporal.foo.exception_interceptor
+      maxConcurrentActivityExecutionSize: 1
+      workerActivitiesPerSecond: 1
+      maxConcurrentLocalActivityExecutionSize: 1
+      workerLocalActivitiesPerSecond: 1
+      taskQueueActivitiesPerSecond: 1
+      maxConcurrentActivityTaskPollers: 1
+      maxConcurrentWorkflowTaskExecutionSize: 1
+      maxConcurrentWorkflowTaskPollers: 1
+      enableSessionWorker: true
+      sessionResourceId: resource.foo
+      maxConcurrentSessionExecutionSize: 2000
+
+    bar:
+      taskQueue: bar
+      exceptionInterceptor: temporal.bar.exception_interceptor
+      maxConcurrentActivityExecutionSize: 2
+      workerActivitiesPerSecond: 2
+      maxConcurrentLocalActivityExecutionSize: 2
+      workerLocalActivitiesPerSecond: 2
+      taskQueueActivitiesPerSecond: 2
+      maxConcurrentActivityTaskPollers: 2
+      maxConcurrentWorkflowTaskExecutionSize: 2
+      maxConcurrentWorkflowTaskPollers: 2
+      enableSessionWorker: false
+      sessionResourceId: resource.bar
+      maxConcurrentSessionExecutionSize: 3000
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: default_x
+      queryRejectionCondition: 0
+
+    foo:
+      namespace: foo
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: foo_x
+      queryRejectionCondition: 1
+
+
+    bar:
+      namespace: bar
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: bar_x
+      queryRejectionCondition: 2

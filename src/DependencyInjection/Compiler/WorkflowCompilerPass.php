@@ -1,4 +1,10 @@
 <?php
+/**
+ * Temporal Bundle
+ *
+ * @author Vlad Shashkov <v.shashkov@pos-credit.ru>
+ * @copyright Copyright (c) 2023, The Vanta
+ */
 
 declare(strict_types=1);
 
@@ -7,6 +13,7 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 use Closure;
 use Spiral\RoadRunner\Environment as RoadRunnerEnvironment;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -18,6 +25,7 @@ use Temporal\WorkerFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
 
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
@@ -51,7 +59,7 @@ final class WorkflowCompilerPass implements CompilerPass
 
         $configuredWorkers = [];
 
-        foreach ($config['workers'] as $name => $worker) {
+        foreach ($config['workers'] as $workerName => $worker) {
             $options = definition(WorkerOptions::class)
                 ->setFactory([WorkerOptions::class, 'new'])
             ;
@@ -66,10 +74,16 @@ final class WorkflowCompilerPass implements CompilerPass
                 $options->addMethodCall($method, [$value], true);
             }
 
+            $exceptionInterceptorId = exceptionInspectorId($workerName);
 
-            $newWorker = $container->register(sprintf('temporal.%s.worker', $name), Worker::class)
+            $container->setDefinition(
+                $exceptionInterceptorId,
+                new ChildDefinition($worker['exceptionInterceptor'])
+            );
+
+            $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), Worker::class)
                 ->setFactory([$factory, 'newWorker'])
-                ->setArguments([$worker['taskQueue'], $options, new Reference($worker['exceptionInterceptor'])])
+                ->setArguments([$worker['taskQueue'], $options, new Reference($exceptionInterceptorId)])
                 ->setPublic(true)
             ;
 
@@ -80,9 +94,9 @@ final class WorkflowCompilerPass implements CompilerPass
                     continue;
                 }
 
-                $workerName = $attributes[0]['worker'] ?? null;
+                $workerNames = $attributes[0]['workers'] ?? [];
 
-                if ($workerName != null && $workerName != $name) {
+                if (!in_array($workerName, $workerNames)) {
                     continue;
                 }
 
@@ -93,6 +107,12 @@ final class WorkflowCompilerPass implements CompilerPass
                 $class = $container->getDefinition($id)->getClass();
 
                 if ($class == null) {
+                    continue;
+                }
+
+                $workerNames = $attributes[0]['workers'] ?? [];
+
+                if (!in_array($workerName, $workerNames)) {
                     continue;
                 }
 

@@ -1,0 +1,31 @@
+name: Code-Style CI
+on: [ push, pull_request ]
+
+jobs:
+  php-cs-fixer:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ 8.2 ]
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: Install Infrastructure
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2, cs2pr
+          coverage: none
+
+      - name: Load cache
+        uses: actions/cache@v3
+        with:
+          path: .php_cs.cache-${{ matrix.php }}
+          key: php-cs-fixer-${{ matrix.php }}
+          restore-keys: php-cs-fixer-${{ matrix.php }}
+
+      - name: Install Dependence
+        uses: ramsey/composer-install@v2
+        with:
+          composer-options: --optimize-autoloader
+      - run: ./vendor/bin/php-cs-fixer fix --allow-risky=yes --stop-on-violation --format=checkstyle --using-cache=yes --cache-file=.php_cs.cache-${{ matrix.php }} | cs2pr

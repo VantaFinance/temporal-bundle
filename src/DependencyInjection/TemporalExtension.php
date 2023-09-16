@@ -1,4 +1,10 @@
 <?php
+/**
+ * Temporal Bundle
+ *
+ * @author Vlad Shashkov <v.shashkov@pos-credit.ru>
+ * @copyright Copyright (c) 2023, The Vanta
+ */
 
 declare(strict_types=1);
 
@@ -14,11 +20,7 @@ use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Temporal\Activity\ActivityInterface as Activity;
 use Temporal\Workflow\WorkflowInterface as Workflow;
-use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
 
-/**
- * @phpstan-import-type RawConfiguration from Configuration
- */
 final class TemporalExtension extends Extension
 {
     /**
@@ -31,34 +33,49 @@ final class TemporalExtension extends Extension
         $loader->load('service.php');
 
         $configuration = new Configuration();
-        /** @var RawConfiguration $config */
-        $config = $this->processConfiguration($configuration, $configs);
 
-        $workflowConfigurator = static function (ChildDefinition $definition, Workflow $attribute, Reflector $reflector): void {
-            if (!$reflector instanceof ReflectionClass) {
-                return;
-            }
-
-            $classAttribute = $reflector->getAttributes(AssignWorker::class)[0] ?? null;
-            $assignWorker   = $classAttribute?->newInstance()?->name;
-
-            $attributes = [];
-
-            if ($assignWorker != null) {
-                $attributes['worker'] = $assignWorker;
-            }
-
-            $definition->addTag('temporal.workflow', $attributes);
-        };
-
-        $activityConfigurator = static function (ChildDefinition $definition, Activity $attribute, Reflector $reflector): void {
-            $definition->addTag('temporal.activity', ['prefix' => $attribute->prefix]);
-        };
-
-
-        $container->registerAttributeForAutoconfiguration(Workflow::class, $workflowConfigurator);
-        $container->registerAttributeForAutoconfiguration(Activity::class, $activityConfigurator);
-
-        $container->setParameter('temporal.config', $config);
+        $container->setParameter('temporal.config', $this->processConfiguration($configuration, $configs));
+        $container->registerAttributeForAutoconfiguration(Workflow::class, workflowConfigurator(...));
+        $container->registerAttributeForAutoconfiguration(Activity::class, activityConfigurator(...));
     }
+}
+
+
+/**
+ * @internal
+ */
+function workflowConfigurator(ChildDefinition $definition, Workflow $attribute, Reflector $reflector): void
+{
+    if (!$reflector instanceof ReflectionClass) {
+        return;
+    }
+
+    $assignWorkers = getWorkers($reflector);
+    $attributes    = [];
+
+    if ($assignWorkers != []) {
+        $attributes['workers'] = $assignWorkers;
+    }
+
+    $definition->addTag('temporal.workflow', $attributes);
+}
+
+
+/**
+ * @internal
+ */
+function activityConfigurator(ChildDefinition $definition, Activity $attribute, Reflector $reflector): void
+{
+    if (!$reflector instanceof ReflectionClass) {
+        return;
+    }
+
+    $assignWorkers = getWorkers($reflector);
+    $attributes    = ['prefix' => $attribute->prefix];
+
+    if ($assignWorkers != []) {
+        $attributes['workers'] = $assignWorkers;
+    }
+
+    $definition->addTag('temporal.activity', $attributes);
 }

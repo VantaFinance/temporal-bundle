@@ -10,8 +10,8 @@
   "branch": "master",
   "is_contrib": false,
   "_links": {
-    "repository": "github.com/VantaFinance/temporal-bundle",
-    "origin_template": "{package}:{version}@github.com/VantaFinance/temporal-bundle:master",
-    "recipe_template": "https://github.com/VantaFinance/temporal-bundle/-/raw/master/.recipie/{version}/manifest.json"
+    "repository": "github.com/VantaFinance/temporal-bundle/.recipie",
+    "origin_template": "github.com/VantaFinance/temporal-bundle/.recipie/{version}:master",
+    "recipe_template": "https://raw.githubusercontent.com/VantaFinance/temporal-bundle/main/.recipie/{version}/manifest.json"
   }
 }

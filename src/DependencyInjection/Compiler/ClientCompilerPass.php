@@ -1,4 +1,10 @@
 <?php
+/**
+ * Temporal Bundle
+ *
+ * @author Vlad Shashkov <v.shashkov@pos-credit.ru>
+ * @copyright Copyright (c) 2023, The Vanta
+ */
 
 declare(strict_types=1);
 
@@ -27,6 +33,7 @@ final class ClientCompilerPass implements CompilerPass
         /** @var RawConfiguration $config */
         $config = $container->getParameter('temporal.config');
 
+
         foreach ($config['clients'] as $name => $client) {
             $options = definition(ClientOptions::class)
                 ->addMethodCall('withNamespace', [$client['namespace']], true);
@@ -35,7 +42,7 @@ final class ClientCompilerPass implements CompilerPass
                 $options->addMethodCall('withIdentity', [$client['identity']], true);
             }
 
-            if ($client['queryRejectionCondition'] ?? false) {
+            if (array_key_exists('queryRejectionCondition', $client)) {
                 $options->addMethodCall('withQueryRejectionCondition', [$client['queryRejectionCondition']], true);
             }
 

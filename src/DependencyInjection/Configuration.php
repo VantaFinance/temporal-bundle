@@ -1,4 +1,10 @@
 <?php
+/**
+ * Temporal Bundle
+ *
+ * @author Vlad Shashkov <v.shashkov@pos-credit.ru>
+ * @copyright Copyright (c) 2023, The Vanta
+ */
 
 declare(strict_types=1);
 
@@ -65,24 +71,17 @@ final class Configuration implements BundleConfiguration
             ->fixXmlConfig('worker', 'workers')
             ->children()
                 ->scalarNode('defaultClient')
-                ->defaultValue('default')
+                    ->defaultValue('default')
                 ->end()
             ->end()
             ->children()
                 ->arrayNode('pool')
-                    ->defaultValue([
-                        'dataConverter' => 'temporal.data_converter',
-                        'roadrunnerRPC' => env('RR_RPC')
-                            ->__toString(),
-                    ])
-                    ->arrayPrototype()
-                        ->children()
-                            ->scalarNode('dataConverter')
-                                ->cannotBeEmpty()
-                            ->end()
-                            ->scalarNode('roadrunnerRPC')
-                                ->cannotBeEmpty()
-                            ->end()
+                    ->children()
+                        ->scalarNode('dataConverter')
+                            ->cannotBeEmpty()
+                        ->end()
+                        ->scalarNode('roadrunnerRPC')
+                            ->cannotBeEmpty()
                         ->end()
                     ->end()
                 ->end()
@@ -165,6 +164,10 @@ final class Configuration implements BundleConfiguration
                             ->defaultValue('temporal.exception_interceptor')->cannotBeEmpty()
                         ->end()
                         ->arrayNode('finalizers')
+                            ->validate()
+                                ->ifTrue(static fn (array $values): bool => !(count($values) == count(array_unique($values))))
+                                ->thenInvalid('Should not be repeated finalizer')
+                            ->end()
                             ->defaultValue([])
                             ->scalarPrototype()->end()
                         ->end()
