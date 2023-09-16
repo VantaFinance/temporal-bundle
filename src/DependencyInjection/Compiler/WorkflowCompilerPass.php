@@ -94,9 +94,9 @@ final class WorkflowCompilerPass implements CompilerPass
                     continue;
                 }
 
-                $workerNames = $attributes[0]['workers'] ?? [];
+                $workerNames = $attributes[0]['workers'] ?? null;
 
-                if (!in_array($workerName, $workerNames)) {
+                if ($workerNames != null && !in_array($workerName, $workerNames)) {
                     continue;
                 }
 
@@ -110,9 +110,9 @@ final class WorkflowCompilerPass implements CompilerPass
                     continue;
                 }
 
-                $workerNames = $attributes[0]['workers'] ?? [];
+                $workerNames = $attributes[0]['workers'] ?? null;
 
-                if (!in_array($workerName, $workerNames)) {
+                if ($workerNames != null && !in_array($workerName, $workerNames)) {
                     continue;
                 }
 
