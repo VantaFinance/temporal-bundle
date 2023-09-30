@@ -54,7 +54,7 @@ services:
     ports:
       - 7233:7233
     healthcheck:
-      test: [ "CMD","temporal","workflow","list" ]
+      test: [ "CMD", "temporal", "workflow", "list" ]
       interval: 1s
       timeout: 5s
       retries: 30

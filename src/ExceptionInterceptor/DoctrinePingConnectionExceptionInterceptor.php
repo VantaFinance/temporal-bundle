@@ -29,7 +29,7 @@ final readonly class DoctrinePingConnectionExceptionInterceptor implements Excep
 
     public function isRetryable(Throwable $e): bool
     {
-        if ($e::class == EntityManagerClosed::class) {
+        if ($e instanceof EntityManagerClosed) {
             try {
                 $this->finalizer->finalize();
             } catch (Throwable $e) {

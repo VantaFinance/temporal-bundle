@@ -44,7 +44,7 @@ final class InstalledVersions
         $handler = self::$handler;
 
         if ($handler) {
-            return ($handler($package, $class, $parentPackages));
+            return $handler($package, $class, $parentPackages);
         }
 
         return ContainerBuilder::willBeAvailable($package, $class, $parentPackages);

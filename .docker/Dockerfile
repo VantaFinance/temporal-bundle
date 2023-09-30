@@ -9,8 +9,7 @@ FROM php:${PHP_VERSION}-cli-buster AS temporal_php
 COPY --from=roadrunner /usr/bin/rr /usr/local/bin/rr
 
 RUN --mount=type=bind,from=installer,source=/usr/bin/install-php-extensions,target=/usr/local/bin/install-php-extensions \
-     install-php-extensions opcache zip intl pcntl bcmath sockets protobuf grpc && \
-     docker-php-source delete
+     install-php-extensions opcache zip intl pcntl sockets protobuf grpc
 
 WORKDIR /app
 

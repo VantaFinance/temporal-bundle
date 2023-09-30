@@ -5,14 +5,15 @@
 ## Features
 
 - **Sentry**: Send throwable events (if the [`SentryBundle`](https://github.com/getsentry/sentry-symfony) use)
-- **Doctrine**: clear opened managers and check connection is still usable after each requests (if [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use)
-- **Serializer**: Deserialize and serialize messages (if [`Symfony/Serializer`](https://github.com/symfony/serializer) is use, **Recommend use**)
-
+- **Doctrine**: clear opened managers and check connection is still usable after each request (
+  if [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use)
+- **Serializer**: Deserialize and serialize messages (if [`Symfony/Serializer`](https://github.com/symfony/serializer)
+  is use, **Recommend use**)
 
 ## Requirements:
+
 - php >= 8.2
 - symfony >= 6.0
-
 
 ## Installation:
 
@@ -32,16 +33,12 @@ composer req temporal serializer
 
 4. Added Workflow/Activity. See [examples](https://github.com/temporalio/samples-php) to get started.
 
-
-
-
 ## Doctrine integrations
 
 If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the following finalizer is available to you:
 
 - `temporal.doctrine_ping_connection_<entity-mananger-name>.finalizer`
 - `temporal.doctrine_clear_entity_manager.finalizer`
-
 
 Example config:
 
@@ -67,13 +64,11 @@ temporal:
       dataConverter: temporal.data_converter
 ```
 
-
-
 ## Assign worker
 
 Running workflows and activities with different task queue
-Add a [`AssignWorker`](src/Attribute/AssignWorker.php) attribute to your Workflow or Activity with the name of the worker. This Workflow or Activity will be processed by the specified worker.
-
+Add a [`AssignWorker`](src/Attribute/AssignWorker.php) attribute to your Workflow or Activity with the name of the
+worker. This Workflow or Activity will be processed by the specified worker.
 
 **Workflow example:**
 
@@ -102,7 +97,6 @@ final class MoneyTransferWorkflow
 }
 ```
 
-
 **Activity example:**
 
 ```php
@@ -127,7 +121,6 @@ final class MoneyTransferActivity
     public function cancel(...): bool;
 }
 ```
-
 
 ## TODO
 
