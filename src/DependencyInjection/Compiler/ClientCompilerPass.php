@@ -33,7 +33,6 @@ final class ClientCompilerPass implements CompilerPass
         /** @var RawConfiguration $config */
         $config = $container->getParameter('temporal.config');
 
-
         foreach ($config['clients'] as $name => $client) {
             $options = definition(ClientOptions::class)
                 ->addMethodCall('withNamespace', [$client['namespace']], true);

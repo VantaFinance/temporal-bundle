@@ -19,7 +19,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: flex
-          extensions: opcache,zip,intl,pcntl,bcmath,sockets,protobuf,grpc
+          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc
 
       - name: Download dependencies
         env:
