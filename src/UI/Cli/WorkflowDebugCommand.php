@@ -47,7 +47,7 @@ final class WorkflowDebugCommand extends Command
         $io->title('Temporal Workflows');
 
         foreach ($this->workers as $name => $worker) {
-            if ($workers != [] && !in_array($name, $workers)){
+            if ($workers != [] && !in_array($name, $workers)) {
                 continue;
             }
 

@@ -47,7 +47,7 @@ final class ActivityDebugCommand extends Command
         $io->title('Temporal Activities');
 
         foreach ($this->workers as $name => $worker) {
-            if ($workers != [] && !in_array($name, $workers)){
+            if ($workers != [] && !in_array($name, $workers)) {
                 continue;
             }
 

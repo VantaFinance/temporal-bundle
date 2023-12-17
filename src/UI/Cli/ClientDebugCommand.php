@@ -44,16 +44,16 @@ final class ClientDebugCommand extends Command
 
     protected function execute(Input $input, Output $output): int
     {
-        $foundClients         = false;
-        $interestedClients    = $input->getArgument('clients');
-        $io                   = new SymfonyStyle($input, $output);
+        $foundClients      = false;
+        $interestedClients = $input->getArgument('clients');
+        $io                = new SymfonyStyle($input, $output);
 
         $io->title('Temporal Clients');
 
-        foreach ($this->clients as $client){
+        foreach ($this->clients as $client) {
             $rows = [];
 
-            if ($interestedClients != [] && !in_array($client['name'], $interestedClients)){
+            if ($interestedClients != [] && !in_array($client['name'], $interestedClients)) {
                 continue;
             }
 
@@ -64,8 +64,8 @@ final class ClientDebugCommand extends Command
             $rows[] = [
                 $client['id'],
                 $client['address'],
-                $client['dataConverter'] ,
-                json_encode($client['options'], JSON_PRETTY_PRINT)
+                $client['dataConverter'],
+                json_encode($client['options'], JSON_PRETTY_PRINT),
             ];
 
             $rows[] = new TableSeparator();
@@ -75,7 +75,7 @@ final class ClientDebugCommand extends Command
                 array_pop($rows);
             }
 
-            $io->table(['Id', 'Address', 'DataConverterId' ,'Options'], $rows);
+            $io->table(['Id', 'Address', 'DataConverterId','Options'], $rows);
         }
 
 

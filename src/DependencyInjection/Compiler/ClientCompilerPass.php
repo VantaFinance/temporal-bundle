@@ -21,8 +21,9 @@ use Temporal\Client\WorkflowClientInterface as WorkflowClient;
 
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
-use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+
+use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
 
 /**
  * @phpstan-import-type RawConfiguration from Configuration
@@ -78,7 +79,7 @@ final class ClientCompilerPass implements CompilerPass
 
         $container->register('temporal.client_debug.command', ClientDebugCommand::class)
             ->setArguments([
-                '$clients' => $clients
+                '$clients' => $clients,
             ])
             ->addTag('console.command')
         ;
