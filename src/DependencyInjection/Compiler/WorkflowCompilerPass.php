@@ -29,6 +29,10 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionIns
 
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
+use Vanta\Integration\Symfony\Temporal\UI\Cli\ActivityDebugCommand;
+
+use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkerDebugCommand;
+use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkflowDebugCommand;
 
 /**
  * @phpstan-import-type RawConfiguration from Configuration
@@ -57,7 +61,9 @@ final class WorkflowCompilerPass implements CompilerPass
             ->setPublic(true)
         ;
 
-        $configuredWorkers = [];
+        $configuredWorkers        = [];
+        $activitiesWithoutWorkers = [];
+        $workflowsWithoutWorkers  = [];
 
         foreach ($config['workers'] as $workerName => $worker) {
             $options = definition(WorkerOptions::class)
@@ -96,6 +102,10 @@ final class WorkflowCompilerPass implements CompilerPass
 
                 $workerNames = $attributes[0]['workers'] ?? null;
 
+                if ($workerNames == null) {
+                    $workflowsWithoutWorkers[] = $class;
+                }
+
                 if ($workerNames != null && !in_array($workerName, $workerNames)) {
                     continue;
                 }
@@ -111,6 +121,11 @@ final class WorkflowCompilerPass implements CompilerPass
                 }
 
                 $workerNames = $attributes[0]['workers'] ?? null;
+
+                if ($workerNames == null) {
+                    $activitiesWithoutWorkers[] = $class;
+                }
+
 
                 if ($workerNames != null && !in_array($workerName, $workerNames)) {
                     continue;
@@ -130,7 +145,7 @@ final class WorkflowCompilerPass implements CompilerPass
                 ]);
             }
 
-            $configuredWorkers[] = $newWorker;
+            $configuredWorkers[$workerName] = $newWorker;
         }
 
 
@@ -144,6 +159,32 @@ final class WorkflowCompilerPass implements CompilerPass
                 $configuredWorkers,
             ])
             ->setPublic(true)
+        ;
+
+
+        $container->register('temporal.worker_debug.command', WorkerDebugCommand::class)
+            ->setArguments([
+                '$workers' => $configuredWorkers,
+            ])
+            ->addTag('console.command')
+        ;
+
+
+        $container->register('temporal.workflow_debug.command', WorkflowDebugCommand::class)
+            ->setArguments([
+                '$workers'                 => $configuredWorkers,
+                '$workflowsWithoutWorkers' => $workflowsWithoutWorkers,
+            ])
+            ->addTag('console.command')
+        ;
+
+
+        $container->register('temporal.activity_debug.command', ActivityDebugCommand::class)
+            ->setArguments([
+                '$workers'                  => $configuredWorkers,
+                '$activitiesWithoutWorkers' => $activitiesWithoutWorkers,
+            ])
+            ->addTag('console.command')
         ;
     }
 }

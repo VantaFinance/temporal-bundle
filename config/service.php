@@ -18,7 +18,9 @@ use Temporal\Exception\ExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\DataConverter\SymfonySerializerDataConverter;
 use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrineClearEntityManagerFinalizer;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
+use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkflowDebugCommand;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\inline_service;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $configurator): void {

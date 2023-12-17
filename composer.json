@@ -36,7 +36,7 @@
         "symfony/dependency-injection": "^6.0",
         "symfony/http-kernel": "^6.0",
         "symfony/runtime": "^6.0",
-        "temporal/sdk": "^2.5"
+        "temporal/sdk": "^v2.7.0-BETA3"
     },
     "config": {
         "allow-plugins": {

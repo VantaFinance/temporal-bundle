@@ -21,6 +21,7 @@ use Temporal\Client\WorkflowClientInterface as WorkflowClient;
 
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
+use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 /**
@@ -31,7 +32,8 @@ final class ClientCompilerPass implements CompilerPass
     public function process(ContainerBuilder $container): void
     {
         /** @var RawConfiguration $config */
-        $config = $container->getParameter('temporal.config');
+        $config  = $container->getParameter('temporal.config');
+        $clients = [];
 
         foreach ($config['clients'] as $name => $client) {
             $options = definition(ClientOptions::class)
@@ -63,6 +65,22 @@ final class ClientCompilerPass implements CompilerPass
             }
 
             $container->registerAliasForArgument($id, WorkflowClient::class, sprintf('%sWorkflowClient', $name));
+
+
+            $clients[] = [
+                'id'            => $id,
+                'name'          => $name,
+                'options'       => $options,
+                'dataConverter' => $client['dataConverter'],
+                'address'       => $client['address'],
+            ];
         }
+
+        $container->register('temporal.client_debug.command', ClientDebugCommand::class)
+            ->setArguments([
+                '$clients' => $clients
+            ])
+            ->addTag('console.command')
+        ;
     }
 }
