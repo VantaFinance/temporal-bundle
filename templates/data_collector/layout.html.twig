@@ -1,0 +1,30 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+
+{% block toolbar %}
+    {% set icon %}
+        <span class="sf-toolbar-value" style="display: flex; justify-content: center; align-items: center;">
+            {{ include('@Temporal/data_collector/assets/temporal_with_text.svg') }}
+        </span>
+    {% endset %}
+
+
+    {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', { 'link': true }) }}
+{% endblock %}
+
+
+
+{% block menu %}
+    <span class="label disabled">
+        <span class="icon">
+            {{ include('@Temporal/data_collector/assets/temporal.svg') }}
+        </span>
+        <strong>Temporal</strong>
+    </span>
+{% endblock %}
+
+
+
+{% block panel %}
+    234234
+{% endblock %}

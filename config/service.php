@@ -15,6 +15,7 @@ use Symfony\Component\Serializer\SerializerInterface as Serializer;
 use Temporal\DataConverter\DataConverter;
 use Temporal\DataConverter\JsonConverter;
 use Temporal\Exception\ExceptionInterceptor;
+use Vanta\Integration\Symfony\Temporal\DataCollector\TemporalCollector;
 use Vanta\Integration\Symfony\Temporal\DataConverter\SymfonySerializerDataConverter;
 use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrineClearEntityManagerFinalizer;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
@@ -33,6 +34,10 @@ return static function (ContainerConfigurator $configurator): void {
 
         ->set('temporal.exception_interceptor', ExceptionInterceptor::class)
             ->factory([ExceptionInterceptor::class, 'createDefault'])
+
+
+        ->set('temporal.collector', TemporalCollector::class)
+            ->tag('data_collector', ['id' => 'Temporal'])
     ;
 
 

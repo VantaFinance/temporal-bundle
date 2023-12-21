@@ -26,4 +26,9 @@ final class TemporalBundle extends Bundle
         $container->addCompilerPass(new DoctrineCompilerPass());
         $container->addCompilerPass(new SentryCompilerPass());
     }
+
+    public function getPath(): string
+    {
+        return \dirname(__DIR__);
+    }
 }
