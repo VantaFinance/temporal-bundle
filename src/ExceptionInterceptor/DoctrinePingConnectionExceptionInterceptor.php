@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\ExceptionInterceptor;
 
+use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\Exception\EntityManagerClosed;
 use Psr\Log\LoggerInterface as Logger;
 use Psr\Log\NullLogger;
@@ -29,7 +30,7 @@ final readonly class DoctrinePingConnectionExceptionInterceptor implements Excep
 
     public function isRetryable(Throwable $e): bool
     {
-        if ($e instanceof EntityManagerClosed) {
+        if ($e instanceof EntityManagerClosed || $e instanceof DriverException) {
             try {
                 $this->finalizer->finalize();
             } catch (Throwable $e) {
