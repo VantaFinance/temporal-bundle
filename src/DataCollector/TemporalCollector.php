@@ -18,8 +18,10 @@ use Throwable;
 final readonly class TemporalCollector implements TemplateAwareDataCollector
 {
     /**
-     * @param array<non-empty-string, array<non-empty-string, non-empty-string>> $workers
-     * @param list<array<non-empty-string, non-empty-string>>                    $clients
+     * @param array<non-empty-string, array<non-empty-string, non-empty-string>>              $workers
+     * @param list<array<non-empty-string, non-empty-string>>                                 $clients
+     * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $workflows
+     * @param list<array<non-empty-string, non-empty-string>>                                 $activities
      */
     public function __construct(
         public array $workers,

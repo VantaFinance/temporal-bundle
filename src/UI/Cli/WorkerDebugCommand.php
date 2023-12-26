@@ -39,8 +39,9 @@ final class WorkerDebugCommand extends Command
 
     protected function execute(Input $input, Output $output): int
     {
-        $rows                 = [];
-        $workers              = $this->workers;
+        $rows    = [];
+        $workers = $this->workers;
+        /** @var list<non-empty-string> $interestedWorkers */
         $interestedWorkers    = $input->getArgument('workers');
         $hasInterestedWorkers = $interestedWorkers != [];
         $io                   = new SymfonyStyle($input, $output);

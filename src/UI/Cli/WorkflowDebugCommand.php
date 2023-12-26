@@ -24,6 +24,7 @@ final class WorkflowDebugCommand extends Command
 {
     /**
      * @param array<non-empty-string, Worker> $workers
+     * @param list<class-string> $workflowsWithoutWorkers
      */
     public function __construct(
         private readonly array $workers,
@@ -41,6 +42,7 @@ final class WorkflowDebugCommand extends Command
 
     protected function execute(Input $input, Output $output): int
     {
+        /** @var list<non-empty-string> $workers */
         $workers = $input->getArgument('workers');
         $io      = new SymfonyStyle($input, $output);
 
