@@ -83,5 +83,10 @@ final class ClientCompilerPass implements CompilerPass
             ])
             ->addTag('console.command')
         ;
+
+
+        $container->getDefinition('temporal.collector')
+            ->setArgument('$clients', $clients)
+        ;
     }
 }

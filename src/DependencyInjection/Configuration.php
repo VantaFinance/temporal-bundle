@@ -48,7 +48,8 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  *  enableSessionWorker: bool,
  *  sessionResourceId: ?non-empty-string,
  *  maxConcurrentSessionExecutionSize: int,
- *  finalizers: non-empty-array<int, non-empty-string>
+ *  finalizers: non-empty-array<int, non-empty-string>,
+ *  interceptors: list<non-empty-string>
  * }
  *
  *
@@ -167,6 +168,14 @@ final class Configuration implements BundleConfiguration
                             ->validate()
                                 ->ifTrue(static fn (array $values): bool => !(count($values) == count(array_unique($values))))
                                 ->thenInvalid('Should not be repeated finalizer')
+                            ->end()
+                            ->defaultValue([])
+                            ->scalarPrototype()->end()
+                        ->end()
+                        ->arrayNode('interceptors')
+                            ->validate()
+                                ->ifTrue(static fn (array $values): bool => !(count($values) == count(array_unique($values))))
+                                ->thenInvalid('Should not be repeated interceptor')
                             ->end()
                             ->defaultValue([])
                             ->scalarPrototype()->end()

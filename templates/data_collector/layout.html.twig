@@ -15,7 +15,7 @@
 
 
 {% block menu %}
-    <span class="label disabled">
+    <span class="label">
         <span class="icon">
             {{ include('@Temporal/data_collector/assets/temporal.svg') }}
         </span>
@@ -26,5 +26,175 @@
 
 
 {% block panel %}
-    234234
+    <style>
+        .time-container { position: relative; }
+        .time-container .nowrap { position: relative; z-index: 1; text-shadow: 0 0 2px #fff; }
+        .time-bar { display: block; position: absolute; top: 0; left: 0; bottom: 0; background: #e0e0e0; }
+        .sql-runnable.sf-toggle-content.sf-toggle-visible { display: flex; flex-direction: column; }
+        .sql-runnable button { align-self: end; }
+        {% if profiler_markup_version >= 3 %}
+        .highlight .keyword   { color: var(--highlight-keyword); font-weight: bold; }
+        .highlight .word      { color: var(--color-text); }
+        .highlight .variable  { color: var(--highlight-variable); }
+        .highlight .symbol    { color: var(--color-text); }
+        .highlight .comment   { color: var(--highlight-comment); }
+        .highlight .string    { color: var(--highlight-string); }
+        .highlight .number    { color: var(--highlight-constant); font-weight: bold; }
+        .highlight .error     { color: var(--highlight-error); }
+        {% endif %}
+    </style>
+
+
+    <h2>Temporal Metrics</h2>
+    <div class="metrics">
+        <div class="metric-group">
+            <div class="metric">
+                <span class="value">{{ collector.workers | length }}</span>
+                <span class="label">Count Workers</span>
+            </div>
+
+            <div class="metric">
+                <span class="value">{{ collector.clients | length }}</span>
+                <span class="label">Count Client</span>
+            </div>
+
+
+            <div class="metric">
+                <span class="value">{{ collector.workflows | length }}</span>
+                <span class="label">Count Workflows</span>
+            </div>
+
+            <div class="metric">
+                <span class="value">{{ collector.activities | length }}</span>
+                <span class="label">Count Activites</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="sf-tabs" style="margin-top: 20px;">
+        <div class="tab {{ collector.clients is empty ? 'disabled' }}">
+            <h3 class="tab-title">Clients</h3>
+            <div class="tab-content">
+                {% if not collector.workers %}
+                    <div class="empty">
+                        <p>There are no configured temporal clients.</p>
+                    </div>
+                {% else %}
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="key">Id</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">DataConverter</th>
+                            <th scope="col">Address</th>
+                            <th scope="col">Options</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for value in collector.clients %}
+                            <tr>
+                                <th scope="row">{{ value.id }}</th>
+                                <th scope="row">{{ value.name }}</th>
+                                <th scope="row">{{ value.dataConverter }}</th>
+                                <th scope="row">{{ value.address }}</th>
+                                <td><pre>{{ value.options | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tab {{ collector.workers is empty ? 'disabled' }}">
+            <h3 class="tab-title">Workers</h3>
+            <div class="tab-content">
+                {% if not collector.workers %}
+                    <div class="empty">
+                        <p>There are no configured temporal workers.</p>
+                    </div>
+                {% else %}
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="key">Name</th>
+                            <th scope="col">Options</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for key, value in collector.workers %}
+                            <tr>
+                                <th scope="row">{{ key }}</th>
+                                <td><pre>{{ value | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+
+
+        <div class="tab">
+            <h3 class="tab-title">Workflows</h3>
+            <div class="tab-content">
+                {% if not collector.workflows %}
+                    <div class="empty">
+                        <p>There are no configured temporal workflows.</p>
+                    </div>
+                {% else %}
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="key">Id</th>
+                            <th scope="col">Workers</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for key, value in collector.workflows %}
+                            <tr>
+                                <th scope="row">{{ key }}</th>
+                                {% set attributes = value | first  %}
+
+                                <td><pre>{{ (attributes.workers  is not defined) ? 'Registered in all workers' : attributes.workers | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tab">
+            <h3 class="tab-title">Activities</h3>
+            <div class="tab-content">
+                {% if not collector.activities %}
+                    <div class="empty">
+                        <p>There are no configured temporal activities.</p>
+                    </div>
+                {% else %}
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="key">Id</th>
+                            <th scope="col">Workers</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for key, value in collector.activities %}
+                            <tr>
+                                <th scope="row">{{ key }}</th>
+                                {% set attributes = value | first  %}
+
+                                <td><pre>{{ (attributes.workers  is not defined) ? 'Registered in all workers' : attributes.workers | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
 {% endblock %}

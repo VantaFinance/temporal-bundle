@@ -15,15 +15,19 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as Comp
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
+use Temporal\Exception\ExceptionInterceptor;
 
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
 
 use Vanta\Integration\Symfony\Temporal\ExceptionInterceptor\DoctrinePingConnectionExceptionInterceptor;
+
 use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrinePingConnectionFinalizer;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
+use Vanta\Integration\Symfony\Temporal\Interceptor\DoctrineWorkflowPanicInterceptor;
 
-final class DoctrineCompilerPass implements CompilerPass
+final readonly class DoctrineCompilerPass implements CompilerPass
 {
     public function process(ContainerBuilder $container): void
     {
@@ -52,6 +56,27 @@ final class DoctrineCompilerPass implements CompilerPass
             ;
 
             $finalizerIds[$entityManager] = $finalizerId;
+        }
+
+
+        foreach ($entityManagers as $entityManager => $id) {
+            $interceptorId = sprintf('temporal.doctrine_ping_connection_%s.interceptor', $entityManager);
+
+            $container->register($interceptorId, DoctrineWorkflowPanicInterceptor::class)
+                ->setArguments([
+                   definition(DoctrinePingConnectionExceptionInterceptor::class)
+                    ->setArguments([
+                        definition(ExceptionInterceptor::class)
+                            ->setFactory([ExceptionInterceptor::class, 'createDefault']),
+                        definition(DoctrinePingConnectionFinalizer::class)
+                            ->setArguments([
+                                new Reference('doctrine'),
+                                $entityManager,
+                            ]),
+                    ]),
+                ])
+                ->addTag('temporal.interceptor')
+            ;
         }
 
 

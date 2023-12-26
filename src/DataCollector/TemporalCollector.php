@@ -13,10 +13,24 @@ namespace Vanta\Integration\Symfony\Temporal\DataCollector;
 use Symfony\Bundle\FrameworkBundle\DataCollector\TemplateAwareDataCollectorInterface as TemplateAwareDataCollector;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 final readonly class TemporalCollector implements TemplateAwareDataCollector
 {
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    /**
+     * @param array<non-empty-string, array<non-empty-string, non-empty-string>> $workers
+     * @param list<array<non-empty-string, non-empty-string>>                    $clients
+     */
+    public function __construct(
+        public array $workers,
+        public array $clients,
+        public array $workflows,
+        public array $activities,
+    ) {
+    }
+
+
+    public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
         // TODO: Implement collect() method.
     }

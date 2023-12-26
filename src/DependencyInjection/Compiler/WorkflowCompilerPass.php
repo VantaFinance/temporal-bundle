@@ -16,7 +16,9 @@ use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Temporal\Interceptor\SimplePipelineProvider;
 use Temporal\Worker\Transport\Goridge;
 use Temporal\Worker\Worker;
 use Temporal\Worker\WorkerOptions;
@@ -89,7 +91,15 @@ final class WorkflowCompilerPass implements CompilerPass
 
             $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), Worker::class)
                 ->setFactory([$factory, 'newWorker'])
-                ->setArguments([$worker['taskQueue'], $options, new Reference($exceptionInterceptorId)])
+                ->setArguments([
+                    $worker['taskQueue'],
+                    $options,
+                    new Reference($exceptionInterceptorId),
+                    definition(SimplePipelineProvider::class)
+                        ->setArguments([
+                            array_map(static fn (string $id): Reference => new Reference($id), $worker['interceptors']),
+                        ]),
+                ])
                 ->setPublic(true)
             ;
 
@@ -149,9 +159,6 @@ final class WorkflowCompilerPass implements CompilerPass
         }
 
 
-        foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
-            $container->removeDefinition($id);
-        }
 
         $container->register('temporal.runtime', Runtime::class)
             ->setArguments([
@@ -169,7 +176,6 @@ final class WorkflowCompilerPass implements CompilerPass
             ->addTag('console.command')
         ;
 
-
         $container->register('temporal.workflow_debug.command', WorkflowDebugCommand::class)
             ->setArguments([
                 '$workers'                 => $configuredWorkers,
@@ -186,5 +192,21 @@ final class WorkflowCompilerPass implements CompilerPass
             ])
             ->addTag('console.command')
         ;
+
+
+        $container->getDefinition('temporal.collector')
+            ->setArgument('$workers', array_map(static function (Definition $worker) {
+                $worker = clone $worker;
+
+                return $worker->addMethodCall('getOptions', returnsClone: true);
+            }, $configuredWorkers))
+            ->setArgument('$workflows', $container->findTaggedServiceIds('temporal.workflow'))
+            ->setArgument('$activities', $container->findTaggedServiceIds('temporal.activity'))
+        ;
+
+
+        foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
+            $container->removeDefinition($id);
+        }
     }
 }

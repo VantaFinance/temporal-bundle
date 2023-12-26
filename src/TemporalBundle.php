@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal;
 
+use function dirname;
+
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ClientCompilerPass;
@@ -29,6 +31,6 @@ final class TemporalBundle extends Bundle
 
     public function getPath(): string
     {
-        return \dirname(__DIR__);
+        return dirname(__DIR__);
     }
 }

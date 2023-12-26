@@ -23,7 +23,7 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLog
 use Vanta\Integration\Symfony\Temporal\ExceptionInterceptor\SentryExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 
-final class SentryCompilerPass implements CompilerPass
+final readonly class SentryCompilerPass implements CompilerPass
 {
     public function process(ContainerBuilder $container): void
     {
