@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $finder = (new PhpCsFixer\Finder())
-    ->in(['src', 'tests'])
+    ->in(['src', 'tests', 'config'])
     ->exclude([
         'var',
         'vendor',

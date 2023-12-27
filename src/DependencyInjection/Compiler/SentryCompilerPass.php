@@ -15,13 +15,9 @@ use Sentry\State\HubInterface as Hub;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
-
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
-
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
-
-use Vanta\Integration\Symfony\Temporal\ExceptionInterceptor\SentryExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
+use Vanta\Integration\Symfony\Temporal\Interceptor\SentryActivityInboundInterceptor;
+use Vanta\Integration\Symfony\Temporal\Interceptor\SentryWorkflowPanicInterceptor;
 
 final readonly class SentryCompilerPass implements CompilerPass
 {
@@ -35,26 +31,19 @@ final readonly class SentryCompilerPass implements CompilerPass
             return;
         }
 
-        $temporalConfig = $container->getParameter('temporal.config');
-        $workers        = $temporalConfig['workers'] ?? [];
 
-        foreach ($workers as $name => $worker) {
-            $exceptionInspectorId = exceptionInspectorId($name);
+        $container->register('temporal.sentry_workflow_panic.workflow_interceptor', SentryWorkflowPanicInterceptor::class)
+            ->setArguments([
+                new Reference(Hub::class),
+            ])
+            ->addTag('temporal.interceptor')
+        ;
 
-            if (!$container->hasDefinition($exceptionInspectorId)) {
-                continue;
-            }
-
-            $newExceptionInspectorId = sprintf('%s.inner.sentry', $exceptionInspectorId);
-
-            $container->register(sprintf('temporal.sentry_%s.interceptor', $name), SentryExceptionInterceptor::class)
-                ->setArguments([
-                    new Reference($newExceptionInspectorId),
-                    new Reference(Hub::class),
-                    referenceLogger(),
-                ])
-                ->setDecoratedService($exceptionInspectorId, $newExceptionInspectorId)
-            ;
-        }
+        $container->register('temporal.sentry_activity_in_bound.activity_interceptor', SentryActivityInboundInterceptor::class)
+            ->setArguments([
+                new Reference(Hub::class),
+            ])
+            ->addTag('temporal.interceptor')
+        ;
     }
 }

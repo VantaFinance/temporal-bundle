@@ -13,8 +13,10 @@ namespace Vanta\Integration\Symfony\Temporal\Interceptor;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\Exception\EntityManagerClosed;
+use RuntimeException;
 use Temporal\Interceptor\ActivityInbound\ActivityInput;
 use Temporal\Interceptor\ActivityInboundInterceptor;
+use Throwable;
 use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrinePingConnectionFinalizer;
 
 final readonly class DoctrineActivityInboundInterceptor implements ActivityInboundInterceptor
@@ -30,10 +32,14 @@ final readonly class DoctrineActivityInboundInterceptor implements ActivityInbou
      */
     public function handleActivityInbound(ActivityInput $input, callable $next): mixed
     {
-        $result = $next($input);
+        try {
+            $result = $next($input);
+        } catch (Throwable $e) {
+            if ($e instanceof EntityManagerClosed || $e instanceof DriverException) {
+                $this->finalizer->finalize();
+            }
 
-        if ($result instanceof EntityManagerClosed || $result instanceof DriverException) {
-            $this->finalizer->finalize();
+            throw new RuntimeException('Reconnect success! Restart activity...');
         }
 
         return $result;
