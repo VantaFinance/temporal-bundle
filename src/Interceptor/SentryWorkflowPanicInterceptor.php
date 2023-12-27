@@ -50,6 +50,7 @@ final readonly class SentryWorkflowPanicInterceptor implements WorkflowOutboundC
             'Namespace' => Workflow::getInfo()->namespace,
             'TaskQueue' => Workflow::getInfo()->taskQueue,
         ]);
+        $event->setRequest(Workflow::getInput()->getValues());
 
         $eventHit = EventHint::fromArray(['exception' => $failure]);
 
