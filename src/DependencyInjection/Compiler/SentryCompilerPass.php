@@ -11,10 +11,15 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 
 use Sentry\SentryBundle\SentryBundle;
+use Sentry\Serializer\RepresentationSerializer;
+use Sentry\StacktraceBuilder;
 use Sentry\State\HubInterface as Hub;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
+
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 use Vanta\Integration\Symfony\Temporal\Interceptor\SentryActivityInboundInterceptor;
 use Vanta\Integration\Symfony\Temporal\Interceptor\SentryWorkflowPanicInterceptor;
@@ -27,14 +32,26 @@ final readonly class SentryCompilerPass implements CompilerPass
             return;
         }
 
-        if (!$container->has(Hub::class)) {
+        if (!$container->has(Hub::class) && !$container->has('sentry.client.options')) {
             return;
         }
+
+
+        $container->register('temporal.sentry_stack_trace_builder', StacktraceBuilder::class)
+            ->setArguments([
+                new Reference('sentry.client.options'),
+                definition(RepresentationSerializer::class)
+                    ->setArguments([
+                        new Reference('sentry.client.options'),
+                    ]),
+            ])
+        ;
 
 
         $container->register('temporal.sentry_workflow_panic.workflow_interceptor', SentryWorkflowPanicInterceptor::class)
             ->setArguments([
                 new Reference(Hub::class),
+                new Reference('temporal.sentry_stack_trace_builder'),
             ])
             ->addTag('temporal.interceptor')
         ;
@@ -42,6 +59,7 @@ final readonly class SentryCompilerPass implements CompilerPass
         $container->register('temporal.sentry_activity_in_bound.activity_interceptor', SentryActivityInboundInterceptor::class)
             ->setArguments([
                 new Reference(Hub::class),
+                new Reference('temporal.sentry_stack_trace_builder'),
             ])
             ->addTag('temporal.interceptor')
         ;

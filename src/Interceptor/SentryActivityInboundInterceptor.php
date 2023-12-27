@@ -13,8 +13,10 @@ namespace Vanta\Integration\Symfony\Temporal\Interceptor;
 use function iterator_to_array;
 
 use Sentry\Event;
+
 use Sentry\EventHint;
 use Sentry\ExceptionDataBag;
+use Sentry\StacktraceBuilder;
 use Sentry\State\HubInterface as Hub;
 use Temporal\Activity;
 use Temporal\Interceptor\ActivityInbound\ActivityInput;
@@ -24,7 +26,8 @@ use Throwable;
 final readonly class SentryActivityInboundInterceptor implements ActivityInboundInterceptor
 {
     public function __construct(
-        private Hub $hub
+        private Hub $hub,
+        private StacktraceBuilder $stacktraceBuilder,
     ) {
     }
 
@@ -37,18 +40,20 @@ final readonly class SentryActivityInboundInterceptor implements ActivityInbound
         try {
             $result = $next($input);
         } catch (Throwable $e) {
+            $stackTrace = $this->stacktraceBuilder->buildFromException($e);
+
             $event = Event::createEvent();
-            $event->setExceptions([new ExceptionDataBag($e)]);
+            $event->setExceptions([new ExceptionDataBag($e, $stackTrace)]);
             $event->setContext('Activity', [
                 'Id'        => Activity::getInfo()->id,
                 'Type'      => Activity::getInfo()->type->name,
                 'TaskQueue' => Activity::getInfo()->taskQueue,
                 'Headers'   => iterator_to_array($input->header->getIterator()),
-                'Workflow'  => [
-                    'Namespace' => Activity::getInfo()->workflowNamespace,
-                    'Type'      => Activity::getInfo()->workflowType?->name,
-                    'Id'        => Activity::getInfo()->workflowExecution?->getID(),
-                ],
+            ]);
+            $event->setContext('Workflow', [
+                'Namespace' => Activity::getInfo()->workflowNamespace,
+                'Type'      => Activity::getInfo()->workflowType?->name,
+                'Id'        => Activity::getInfo()->workflowExecution?->getID(),
             ]);
 
             $eventHit = EventHint::fromArray(['exception' => $e]);
