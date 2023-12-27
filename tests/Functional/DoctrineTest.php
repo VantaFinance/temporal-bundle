@@ -13,9 +13,7 @@ namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Nyholm\BundleTest\TestKernel;
 
-use function PHPUnit\Framework\assertArrayHasKey;
 use function PHPUnit\Framework\assertEquals;
-use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -24,7 +22,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\DoctrineCompilerPass;
@@ -132,8 +129,8 @@ final class DoctrineTest extends KernelTestCase
     /**
      * @param non-empty-string                $id
      */
-    #[DataProvider('decorateInspectorDataProvider')]
-    public function testDecorateInspector(string $id): void
+    #[DataProvider('doctrineInspectorActivity')]
+    public function testRegisterDoctrineInspectorActivity(string $id): void
     {
         InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
             return $package == 'doctrine/doctrine-bundle';
@@ -167,9 +164,9 @@ final class DoctrineTest extends KernelTestCase
 
 
     /**
-     * @return iterable<array{0: non-empty-string, 1: non-empty-string, 2: non-empty-array<int, Reference>}>
+     * @return iterable<array<non-empty-string>>
      */
-    public static function decorateInspectorDataProvider(): iterable
+    public static function doctrineInspectorActivity(): iterable
     {
         yield [
             'temporal.doctrine_ping_connection_default.activity_interceptor',

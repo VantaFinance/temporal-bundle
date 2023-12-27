@@ -12,11 +12,7 @@ namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 
 use Nyholm\BundleTest\TestKernel;
 
-use function PHPUnit\Framework\assertArrayHasKey;
-use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertFalse;
-use function PHPUnit\Framework\assertIsArray;
-use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
