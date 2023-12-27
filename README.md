@@ -40,6 +40,11 @@ If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the fo
 - `temporal.doctrine_ping_connection_<entity-mananger-name>.finalizer`
 - `temporal.doctrine_clear_entity_manager.finalizer`
 
+
+And interceptors: 
+- `temporal.doctrine_ping_connection_<entity-mananger-name>.activity_interceptor`
+
+
 Example config:
 
 ```yaml
@@ -56,6 +61,8 @@ temporal:
       finalizers: 
         - temporal.doctrine_ping_connection_default.finalizer
         - temporal.doctrine_clear_entity_manager.finalizer
+      interceptors:
+        - temporal.doctrine_ping_connection_default.activity_interceptor
 
   clients:
     default:
