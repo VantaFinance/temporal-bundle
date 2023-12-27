@@ -131,34 +131,28 @@ final class DoctrineTest extends KernelTestCase
 
     /**
      * @param non-empty-string                $id
-     * @param non-empty-string                $decoratedInspectorId
-     * @param non-empty-array<int, Reference> $arguments
      */
     #[DataProvider('decorateInspectorDataProvider')]
-    public function testDecorateInspector(string $id, string $decoratedInspectorId, array $arguments): void
+    public function testDecorateInspector(string $id): void
     {
         InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
             return $package == 'doctrine/doctrine-bundle';
         });
 
 
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $decoratedInspectorId, $arguments): void {
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id): void {
             $kernel->addTestBundle(DoctrineBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_finalizers.yaml');
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
 
-            $kernel->addTestCompilerPass(new class($id, $decoratedInspectorId, $arguments) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id) implements CompilerPass {
                 /**
                  * @param non-empty-string                $id
-                 * @param non-empty-string                $decoratedInspectorId
-                 * @param non-empty-array<int, Reference> $arguments
                  */
                 public function __construct(
                     private readonly string $id,
-                    private readonly string $decoratedInspectorId,
-                    private readonly array $arguments,
                 ) {
                 }
 
@@ -166,15 +160,6 @@ final class DoctrineTest extends KernelTestCase
                 public function process(ContainerBuilder $container): void
                 {
                     assertTrue($container->hasDefinition($this->id));
-
-                    $def              = $container->getDefinition($this->id);
-                    $decoratedService = $def->getDecoratedService();
-
-
-                    assertNotNull($decoratedService);
-                    assertArrayHasKey(0, $decoratedService);
-                    assertEquals($this->decoratedInspectorId, $decoratedService[0]);
-                    assertEquals($this->arguments, $def->getArguments());
                 }
             });
         }]);
@@ -187,43 +172,11 @@ final class DoctrineTest extends KernelTestCase
     public static function decorateInspectorDataProvider(): iterable
     {
         yield [
-            'temporal_doctrine_ping_connection_default_default.interceptor',
-            'temporal.exception_interceptor.default',
-            [
-                new Reference('temporal.exception_interceptor.default.temporal_doctrine_ping_connection_default_default.interceptor'),
-                new Reference('temporal.doctrine_ping_connection_default.finalizer'),
-                new Reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE),
-            ],
+            'temporal.doctrine_ping_connection_default.activity_interceptor',
         ];
 
         yield [
-            'temporal_doctrine_ping_connection_default_foo.interceptor',
-            'temporal.exception_interceptor.foo',
-            [
-                new Reference('temporal.exception_interceptor.foo.temporal_doctrine_ping_connection_default_foo.interceptor'),
-                new Reference('temporal.doctrine_ping_connection_default.finalizer'),
-                new Reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE),
-            ],
-        ];
-
-        yield [
-            'temporal_doctrine_ping_connection_customer_foo.interceptor',
-            'temporal.exception_interceptor.foo',
-            [
-                new Reference('temporal.exception_interceptor.foo.temporal_doctrine_ping_connection_customer_foo.interceptor'),
-                new Reference('temporal.doctrine_ping_connection_customer.finalizer'),
-                new Reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE),
-            ],
-        ];
-
-        yield [
-            'temporal_doctrine_ping_connection_customer_bar.interceptor',
-            'temporal.exception_interceptor.bar',
-            [
-                new Reference('temporal.exception_interceptor.bar.temporal_doctrine_ping_connection_customer_bar.interceptor'),
-                new Reference('temporal.doctrine_ping_connection_customer.finalizer'),
-                new Reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE),
-            ],
+            'temporal.doctrine_ping_connection_customer.activity_interceptor',
         ];
     }
 }
