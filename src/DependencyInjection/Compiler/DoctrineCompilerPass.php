@@ -56,7 +56,7 @@ final readonly class DoctrineCompilerPass implements CompilerPass
             $finalizerIds[$entityManager] = $finalizerId;
 
 
-            $interceptorId = sprintf('temporal.doctrine_ping_connection_%s.interceptor', $entityManager);
+            $interceptorId = sprintf('temporal.doctrine_ping_connection_%s.activity_interceptor', $entityManager);
 
             $container->register($interceptorId, DoctrineActivityInboundInterceptor::class)
                 ->setArguments([
