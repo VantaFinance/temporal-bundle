@@ -37,6 +37,7 @@ final readonly class SentryCompilerPass implements CompilerPass
                 new Reference(Hub::class),
             ])
             ->addTag('temporal.interceptor')
+            ->setPublic(true)
         ;
 
         $container->register('temporal.sentry_activity_in_bound.activity_interceptor', SentryActivityInboundInterceptor::class)
@@ -44,6 +45,7 @@ final readonly class SentryCompilerPass implements CompilerPass
                 new Reference(Hub::class),
             ])
             ->addTag('temporal.interceptor')
+            ->setPublic(true)
         ;
     }
 }
