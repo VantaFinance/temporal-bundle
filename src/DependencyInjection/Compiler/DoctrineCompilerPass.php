@@ -48,7 +48,7 @@ final readonly class DoctrineCompilerPass implements CompilerPass
                 ->addTag('temporal.finalizer')
             ;
 
-            $interceptorId = sprintf('temporal.doctrine_ping_connection_%s.activity_interceptor', $entityManager);
+            $interceptorId = sprintf('temporal.doctrine_ping_connection_%s_activity_inbound_interceptor', $entityManager);
 
             $container->register($interceptorId, DoctrineActivityInboundInterceptor::class)
                 ->setArguments([

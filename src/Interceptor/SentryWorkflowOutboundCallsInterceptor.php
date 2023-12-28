@@ -23,7 +23,7 @@ use Temporal\Interceptor\WorkflowOutboundCallsInterceptor;
 use Temporal\Workflow;
 use Throwable;
 
-final readonly class SentryWorkflowPanicInterceptor implements WorkflowOutboundCallsInterceptor
+final readonly class SentryWorkflowOutboundCallsInterceptor implements WorkflowOutboundCallsInterceptor
 {
     use WorkflowOutboundCallsInterceptorTrait;
 

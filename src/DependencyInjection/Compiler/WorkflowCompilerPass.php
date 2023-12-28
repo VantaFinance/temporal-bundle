@@ -186,7 +186,7 @@ final class WorkflowCompilerPass implements CompilerPass
 
 
         $container->getDefinition('temporal.collector')
-            ->setArgument('$workers', array_map(static function (Definition $worker) {
+            ->setArgument('$workers', array_map(static function (Definition $worker): Definition {
                 $worker = clone $worker;
 
                 return $worker->addMethodCall('getOptions', returnsClone: true);

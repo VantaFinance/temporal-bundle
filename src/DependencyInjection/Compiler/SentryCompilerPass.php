@@ -22,7 +22,7 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 use Vanta\Integration\Symfony\Temporal\Interceptor\SentryActivityInboundInterceptor;
-use Vanta\Integration\Symfony\Temporal\Interceptor\SentryWorkflowPanicInterceptor;
+use Vanta\Integration\Symfony\Temporal\Interceptor\SentryWorkflowOutboundCallsInterceptor;
 
 final readonly class SentryCompilerPass implements CompilerPass
 {
@@ -48,20 +48,18 @@ final readonly class SentryCompilerPass implements CompilerPass
         ;
 
 
-        $container->register('temporal.sentry_workflow_panic.workflow_interceptor', SentryWorkflowPanicInterceptor::class)
+        $container->register('temporal.sentry_workflow_outbound_calls.interceptor', SentryWorkflowOutboundCallsInterceptor::class)
             ->setArguments([
                 new Reference(Hub::class),
                 new Reference('temporal.sentry_stack_trace_builder'),
             ])
-            ->addTag('temporal.interceptor')
         ;
 
-        $container->register('temporal.sentry_activity_in_bound.activity_interceptor', SentryActivityInboundInterceptor::class)
+        $container->register('temporal.sentry_activity_inbound_interceptor', SentryActivityInboundInterceptor::class)
             ->setArguments([
                 new Reference(Hub::class),
                 new Reference('temporal.sentry_stack_trace_builder'),
             ])
-            ->addTag('temporal.interceptor')
         ;
     }
 }
