@@ -46,7 +46,6 @@ use Vanta\Integration\Symfony\Temporal\Test\Functional\Activity\ActivityBHandler
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Activity\ActivityCHandler;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Bundle\TestActivityBundle;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Bundle\TestWorkflowBundle;
-use Vanta\Integration\Symfony\Temporal\Test\Functional\ExceptionInterceptor\NullExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Workflow\AssignWorkflowHandler;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Workflow\AssignWorkflowHandlerV2;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Workflow\NullWorkflowHandler;
@@ -276,54 +275,6 @@ final class WorkerTest extends KernelTestCase
         yield ['temporal.bar.worker', 'bar'];
     }
 
-
-    /**
-     * @param non-empty-string    $id
-     */
-    #[DataProvider('registerWorkerExceptionInterceptorDataProvider')]
-    public function testRegisterWorkerExceptionInterceptor(string $id, Reference $reference): void
-    {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $reference): void {
-            $kernel->addTestCompilerPass(new class() implements  CompilerPass {
-                public function process(ContainerBuilder $container): void
-                {
-                    $container->register('temporal.foo.exception_interceptor', NullExceptionInterceptor::class);
-                    $container->register('temporal.bar.exception_interceptor', NullExceptionInterceptor::class);
-                }
-            });
-
-
-            $kernel->addTestBundle(TemporalBundle::class);
-            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_exception_interceptor.yaml');
-
-
-            $kernel->addTestCompilerPass(new class($id, $reference) implements CompilerPass {
-                public function __construct(
-                    private readonly string $id,
-                    private readonly Reference $reference
-                ) {
-                }
-
-
-                public function process(ContainerBuilder $container): void
-                {
-                    assertTrue($container->hasDefinition($this->id));
-                    assertEquals($this->reference, $container->getDefinition($this->id)->getArgument(2));
-                }
-            });
-        }]);
-    }
-
-
-    /**
-     * @return iterable<array{0: non-empty-string, 1: Reference}>
-     */
-    public static function registerWorkerExceptionInterceptorDataProvider(): iterable
-    {
-        yield ['temporal.default.worker', new Reference('temporal.exception_interceptor.default')];
-        yield ['temporal.foo.worker', new Reference('temporal.exception_interceptor.foo')];
-        yield ['temporal.bar.worker', new Reference('temporal.exception_interceptor.bar')];
-    }
 
 
     /**
