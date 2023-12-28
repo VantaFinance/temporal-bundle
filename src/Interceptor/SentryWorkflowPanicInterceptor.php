@@ -42,7 +42,7 @@ final readonly class SentryWorkflowPanicInterceptor implements WorkflowOutboundC
             return $next($input);
         }
 
-        $this->reportError($input->failure);
+        $this->reportError($failure);
 
         return $next($input);
     }
@@ -56,7 +56,7 @@ final readonly class SentryWorkflowPanicInterceptor implements WorkflowOutboundC
             return $next($input);
         }
 
-        $this->reportError($input->failure);
+        $this->reportError($failure);
 
         return $next($input);
     }
@@ -69,7 +69,7 @@ final readonly class SentryWorkflowPanicInterceptor implements WorkflowOutboundC
         $event->setExceptions([new ExceptionDataBag($e, $stackTrace)]);
         $event->setContext('Workflow', [
             'Id'        => Workflow::getInfo()->execution->getID(),
-            'Type'      => Workflow::getInfo()->type,
+            'Type'      => Workflow::getInfo()->type->name,
             'Namespace' => Workflow::getInfo()->namespace,
             'TaskQueue' => Workflow::getInfo()->taskQueue,
         ]);
