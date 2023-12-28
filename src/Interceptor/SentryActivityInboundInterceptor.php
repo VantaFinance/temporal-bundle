@@ -56,6 +56,15 @@ final readonly class SentryActivityInboundInterceptor implements ActivityInbound
                 'Id'        => Activity::getInfo()->workflowExecution?->getID(),
             ]);
 
+            $request = [];
+
+            foreach (Activity::getInput()->getValues() as $value) {
+                $request[] = $value;
+            }
+
+            $event->setExtra(['Args' => $request]);
+
+
             $eventHit = EventHint::fromArray(['exception' => $e]);
 
             $this->hub->captureEvent($event, $eventHit);

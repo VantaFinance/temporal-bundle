@@ -16,7 +16,6 @@ use Sentry\EventHint;
 use Sentry\ExceptionDataBag;
 use Sentry\StacktraceBuilder;
 use Sentry\State\HubInterface as Hub;
-use Temporal\DataConverter\Type;
 use Temporal\Interceptor\Trait\WorkflowOutboundCallsInterceptorTrait;
 use Temporal\Interceptor\WorkflowOutboundCalls\CompleteInput;
 use Temporal\Interceptor\WorkflowOutboundCalls\PanicInput;
@@ -76,19 +75,12 @@ final readonly class SentryWorkflowPanicInterceptor implements WorkflowOutboundC
         ]);
 
         $request = [];
-        $workflowRequest = Workflow::getInput();
 
-        foreach ($workflowRequest->getValues() as $key => $value) {
-            $type = Type::TYPE_ANY;
-
-            if (is_object($value)){
-                $type = Type::TYPE_ARRAY;
-            }
-
-            $request[sprintf('%s parameter', $key)] = $workflowRequest->getValue($key, $type);
+        foreach (Workflow::getInput()->getValues() as $value) {
+            $request[] = $value;
         }
 
-        $event->setRequest($request);
+        $event->setExtra(['Args' => $request]);
 
         $eventHit = EventHint::fromArray(['exception' => $e, 'stacktrace' => $stackTrace]);
 
