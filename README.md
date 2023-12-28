@@ -71,6 +71,46 @@ temporal:
       dataConverter: temporal.data_converter
 ```
 
+
+
+
+## Sentry integrations
+
+If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is use, the following interceptors is available to you:
+
+- `temporal.sentry_activity_in_bound.activity_interceptor`
+
+
+
+Example config:
+
+```yaml
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+      interceptors:
+        - temporal.sentry_activity_in_bound.activity_interceptor
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+```
+
+
+
+
+
+
+
 ## Assign worker
 
 Running workflows and activities with different task queue

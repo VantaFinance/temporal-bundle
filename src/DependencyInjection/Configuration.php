@@ -30,6 +30,7 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  *  identity: ?non-empty-string,
  *  dataConverter: non-empty-string,
  *  queryRejectionCondition: ?int,
+ *  interceptors: list<non-empty-string>
  * }
  *
  * @phpstan-type Worker array{
@@ -126,6 +127,14 @@ final class Configuration implements BundleConfiguration
                                     ])
                                     ->thenInvalid(sprintf('"queryRejectionCondition" value is not in the enum: %s', QueryRejectCondition::class))
                                 ->end()
+                            ->end()
+                            ->arrayNode('interceptors')
+                                ->validate()
+                                    ->ifTrue(static fn (array $values): bool => !(count($values) == count(array_unique($values))))
+                                    ->thenInvalid('Should not be repeated interceptor')
+                                ->end()
+                                ->defaultValue([])
+                                ->scalarPrototype()->end()
                             ->end()
                         ->end()
                     ->end()

@@ -19,6 +19,7 @@ use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
 use Temporal\Client\WorkflowClient as GrpcWorkflowClient;
 use Temporal\Client\WorkflowClientInterface as WorkflowClient;
 
+use Temporal\Interceptor\SimplePipelineProvider;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
@@ -57,8 +58,12 @@ final class ClientCompilerPass implements CompilerPass
                     '$serviceClient' => definition(ServiceClient::class, [$client['address']])
                         ->setFactory([GrpcServiceClient::class, 'create']),
 
-                    '$options'   => $options,
-                    '$converter' => new Reference($client['dataConverter']),
+                    '$options'             => $options,
+                    '$converter'           => new Reference($client['dataConverter']),
+                    '$interceptorProvider' => definition(SimplePipelineProvider::class)
+                        ->setArguments([
+                            array_map(static fn (string $id): Reference => new Reference($id), $client['interceptors']),
+                        ]),
                 ]);
 
             if ($name == $config['defaultClient']) {

@@ -13,7 +13,6 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 use Closure;
 use Spiral\RoadRunner\Environment as RoadRunnerEnvironment;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -27,7 +26,6 @@ use Temporal\WorkerFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
 
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
@@ -82,19 +80,12 @@ final class WorkflowCompilerPass implements CompilerPass
                 $options->addMethodCall($method, [$value], true);
             }
 
-            $exceptionInterceptorId = exceptionInspectorId($workerName);
-
-            $container->setDefinition(
-                $exceptionInterceptorId,
-                new ChildDefinition($worker['exceptionInterceptor'])
-            );
-
             $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), Worker::class)
                 ->setFactory([$factory, 'newWorker'])
                 ->setArguments([
                     $worker['taskQueue'],
                     $options,
-                    new Reference($exceptionInterceptorId),
+                    new Reference($worker['exceptionInterceptor']),
                     definition(SimplePipelineProvider::class)
                         ->setArguments([
                             array_map(static fn (string $id): Reference => new Reference($id), $worker['interceptors']),
