@@ -169,11 +169,11 @@ final class DoctrineTest extends KernelTestCase
     public static function doctrineInspectorActivity(): iterable
     {
         yield [
-            'temporal.doctrine_ping_connection_default.activity_interceptor',
+            'temporal.doctrine_ping_connection_default_activity_inbound.interceptor',
         ];
 
         yield [
-            'temporal.doctrine_ping_connection_customer.activity_interceptor',
+            'temporal.doctrine_ping_connection_customer_activity_inbound.interceptor',
         ];
     }
 }

@@ -42,7 +42,7 @@ If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the fo
 
 
 And interceptors: 
-- `temporal.doctrine_ping_connection_<entity-mananger-name>_activity_inbound.interceptorr`
+- `temporal.doctrine_ping_connection_<entity-mananger-name>_activity_inbound.interceptor`
 
 
 Example config:
