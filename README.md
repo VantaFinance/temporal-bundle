@@ -62,7 +62,7 @@ temporal:
         - temporal.doctrine_ping_connection_default.finalizer
         - temporal.doctrine_clear_entity_manager.finalizer
       interceptors:
-        - temporal.doctrine_ping_connection_default.activity.interceptor
+        - temporal.doctrine_ping_connection_default_activity_inbound.interceptor
 
   clients:
     default:
