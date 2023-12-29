@@ -10,13 +10,14 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal;
 
-use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use function dirname;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\DoctrineCompilerPass;
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\SentryCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 

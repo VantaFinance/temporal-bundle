@@ -42,7 +42,7 @@ If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the fo
 
 
 And interceptors: 
-- `temporal.doctrine_ping_connection_<entity-mananger-name>_activity_inbound_interceptorr`
+- `temporal.doctrine_ping_connection_<entity-mananger-name>_activity_inbound.interceptorr`
 
 
 Example config:
@@ -62,7 +62,7 @@ temporal:
         - temporal.doctrine_ping_connection_default.finalizer
         - temporal.doctrine_clear_entity_manager.finalizer
       interceptors:
-        - temporal.doctrine_ping_connection_default.activity_interceptor
+        - temporal.doctrine_ping_connection_default.activity.interceptor
 
   clients:
     default:
@@ -79,7 +79,7 @@ temporal:
 If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is use, the following interceptors is available to you:
 
 - `temporal.sentry_workflow_outbound_calls.interceptor`
-- `temporal.sentry_activity_in_bound.activity_interceptor`
+- `temporal.sentry_activity_inbound.interceptor`
 
 
 
@@ -99,7 +99,7 @@ temporal:
       exceptionInterceptor: temporal.exception_interceptor
       interceptors:
         - temporal.sentry_workflow_outbound_calls.interceptor
-        - temporal.sentry_activity_in_bound.activity_interceptor
+        - temporal.sentry_activity_inbound.interceptor
 
   clients:
     default:

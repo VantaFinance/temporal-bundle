@@ -16,12 +16,13 @@ use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
 use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
 use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
-use Temporal\Client\ScheduleClientInterface as ScheduleClient;
 use Temporal\Client\ScheduleClient as GrpcScheduleClient;
+use Temporal\Client\ScheduleClientInterface as ScheduleClient;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
-use Vanta\Integration\Symfony\Temporal\UI\Cli\ScheduleClientDebugCommand;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+
+use Vanta\Integration\Symfony\Temporal\UI\Cli\ScheduleClientDebugCommand;
 
 /**
  * @phpstan-import-type RawConfiguration from Configuration
@@ -55,8 +56,8 @@ final class ScheduleClientCompilerPass implements CompilerPass
                     '$serviceClient' => definition(ServiceClient::class, [$client['address']])
                         ->setFactory([GrpcServiceClient::class, 'create']),
 
-                    '$options'     => $options,
-                    '$converter'   => new Reference($client['dataConverter']),
+                    '$options'   => $options,
+                    '$converter' => new Reference($client['dataConverter']),
                 ]);
 
             if ($name == $config['defaultClient']) {

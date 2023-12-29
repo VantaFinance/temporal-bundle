@@ -55,7 +55,7 @@ final readonly class SentryCompilerPass implements CompilerPass
             ])
         ;
 
-        $container->register('temporal.sentry_activity_inbound_interceptor', SentryActivityInboundInterceptor::class)
+        $container->register('temporal.sentry_activity_inbound.interceptor', SentryActivityInboundInterceptor::class)
             ->setArguments([
                 new Reference(Hub::class),
                 new Reference('temporal.sentry_stack_trace_builder'),
