@@ -102,7 +102,7 @@ final class SentryTest extends KernelTestCase
     }
 
 
-    public function testDecorateTemporalInspector(): void
+    public function testRegisterTemporalInspector(): void
     {
         InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
             return $package == 'sentry/sentry-symfony';
@@ -119,8 +119,8 @@ final class SentryTest extends KernelTestCase
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition('temporal.sentry_workflow_panic.workflow_interceptor'));
-                    assertTrue($container->hasDefinition('temporal.sentry_activity_in_bound.activity_interceptor'));
+                    assertTrue($container->hasDefinition('temporal.sentry_activity_inbound.interceptor'));
+                    assertTrue($container->hasDefinition('temporal.sentry_workflow_outbound_calls.interceptor'));
                     assertTrue($container->hasDefinition('temporal.sentry_stack_trace_builder'));
                 }
             });
