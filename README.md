@@ -98,6 +98,7 @@ temporal:
       taskQueue: default
       exceptionInterceptor: temporal.exception_interceptor
       interceptors:
+        - temporal.sentry_workflow_outbound_calls.interceptor
         - temporal.sentry_activity_in_bound.activity_interceptor
 
   clients:
