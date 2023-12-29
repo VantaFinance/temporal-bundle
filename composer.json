@@ -36,7 +36,7 @@
         "symfony/dependency-injection": "^6.0",
         "symfony/http-kernel": "^6.0",
         "symfony/runtime": "^6.0",
-        "temporal/sdk": "^2.5"
+        "temporal/sdk": "^2.7"
     },
     "config": {
         "allow-plugins": {
@@ -57,6 +57,7 @@
         "sentry/sentry-symfony": "^4.10",
         "nyholm/symfony-bundle-test": "^2.0",
         "phpunit/phpunit": "^10.3",
-        "symfony/monolog-bundle": "^3.8"
+        "symfony/monolog-bundle": "^3.8",
+        "symfony/web-profiler-bundle": "^6.0"
     }
 }

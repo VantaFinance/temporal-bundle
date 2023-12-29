@@ -16,20 +16,18 @@ use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
 use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
 use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
-use Temporal\Client\WorkflowClient as GrpcWorkflowClient;
-use Temporal\Client\WorkflowClientInterface as WorkflowClient;
-
-use Temporal\Interceptor\SimplePipelineProvider;
+use Temporal\Client\ScheduleClient as GrpcScheduleClient;
+use Temporal\Client\ScheduleClientInterface as ScheduleClient;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
-use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
+use Vanta\Integration\Symfony\Temporal\UI\Cli\ScheduleClientDebugCommand;
 
 /**
  * @phpstan-import-type RawConfiguration from Configuration
  */
-final class ClientCompilerPass implements CompilerPass
+final class ScheduleClientCompilerPass implements CompilerPass
 {
     public function process(ContainerBuilder $container): void
     {
@@ -37,7 +35,7 @@ final class ClientCompilerPass implements CompilerPass
         $config  = $container->getParameter('temporal.config');
         $clients = [];
 
-        foreach ($config['clients'] as $name => $client) {
+        foreach ($config['scheduleClients'] as $name => $client) {
             $options = definition(ClientOptions::class)
                 ->addMethodCall('withNamespace', [$client['namespace']], true);
 
@@ -50,27 +48,23 @@ final class ClientCompilerPass implements CompilerPass
             }
 
 
-            $id = sprintf('temporal.%s.client', $name);
+            $id = sprintf('temporal.%s.schedule_client', $name);
 
-            $container->register($id, WorkflowClient::class)
-                ->setFactory([GrpcWorkflowClient::class, 'create'])
+            $container->register($id, ScheduleClient::class)
+                ->setFactory([GrpcScheduleClient::class, 'create'])
                 ->setArguments([
                     '$serviceClient' => definition(ServiceClient::class, [$client['address']])
                         ->setFactory([GrpcServiceClient::class, 'create']),
 
-                    '$options'             => $options,
-                    '$converter'           => new Reference($client['dataConverter']),
-                    '$interceptorProvider' => definition(SimplePipelineProvider::class)
-                        ->setArguments([
-                            array_map(static fn (string $id): Reference => new Reference($id), $client['interceptors']),
-                        ]),
+                    '$options'   => $options,
+                    '$converter' => new Reference($client['dataConverter']),
                 ]);
 
             if ($name == $config['defaultClient']) {
-                $container->setAlias(WorkflowClient::class, $id);
+                $container->setAlias(ScheduleClient::class, $id);
             }
 
-            $container->registerAliasForArgument($id, WorkflowClient::class, sprintf('%sWorkflowClient', $name));
+            $container->registerAliasForArgument($id, ScheduleClient::class, sprintf('%sScheduleClient', $name));
 
 
             $clients[] = [
@@ -82,7 +76,7 @@ final class ClientCompilerPass implements CompilerPass
             ];
         }
 
-        $container->register('temporal.client_debug.command', ClientDebugCommand::class)
+        $container->register('temporal.schedule_client_debug.command', ScheduleClientDebugCommand::class)
             ->setArguments([
                 '$clients' => $clients,
             ])
@@ -91,7 +85,7 @@ final class ClientCompilerPass implements CompilerPass
 
 
         $container->getDefinition('temporal.collector')
-            ->setArgument('$clients', $clients)
+            ->setArgument('$scheduleClients', $clients)
         ;
     }
 }

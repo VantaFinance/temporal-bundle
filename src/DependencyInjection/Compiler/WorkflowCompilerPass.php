@@ -13,10 +13,11 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 use Closure;
 use Spiral\RoadRunner\Environment as RoadRunnerEnvironment;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Temporal\Interceptor\SimplePipelineProvider;
 use Temporal\Worker\Transport\Goridge;
 use Temporal\Worker\Worker;
 use Temporal\Worker\WorkerOptions;
@@ -25,10 +26,13 @@ use Temporal\WorkerFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
 
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
+use Vanta\Integration\Symfony\Temporal\UI\Cli\ActivityDebugCommand;
+
+use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkerDebugCommand;
+use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkflowDebugCommand;
 
 /**
  * @phpstan-import-type RawConfiguration from Configuration
@@ -57,7 +61,9 @@ final class WorkflowCompilerPass implements CompilerPass
             ->setPublic(true)
         ;
 
-        $configuredWorkers = [];
+        $configuredWorkers        = [];
+        $activitiesWithoutWorkers = [];
+        $workflowsWithoutWorkers  = [];
 
         foreach ($config['workers'] as $workerName => $worker) {
             $options = definition(WorkerOptions::class)
@@ -74,16 +80,17 @@ final class WorkflowCompilerPass implements CompilerPass
                 $options->addMethodCall($method, [$value], true);
             }
 
-            $exceptionInterceptorId = exceptionInspectorId($workerName);
-
-            $container->setDefinition(
-                $exceptionInterceptorId,
-                new ChildDefinition($worker['exceptionInterceptor'])
-            );
-
             $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), Worker::class)
                 ->setFactory([$factory, 'newWorker'])
-                ->setArguments([$worker['taskQueue'], $options, new Reference($exceptionInterceptorId)])
+                ->setArguments([
+                    $worker['taskQueue'],
+                    $options,
+                    new Reference($worker['exceptionInterceptor']),
+                    definition(SimplePipelineProvider::class)
+                        ->setArguments([
+                            array_map(static fn (string $id): Reference => new Reference($id), $worker['interceptors']),
+                        ]),
+                ])
                 ->setPublic(true)
             ;
 
@@ -95,6 +102,10 @@ final class WorkflowCompilerPass implements CompilerPass
                 }
 
                 $workerNames = $attributes[0]['workers'] ?? null;
+
+                if ($workerNames == null) {
+                    $workflowsWithoutWorkers[] = $class;
+                }
 
                 if ($workerNames != null && !in_array($workerName, $workerNames)) {
                     continue;
@@ -111,6 +122,11 @@ final class WorkflowCompilerPass implements CompilerPass
                 }
 
                 $workerNames = $attributes[0]['workers'] ?? null;
+
+                if ($workerNames == null) {
+                    $activitiesWithoutWorkers[] = $class;
+                }
+
 
                 if ($workerNames != null && !in_array($workerName, $workerNames)) {
                     continue;
@@ -130,13 +146,10 @@ final class WorkflowCompilerPass implements CompilerPass
                 ]);
             }
 
-            $configuredWorkers[] = $newWorker;
+            $configuredWorkers[$workerName] = $newWorker;
         }
 
 
-        foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
-            $container->removeDefinition($id);
-        }
 
         $container->register('temporal.runtime', Runtime::class)
             ->setArguments([
@@ -145,5 +158,46 @@ final class WorkflowCompilerPass implements CompilerPass
             ])
             ->setPublic(true)
         ;
+
+
+        $container->register('temporal.worker_debug.command', WorkerDebugCommand::class)
+            ->setArguments([
+                '$workers' => $configuredWorkers,
+            ])
+            ->addTag('console.command')
+        ;
+
+        $container->register('temporal.workflow_debug.command', WorkflowDebugCommand::class)
+            ->setArguments([
+                '$workers'                 => $configuredWorkers,
+                '$workflowsWithoutWorkers' => $workflowsWithoutWorkers,
+            ])
+            ->addTag('console.command')
+        ;
+
+
+        $container->register('temporal.activity_debug.command', ActivityDebugCommand::class)
+            ->setArguments([
+                '$workers'                  => $configuredWorkers,
+                '$activitiesWithoutWorkers' => $activitiesWithoutWorkers,
+            ])
+            ->addTag('console.command')
+        ;
+
+
+        $container->getDefinition('temporal.collector')
+            ->setArgument('$workers', array_map(static function (Definition $worker): Definition {
+                $worker = clone $worker;
+
+                return $worker->addMethodCall('getOptions', returnsClone: true);
+            }, $configuredWorkers))
+            ->setArgument('$workflows', $container->findTaggedServiceIds('temporal.workflow'))
+            ->setArgument('$activities', $container->findTaggedServiceIds('temporal.activity'))
+        ;
+
+
+        foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
+            $container->removeDefinition($id);
+        }
     }
 }

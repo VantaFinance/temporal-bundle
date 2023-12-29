@@ -42,19 +42,6 @@ function referenceLogger(): Reference
 /**
  * @internal
  *
- * @param non-empty-string $name
- *
- * @return non-empty-string
- */
-function exceptionInspectorId(string $name): string
-{
-    return sprintf('temporal.exception_interceptor.%s', $name);
-}
-
-
-/**
- * @internal
- *
  * @param ReflectionClass<object> $reflectionClass
  *
  * @return array<int, non-empty-string>

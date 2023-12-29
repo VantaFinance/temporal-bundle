@@ -12,11 +12,7 @@ namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 
 use Nyholm\BundleTest\TestKernel;
 
-use function PHPUnit\Framework\assertArrayHasKey;
-use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertFalse;
-use function PHPUnit\Framework\assertIsArray;
-use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -106,18 +102,13 @@ final class SentryTest extends KernelTestCase
     }
 
 
-    /**
-     * @param non-empty-string $id
-     * @param non-empty-string $decoratedId
-     */
-    #[DataProvider('decorateTemporalInspectorDataProvider')]
-    public function testDecorateTemporalInspector(string $id, string $decoratedId): void
+    public function testRegisterTemporalInspector(): void
     {
         InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
             return $package == 'sentry/sentry-symfony';
         });
 
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $decoratedId): void {
+        self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(SentryBundle::class);
             $kernel->addTestBundle(MonologBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
@@ -125,43 +116,14 @@ final class SentryTest extends KernelTestCase
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/sentry.yaml');
 
 
-            $kernel->addTestCompilerPass(new class($id, $decoratedId) implements CompilerPass {
-                /**
-                 * @param non-empty-string $id
-                 * @param non-empty-string $decoratedId
-                 */
-                public function __construct(
-                    private readonly string $id,
-                    private readonly string $decoratedId,
-                ) {
-                }
-
-
+            $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-
-                    $decoratedService = $container->getDefinition($this->id)
-                        ->getDecoratedService()
-                    ;
-
-                    assertNotNull($decoratedService);
-                    assertIsArray($decoratedService);
-                    assertArrayHasKey(0, $decoratedService);
-                    assertEquals($this->decoratedId, $decoratedService[0]);
+                    assertTrue($container->hasDefinition('temporal.sentry_activity_inbound.interceptor'));
+                    assertTrue($container->hasDefinition('temporal.sentry_workflow_outbound_calls.interceptor'));
+                    assertTrue($container->hasDefinition('temporal.sentry_stack_trace_builder'));
                 }
             });
         }]);
-    }
-
-
-    /**
-     * @return iterable<array<int, non-empty-string>>
-     */
-    public static function decorateTemporalInspectorDataProvider(): iterable
-    {
-        yield ['temporal.sentry_default.interceptor', 'temporal.exception_interceptor.default'];
-        yield ['temporal.sentry_foo.interceptor', 'temporal.exception_interceptor.foo'];
-        yield ['temporal.sentry_bar.interceptor', 'temporal.exception_interceptor.bar'];
     }
 }

@@ -11,19 +11,20 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 
 use Sentry\SentryBundle\SentryBundle;
+use Sentry\Serializer\RepresentationSerializer;
+use Sentry\StacktraceBuilder;
 use Sentry\State\HubInterface as Hub;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\exceptionInspectorId;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
-
-use Vanta\Integration\Symfony\Temporal\ExceptionInterceptor\SentryExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
+use Vanta\Integration\Symfony\Temporal\Interceptor\SentryActivityInboundInterceptor;
+use Vanta\Integration\Symfony\Temporal\Interceptor\SentryWorkflowOutboundCallsInterceptor;
 
-final class SentryCompilerPass implements CompilerPass
+final readonly class SentryCompilerPass implements CompilerPass
 {
     public function process(ContainerBuilder $container): void
     {
@@ -31,30 +32,34 @@ final class SentryCompilerPass implements CompilerPass
             return;
         }
 
-        if (!$container->has(Hub::class)) {
+        if (!$container->has(Hub::class) && !$container->has('sentry.client.options')) {
             return;
         }
 
-        $temporalConfig = $container->getParameter('temporal.config');
-        $workers        = $temporalConfig['workers'] ?? [];
 
-        foreach ($workers as $name => $worker) {
-            $exceptionInspectorId = exceptionInspectorId($name);
+        $container->register('temporal.sentry_stack_trace_builder', StacktraceBuilder::class)
+            ->setArguments([
+                new Reference('sentry.client.options'),
+                definition(RepresentationSerializer::class)
+                    ->setArguments([
+                        new Reference('sentry.client.options'),
+                    ]),
+            ])
+        ;
 
-            if (!$container->hasDefinition($exceptionInspectorId)) {
-                continue;
-            }
 
-            $newExceptionInspectorId = sprintf('%s.inner.sentry', $exceptionInspectorId);
+        $container->register('temporal.sentry_workflow_outbound_calls.interceptor', SentryWorkflowOutboundCallsInterceptor::class)
+            ->setArguments([
+                new Reference(Hub::class),
+                new Reference('temporal.sentry_stack_trace_builder'),
+            ])
+        ;
 
-            $container->register(sprintf('temporal.sentry_%s.interceptor', $name), SentryExceptionInterceptor::class)
-                ->setArguments([
-                    new Reference($newExceptionInspectorId),
-                    new Reference(Hub::class),
-                    referenceLogger(),
-                ])
-                ->setDecoratedService($exceptionInspectorId, $newExceptionInspectorId)
-            ;
-        }
+        $container->register('temporal.sentry_activity_inbound.interceptor', SentryActivityInboundInterceptor::class)
+            ->setArguments([
+                new Reference(Hub::class),
+                new Reference('temporal.sentry_stack_trace_builder'),
+            ])
+        ;
     }
 }

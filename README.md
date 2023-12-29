@@ -40,6 +40,11 @@ If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the fo
 - `temporal.doctrine_ping_connection_<entity-mananger-name>.finalizer`
 - `temporal.doctrine_clear_entity_manager.finalizer`
 
+
+And interceptors: 
+- `temporal.doctrine_ping_connection_<entity-mananger-name>_activity_inbound.interceptor`
+
+
 Example config:
 
 ```yaml
@@ -56,6 +61,8 @@ temporal:
       finalizers: 
         - temporal.doctrine_ping_connection_default.finalizer
         - temporal.doctrine_clear_entity_manager.finalizer
+      interceptors:
+        - temporal.doctrine_ping_connection_default.activity.interceptor
 
   clients:
     default:
@@ -63,6 +70,49 @@ temporal:
       address: '%env(TEMPORAL_ADDRESS)%'
       dataConverter: temporal.data_converter
 ```
+
+
+
+
+## Sentry integrations
+
+If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is use, the following interceptors is available to you:
+
+- `temporal.sentry_workflow_outbound_calls.interceptor`
+- `temporal.sentry_activity_inbound.interceptor`
+
+
+
+
+Example config:
+
+```yaml
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+      interceptors:
+        - temporal.sentry_workflow_outbound_calls.interceptor
+        - temporal.sentry_activity_inbound.interceptor
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+```
+
+
+
+
+
+
 
 ## Assign worker
 
