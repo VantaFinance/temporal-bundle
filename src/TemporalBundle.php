@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal;
 
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use function dirname;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -27,6 +28,7 @@ final class TemporalBundle extends Bundle
         $container->addCompilerPass(new ClientCompilerPass());
         $container->addCompilerPass(new DoctrineCompilerPass());
         $container->addCompilerPass(new SentryCompilerPass());
+        $container->addCompilerPass(new ScheduleClientCompilerPass());
     }
 
     public function getPath(): string

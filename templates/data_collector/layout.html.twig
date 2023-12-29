@@ -58,6 +58,11 @@
                 <span class="label">Count Client</span>
             </div>
 
+            <div class="metric">
+                <span class="value">{{ collector.scheduleClients | length }}</span>
+                <span class="label">Count Schedule Client</span>
+            </div>
+
 
             <div class="metric">
                 <span class="value">{{ collector.workflows | length }}</span>
@@ -76,7 +81,7 @@
         <div class="tab {{ collector.clients is empty ? 'disabled' }}">
             <h3 class="tab-title">Clients</h3>
             <div class="tab-content">
-                {% if not collector.workers %}
+                {% if not collector.clients %}
                     <div class="empty">
                         <p>There are no configured temporal clients.</p>
                     </div>
@@ -106,6 +111,41 @@
                 {% endif %}
             </div>
         </div>
+
+        <div class="tab {{ collector.scheduleClients is empty ? 'disabled' }}">
+            <h3 class="tab-title">Schedule Clients</h3>
+            <div class="tab-content">
+                {% if not collector.scheduleClients %}
+                    <div class="empty">
+                        <p>There are no configured temporal schedule clients.</p>
+                    </div>
+                {% else %}
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="key">Id</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">DataConverter</th>
+                            <th scope="col">Address</th>
+                            <th scope="col">Options</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for value in collector.scheduleClients %}
+                            <tr>
+                                <th scope="row">{{ value.id }}</th>
+                                <th scope="row">{{ value.name }}</th>
+                                <th scope="row">{{ value.dataConverter }}</th>
+                                <th scope="row">{{ value.address }}</th>
+                                <td><pre>{{ value.options | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+
 
         <div class="tab {{ collector.workers is empty ? 'disabled' }}">
             <h3 class="tab-title">Workers</h3>
@@ -196,5 +236,4 @@
             </div>
         </div>
     </div>
-
 {% endblock %}

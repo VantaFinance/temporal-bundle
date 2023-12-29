@@ -21,13 +21,15 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
      * @param array<non-empty-string, array<non-empty-string, non-empty-string>>              $workers
      * @param list<array<non-empty-string, non-empty-string>>                                 $clients
      * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $workflows
-     * @param list<array<non-empty-string, non-empty-string>>                                 $activities
+     * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $activities
+     * @param list<array<non-empty-string, non-empty-string>>                                 $scheduleClients
      */
     public function __construct(
         public array $workers,
         public array $clients,
         public array $workflows,
         public array $activities,
+        public array $scheduleClients,
     ) {
     }
 

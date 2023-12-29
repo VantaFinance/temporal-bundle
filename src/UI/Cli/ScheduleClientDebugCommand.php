@@ -19,8 +19,8 @@ use Symfony\Component\Console\Output\OutputInterface as Output;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Temporal\Client\ClientOptions;
 
-#[AsCommand('debug:temporal:clients', 'List registered clients')]
-final class ClientDebugCommand extends Command
+#[AsCommand('debug:temporal:schedule-clients', 'List registered schedule clients')]
+final class ScheduleClientDebugCommand extends Command
 {
     /**
      * @param array<int, array{
@@ -49,7 +49,7 @@ final class ClientDebugCommand extends Command
         $interestedClients = $input->getArgument('clients');
         $io                = new SymfonyStyle($input, $output);
 
-        $io->title('Temporal Clients');
+        $io->title('Temporal Schedule Clients');
 
         foreach ($this->clients as $client) {
             $rows = [];

@@ -33,6 +33,15 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  *  interceptors: list<non-empty-string>
  * }
  *
+ * @phpstan-type ScheduleClient array{
+ *   name: non-empty-string,
+ *   address: non-empty-string,
+ *   namespace: non-empty-string,
+ *   identity: ?non-empty-string,
+ *   dataConverter: non-empty-string,
+ *   queryRejectionCondition: ?int,
+ *  }
+ *
  * @phpstan-type Worker array{
  *  name: non-empty-string,
  *  taskQueue: non-empty-string,
@@ -56,7 +65,9 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  *
  * @phpstan-type RawConfiguration array{
  *  defaultClient: non-empty-string,
+ *  defaultScheduleClient: non-empty-string,
  *  clients: array<non-empty-string, Client>,
+ *  scheduleClients: array<non-empty-string, ScheduleClient>,
  *  workers: array<non-empty-string, Worker>,
  *  pool: PoolWorkerConfiguration
  * }
@@ -71,8 +82,12 @@ final class Configuration implements BundleConfiguration
         $treeBuilder->getRootNode()
             ->fixXmlConfig('client', 'clients')
             ->fixXmlConfig('worker', 'workers')
+            ->fixXmlConfig('scheduleClient', 'scheduleClients')
             ->children()
                 ->scalarNode('defaultClient')
+                    ->defaultValue('default')
+                ->end()
+                ->scalarNode('defaultScheduleClient')
                     ->defaultValue('default')
                 ->end()
             ->end()
@@ -140,6 +155,54 @@ final class Configuration implements BundleConfiguration
                     ->end()
                 ->end()
             ->end()
+
+
+
+            ->children()
+                ->arrayNode('scheduleClients')
+                    ->defaultValue(['default' => [
+                        'namespace'     => 'default',
+                        'address'       => env('TEMPORAL_ADDRESS')->__toString(),
+                        'dataConverter' => 'temporal.data_converter'],
+                    ])
+                    ->useAttributeAsKey('name')
+                        ->arrayPrototype()
+                            ->addDefaultsIfNotSet()
+                            ->children()
+                                ->scalarNode('namespace')
+                                    ->isRequired()->cannotBeEmpty()
+                                ->end()
+                                ->scalarNode('address')
+                                    ->defaultValue(env('TEMPORAL_ADDRESS')->__toString())->cannotBeEmpty()
+                                ->end()
+                                ->scalarNode('identity')
+                                ->end()
+                                ->scalarNode('dataConverter')
+                                    ->cannotBeEmpty()->defaultValue('temporal.data_converter')
+                                ->end()
+                                ->enumNode('queryRejectionCondition')
+                                    ->values([
+                                        QueryRejectCondition::QUERY_REJECT_CONDITION_UNSPECIFIED,
+                                        QueryRejectCondition::QUERY_REJECT_CONDITION_NONE,
+                                        QueryRejectCondition::QUERY_REJECT_CONDITION_NOT_OPEN,
+                                        QueryRejectCondition::QUERY_REJECT_CONDITION_NOT_COMPLETED_CLEANLY,
+                                    ])
+                                    ->validate()
+                                        ->ifNotInArray([
+                                            QueryRejectCondition::QUERY_REJECT_CONDITION_UNSPECIFIED,
+                                            QueryRejectCondition::QUERY_REJECT_CONDITION_NONE,
+                                            QueryRejectCondition::QUERY_REJECT_CONDITION_NOT_OPEN,
+                                            QueryRejectCondition::QUERY_REJECT_CONDITION_NOT_COMPLETED_CLEANLY,
+                                        ])
+                                        ->thenInvalid(sprintf('"queryRejectionCondition" value is not in the enum: %s', QueryRejectCondition::class))
+                                    ->end()
+                                ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end()
+
+
             ->children()
                 ->arrayNode('workers')
                 ->defaultValue(['default' => ['taskQueue' => 'default', 'exceptionInterceptor' => 'temporal.exception_interceptor', 'finalizers' => []]])
