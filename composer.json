@@ -58,6 +58,5 @@
         "nyholm/symfony-bundle-test": "^2.0",
         "phpunit/phpunit": "^10.3",
         "symfony/monolog-bundle": "^3.8",
-        "symfony/web-profiler-bundle": "^6.0"
-    }
+        "symfony/web-profiler-bundle": "^6.0"}
 }
