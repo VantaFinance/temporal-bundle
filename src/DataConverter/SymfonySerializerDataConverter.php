@@ -50,7 +50,7 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
 
     public function fromPayload(Payload $payload, Type $type): mixed
     {
-        if ("null" == $payload->getData() && $type->allowsNull()){
+        if ("null" == $payload->getData() && $type->allowsNull()) {
             return null;
         }
 
