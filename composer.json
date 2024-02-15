@@ -44,6 +44,9 @@
             "phpstan/extension-installer": true
         }
     },
+    "conflict": {
+        "php-http/message-factory": "*"
+    },
     "require-dev": {
         "symfony/serializer": "^6.0",
         "doctrine/doctrine-bundle": "^2.10",
