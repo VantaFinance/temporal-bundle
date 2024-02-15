@@ -41,8 +41,7 @@
     "config": {
         "allow-plugins": {
             "symfony/runtime": true,
-            "phpstan/extension-installer": true,
-            "php-http/discovery": false
+            "phpstan/extension-installer": true
         }
     },
     "require-dev": {
