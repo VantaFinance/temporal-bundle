@@ -37,4 +37,4 @@ jobs:
         uses: ramsey/composer-install@v2
         with:
           composer-options: --optimize-autoloader
-      - run: composer audit
+      - run: composer audit --no-dev

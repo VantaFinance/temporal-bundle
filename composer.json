@@ -41,11 +41,9 @@
     "config": {
         "allow-plugins": {
             "symfony/runtime": true,
-            "phpstan/extension-installer": true
+            "phpstan/extension-installer": true,
+            "php-http/discovery": false
         }
-    },
-    "conflict": {
-        "php-http/message-factory": "*"
     },
     "require-dev": {
         "symfony/serializer": "^6.0",
@@ -60,6 +58,5 @@
         "nyholm/symfony-bundle-test": "^2.0",
         "phpunit/phpunit": "^10.3",
         "symfony/monolog-bundle": "^3.8",
-        "symfony/web-profiler-bundle": "^6.0"
-    }
+        "symfony/web-profiler-bundle": "^6.0"}
 }
