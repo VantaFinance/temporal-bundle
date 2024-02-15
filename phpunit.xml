@@ -15,6 +15,7 @@
         </testsuite>
     </testsuites>
     <php>
+        <env name="TEMPORAL_ADDRESS" value="temporal:7233" />
         <env name="RR_RPC" value="tcp://temporal_php:6001" />
         <env name="DATABASE_URL" value="postgresql://symfony:symfony@symfony_db:5432/symfony_db?serverVersion=14&amp;charset=utf8" />
     </php>
