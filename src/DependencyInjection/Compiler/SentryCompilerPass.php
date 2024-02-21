@@ -21,8 +21,9 @@ use Symfony\Component\DependencyInjection\Reference;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
-use Vanta\Integration\Symfony\Temporal\Interceptor\SentryActivityInboundInterceptor;
-use Vanta\Integration\Symfony\Temporal\Interceptor\SentryWorkflowOutboundCallsInterceptor;
+use Vanta\Integration\Temporal\Sentry\SentryActivityInboundInterceptor;
+
+use Vanta\Integration\Temporal\Sentry\SentryWorkflowOutboundCallsInterceptor;
 
 final readonly class SentryCompilerPass implements CompilerPass
 {
@@ -32,10 +33,13 @@ final readonly class SentryCompilerPass implements CompilerPass
             return;
         }
 
-        if (!$container->has(Hub::class) && !$container->has('sentry.client.options')) {
+        if (!InstalledVersions::willBeAvailable('vanta/temporal-sentry', SentryWorkflowOutboundCallsInterceptor::class)) {
             return;
         }
 
+        if (!$container->has(Hub::class) && !$container->has('sentry.client.options')) {
+            return;
+        }
 
         $container->register('temporal.sentry_stack_trace_builder', StacktraceBuilder::class)
             ->setArguments([
@@ -46,7 +50,6 @@ final readonly class SentryCompilerPass implements CompilerPass
                     ]),
             ])
         ;
-
 
         $container->register('temporal.sentry_workflow_outbound_calls.interceptor', SentryWorkflowOutboundCallsInterceptor::class)
             ->setArguments([

@@ -62,7 +62,7 @@ final class SentryTest extends KernelTestCase
     public function testNotFoundHub(string $id): void
     {
         InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
-            return $package == 'sentry/sentry-symfony';
+            return in_array($package, ['sentry/sentry-symfony', 'vanta/temporal-sentry']);
         });
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id): void {
@@ -105,7 +105,7 @@ final class SentryTest extends KernelTestCase
     public function testRegisterTemporalInspector(): void
     {
         InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
-            return $package == 'sentry/sentry-symfony';
+            return in_array($package, ['sentry/sentry-symfony', 'vanta/temporal-sentry']);
         });
 
         self::bootKernel(['config' => static function (TestKernel $kernel): void {
