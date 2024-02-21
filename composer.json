@@ -33,9 +33,9 @@
   },
   "require": {
     "php": "^8.2",
-    "symfony/dependency-injection": "^6.0",
-    "symfony/http-kernel": "^6.0",
-    "symfony/runtime": "^6.0",
+    "symfony/dependency-injection": "^6.0|^7.0",
+    "symfony/http-kernel": "^6.0|^7.0",
+    "symfony/runtime": "^6.0|^7.0",
     "temporal/sdk": "^2.7"
   },
   "config": {
@@ -46,7 +46,7 @@
     }
   },
   "require-dev": {
-    "symfony/serializer": "^6.0",
+    "symfony/serializer": "^6.0|^7.0",
     "doctrine/doctrine-bundle": "^2.10",
     "doctrine/orm": "^2.15",
     "phpstan/phpstan": "^1.10",
@@ -58,6 +58,6 @@
     "nyholm/symfony-bundle-test": "^2.0",
     "phpunit/phpunit": "^10.3",
     "symfony/monolog-bundle": "^3.8",
-    "symfony/web-profiler-bundle": "^6.0"
+    "symfony/web-profiler-bundle": "^6.0|^7.0"
   }
 }
