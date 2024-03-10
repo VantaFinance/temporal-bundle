@@ -38,6 +38,9 @@
     "symfony/runtime": "^6.0|^7.0",
     "temporal/sdk": "^2.7"
   },
+  "suggest": {
+    "vanta/temporal-sentry": "Integration for sentry"
+  },
   "config": {
     "allow-plugins": {
       "symfony/runtime": true,
@@ -59,7 +62,6 @@
     "phpunit/phpunit": "^10.3",
     "symfony/monolog-bundle": "^3.8",
     "symfony/web-profiler-bundle": "^6.0|^7.0",
-    "symfony/translation": "^6.0",
     "vanta/temporal-sentry": "^0.1.1"
   }
 }
