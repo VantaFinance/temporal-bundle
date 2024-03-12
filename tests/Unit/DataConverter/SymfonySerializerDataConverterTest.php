@@ -30,7 +30,7 @@ final class SymfonySerializerDataConverterTest extends TestCase
             new class() implements Serializer {
                 public function serialize(mixed $data, string $format, array $context = []): string
                 {
-                    return "null";
+                    return 'null';
                 }
 
                 public function deserialize(mixed $data, string $type, string $format, array $context = []): mixed
