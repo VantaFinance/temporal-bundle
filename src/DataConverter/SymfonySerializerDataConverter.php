@@ -38,10 +38,12 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
 
     public function toPayload($value): ?Payload
     {
-        $inputType = null;
+        $metadata = [
+            EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
+        ];
 
         if (is_object($value)) {
-            $inputType = $value::class;
+            $metadata[self::INPUT_TYPE] = $value::class;
         }
 
         try {
@@ -51,10 +53,7 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
         }
 
         $payload = new Payload();
-        $payload->setMetadata([
-            self::INPUT_TYPE                    => $inputType,
-            EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
-        ]);
+        $payload->setMetadata($metadata);
         $payload->setData($data);
 
         return $payload;
