@@ -21,6 +21,9 @@ use Throwable;
 
 final readonly class SymfonySerializerDataConverter implements PayloadConverter
 {
+    private const INPUT_TYPE = 'symfony.serializer.type';
+
+
     public function __construct(
         private Serializer $serializer,
         private PayloadConverter $payloadConverter = new JsonConverter(),
@@ -35,6 +38,12 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
 
     public function toPayload($value): ?Payload
     {
+        $inputType = null;
+
+        if (is_object($value)) {
+            $inputType = $value::class;
+        }
+
         try {
             $data = $this->serializer->serialize($value, 'json');
         } catch (Throwable $e) {
@@ -42,7 +51,10 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
         }
 
         $payload = new Payload();
-        $payload->setMetadata([EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType()]);
+        $payload->setMetadata([
+            self::INPUT_TYPE                    => $inputType,
+            EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
+        ]);
         $payload->setData($data);
 
         return $payload;
@@ -54,12 +66,14 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             return null;
         }
 
-        if (!$type->isClass()) {
+        $inputType = $payload->getMetadata()[self::INPUT_TYPE] ?? null;
+
+        if (!$type->isClass() && $inputType == null) {
             return $this->payloadConverter->fromPayload($payload, $type);
         }
 
         try {
-            return $this->serializer->deserialize($payload->getData(), $type->getName(), 'json');
+            return $this->serializer->deserialize($payload->getData(), $inputType ?? $type->getName(), 'json');
         } catch (Throwable $e) {
             throw new DataConverterException($e->getMessage(), $e->getCode(), $e);
         }
