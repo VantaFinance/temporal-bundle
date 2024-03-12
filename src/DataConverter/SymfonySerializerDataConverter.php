@@ -66,6 +66,7 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             return null;
         }
 
+        /** @var string|null $inputType */
         $inputType = $payload->getMetadata()[self::INPUT_TYPE] ?? null;
 
         if (!$type->isClass() && $inputType == null) {
