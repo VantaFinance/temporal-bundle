@@ -1,6 +1,8 @@
 {
   "aliases": {
-    "temporal": "vanta/temporal-bundle"
+    "temporal": "vanta/temporal-bundle",
+    "temporal-sentry": "vanta/temporal-sentry",
+    "sentry": "sentry/sentry-symfony"
   },
   "recipes": {
     "vanta/temporal-bundle": [

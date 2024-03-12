@@ -76,6 +76,12 @@ temporal:
 
 ## Sentry integrations
 
+Install packages:
+
+```bash
+composer require sentry temporal-sentry
+```
+
 If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is use, the following interceptors is available to you:
 
 - `temporal.sentry_workflow_outbound_calls.interceptor`
