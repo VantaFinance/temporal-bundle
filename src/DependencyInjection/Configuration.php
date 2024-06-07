@@ -205,7 +205,6 @@ final class Configuration implements BundleConfiguration
 
             ->children()
                 ->arrayNode('workers')
-                ->defaultValue(['default' => ['taskQueue' => 'default', 'exceptionInterceptor' => 'temporal.exception_interceptor', 'finalizers' => []]])
                 ->useAttributeAsKey('name')
                     ->arrayPrototype()
                     ->children()
