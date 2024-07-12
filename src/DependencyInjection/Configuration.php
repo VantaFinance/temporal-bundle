@@ -32,7 +32,7 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  *  queryRejectionCondition: ?int,
  *  interceptors: list<non-empty-string>,
  *  clientKey: ?non-empty-string,
- *  clientCert: ?non-empty-string,
+ *  clientPem: ?non-empty-string,
  * }
  *
  * @phpstan-type ScheduleClient array{
