@@ -30,7 +30,9 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  *  identity: ?non-empty-string,
  *  dataConverter: non-empty-string,
  *  queryRejectionCondition: ?int,
- *  interceptors: list<non-empty-string>
+ *  interceptors: list<non-empty-string>,
+ *  clientKey: ?non-empty-string,
+ *  clientCert: ?non-empty-string,
  * }
  *
  * @phpstan-type ScheduleClient array{
@@ -125,6 +127,10 @@ final class Configuration implements BundleConfiguration
                             ->end()
                             ->scalarNode('dataConverter')
                                 ->cannotBeEmpty()->defaultValue('temporal.data_converter')
+                            ->end()
+                            ->scalarNode('clientKey')
+                            ->end()
+                            ->scalarNode('clientPem')
                             ->end()
                             ->enumNode('queryRejectionCondition')
                                 ->values([

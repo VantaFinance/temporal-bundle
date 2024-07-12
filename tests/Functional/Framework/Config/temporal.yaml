@@ -72,3 +72,12 @@ temporal:
       dataConverter: temporal.data_converter
       identity: bar_x
       queryRejectionCondition: 2
+
+    cloud:
+      namespace: cloud
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: cloud_x
+      queryRejectionCondition: 2
+      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
