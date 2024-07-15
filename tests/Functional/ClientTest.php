@@ -157,8 +157,6 @@ final class ClientTest extends KernelTestCase
         }]);
     }
 
-    /**
-     */
     public function testRegisterServiceClient(): void
     {
         self::bootKernel([

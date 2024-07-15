@@ -52,6 +52,9 @@ final class ClientCompilerPass implements CompilerPass
 
             $id = sprintf('temporal.%s.client', $name);
 
+            $serviceClient = definition(ServiceClient::class, [$client['address']])
+                ->setFactory([GrpcServiceClient::class, 'create']);
+
             if (isset($client['clientKey'])) {
                 $serviceClient = definition(ServiceClient::class, [
                     $client['address'],
@@ -61,9 +64,6 @@ final class ClientCompilerPass implements CompilerPass
                     null, // Overwrite server name
                 ])
                     ->setFactory([GrpcServiceClient::class, 'createSSL']);
-            } else {
-                $serviceClient = definition(ServiceClient::class, [$client['address']])
-                    ->setFactory([GrpcServiceClient::class, 'create']);
             }
 
             $container->register($id, WorkflowClient::class)
