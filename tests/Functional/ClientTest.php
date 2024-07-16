@@ -79,6 +79,7 @@ final class ClientTest extends KernelTestCase
                     assertTrue($container->has('temporal.default.client'));
                     assertTrue($container->has('temporal.foo.client'));
                     assertTrue($container->has('temporal.bar.client'));
+                    assertTrue($container->has('temporal.cloud.client'));
                 }
             });
         }]);
@@ -98,6 +99,7 @@ final class ClientTest extends KernelTestCase
                     assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $defaultWorkflowClient'));
                     assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $fooWorkflowClient'));
                     assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $barWorkflowClient'));
+                    assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $cloudWorkflowClient'));
                 }
             });
         }]);
@@ -155,6 +157,40 @@ final class ClientTest extends KernelTestCase
         }]);
     }
 
+    public function testRegisterServiceClient(): void
+    {
+        self::bootKernel([
+            'config' => static function (TestKernel $kernel): void {
+                $kernel->addTestBundle(TemporalBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
+
+                $kernel->addTestCompilerPass(new class () implements CompilerPass {
+                    public function process(ContainerBuilder $container): void
+                    {
+                        /** @var Definition $def */
+                        $def = $container->getDefinition('temporal.cloud.client')
+                            ->getArgument('$serviceClient')
+                        ;
+
+                        assertInstanceOf(Definition::class, $def);
+                        assertEquals(["Temporal\Client\GRPC\ServiceClient", "createSSL"], $def->getFactory());
+                        assertCount(5, $def->getArguments());
+
+                        /** @var Definition $def */
+                        $def = $container->getDefinition('temporal.default.client')
+                            ->getArgument('$serviceClient')
+                        ;
+
+                        assertInstanceOf(Definition::class, $def);
+                        assertEquals(["Temporal\Client\GRPC\ServiceClient", "create"], $def->getFactory());
+                        assertCount(1, $def->getArguments());
+                    }
+                });
+            },
+        ]);
+    }
+
 
     /**
      * @return iterable<array{0: non-empty-string, 1: ClientOptions}>
@@ -164,8 +200,8 @@ final class ClientTest extends KernelTestCase
         yield ['temporal.default.client', ['withNamespace' => 'default', 'withIdentity' => 'default_x', 'withQueryRejectionCondition' => 0]];
         yield ['temporal.foo.client', ['withNamespace' => 'foo', 'withIdentity' => 'foo_x', 'withQueryRejectionCondition' => 1]];
         yield ['temporal.bar.client', ['withNamespace' => 'bar', 'withIdentity' => 'bar_x', 'withQueryRejectionCondition' => 2]];
+        yield ['temporal.cloud.client', ['withNamespace' => 'cloud', 'withIdentity' => 'cloud_x', 'withQueryRejectionCondition' => 2]];
     }
-
 
     public function testRegisterDefaultClient(): void
     {

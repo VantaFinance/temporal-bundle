@@ -69,6 +69,12 @@ temporal:
       namespace: default
       address: '%env(TEMPORAL_ADDRESS)%'
       dataConverter: temporal.data_converter
+    cloud:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
 ```
 
 
