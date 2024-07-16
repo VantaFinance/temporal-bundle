@@ -55,7 +55,7 @@ final class ClientCompilerPass implements CompilerPass
             $serviceClient = definition(ServiceClient::class, [$client['address']])
                 ->setFactory([GrpcServiceClient::class, 'create']);
 
-            if ($client['clientKey'] ?? false && $client['clientPem'] ?? false) {
+            if (($client['clientKey'] ?? false) && ($client['clientPem'] ?? false)) {
                 $serviceClient = definition(ServiceClient::class, [
                     $client['address'],
                     null, // root CA - Not required for Temporal Cloud
