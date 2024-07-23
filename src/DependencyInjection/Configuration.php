@@ -128,6 +128,8 @@ final class Configuration implements BundleConfiguration
                             ->scalarNode('dataConverter')
                                 ->cannotBeEmpty()->defaultValue('temporal.data_converter')
                             ->end()
+                            ->scalarNode('tls')
+                            ->end()
                             ->scalarNode('clientKey')
                             ->end()
                             ->scalarNode('clientPem')

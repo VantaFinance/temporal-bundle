@@ -55,15 +55,20 @@ final class ClientCompilerPass implements CompilerPass
             $serviceClient = definition(ServiceClient::class, [$client['address']])
                 ->setFactory([GrpcServiceClient::class, 'create']);
 
-            if (($client['clientKey'] ?? false) && ($client['clientPem'] ?? false)) {
-                $serviceClient = definition(ServiceClient::class, [
-                    $client['address'],
-                    null, // root CA - Not required for Temporal Cloud
-                    $client['clientKey'],
-                    $client['clientPem'],
-                    null, // Overwrite server name
-                ])
+            if ($client['tls'] ?? false) {
+                $serviceClient = definition(ServiceClient::class)
                     ->setFactory([GrpcServiceClient::class, 'createSSL']);
+
+                if (($client['clientKey'] ?? false) && ($client['clientPem'] ?? false)) {
+                    $serviceClient = definition(ServiceClient::class, [
+                        $client['address'],
+                        null, // root CA - Not required for Temporal Cloud
+                        $client['clientKey'],
+                        $client['clientPem'],
+                        null, // Overwrite server name
+                    ])
+                        ->setFactory([GrpcServiceClient::class, 'createSSL']);
+                }
             }
 
             $container->register($id, WorkflowClient::class)
