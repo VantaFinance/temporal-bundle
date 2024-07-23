@@ -56,7 +56,7 @@ final class ClientCompilerPass implements CompilerPass
                 ->setFactory([GrpcServiceClient::class, 'create']);
 
             if ($client['tls'] ?? false) {
-                $serviceClient = definition(ServiceClient::class)
+                $serviceClient = definition(ServiceClient::class, [$client['address']])
                     ->setFactory([GrpcServiceClient::class, 'createSSL']);
 
                 if (($client['clientKey'] ?? false) && ($client['clientPem'] ?? false)) {
