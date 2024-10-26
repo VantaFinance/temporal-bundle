@@ -122,7 +122,38 @@ temporal:
 
 
 
+## Worker Factory
 
+By default the `Temporal\WorkerFactory` is used to instantiate the workers. However when you are unit-testing you
+may wish to override the default factory with the one provided by the ['Testing framework'](https://github.com/temporalio/sdk-php/tree/master/testing)
+
+Example Config:
+
+```yaml
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+      interceptors:
+        - temporal.sentry_workflow_outbound_calls.intercepto
+        - temporal.sentry_activity_inbound.interceptor
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+
+when@test:
+  temporal:
+    workerFactory: Temporal\Testing\WorkerFactory
+```
 
 
 
