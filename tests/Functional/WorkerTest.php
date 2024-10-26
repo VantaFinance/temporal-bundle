@@ -110,6 +110,33 @@ final class WorkerTest extends KernelTestCase
         assertNotNull($runtime);
         assertInstanceOf(Runtime::class, $runtime);
         assertCount(3, $runtime);
+
+        $factory = $container->get('temporal.worker_factory');
+        assertInstanceOf(\Temporal\WorkerFactory::class, $factory);
+    }
+
+    public function testRegisterWorkerWithCustomFactory(): void
+    {
+        $kernel = self::bootKernel([
+            'config' => static function (TestKernel $kernel): void {
+                $kernel->addTestBundle(TemporalBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_factory.yaml');
+            }
+        ]);
+
+        $container = $kernel->getContainer();
+
+        assertTrue($container->has('temporal.runtime'));
+
+        /** @var Runtime|null $runtime */
+        $runtime = $container->get('temporal.runtime');
+
+        assertNotNull($runtime);
+        assertInstanceOf(Runtime::class, $runtime);
+        assertCount(3, $runtime);
+
+        $factory = $container->get('temporal.worker_factory');
+        assertInstanceOf(\Temporal\Testing\WorkerFactory::class, $factory);
     }
 
 

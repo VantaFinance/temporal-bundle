@@ -13,6 +13,7 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfiguration;
 
+use Temporal\WorkerFactory;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 use Temporal\Api\Enums\V1\QueryRejectCondition;
@@ -68,6 +69,7 @@ use Temporal\Api\Enums\V1\QueryRejectCondition;
  * @phpstan-type RawConfiguration array{
  *  defaultClient: non-empty-string,
  *  defaultScheduleClient: non-empty-string,
+ *  workerFactory: non-empty-string,
  *  clients: array<non-empty-string, Client>,
  *  scheduleClients: array<non-empty-string, ScheduleClient>,
  *  workers: array<non-empty-string, Worker>,
@@ -92,6 +94,7 @@ final class Configuration implements BundleConfiguration
                 ->scalarNode('defaultScheduleClient')
                     ->defaultValue('default')
                 ->end()
+                ->scalarNode('workerFactory')->defaultValue(WorkerFactory::class)->end()
             ->end()
             ->children()
                 ->arrayNode('pool')
