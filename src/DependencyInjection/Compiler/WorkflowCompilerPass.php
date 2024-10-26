@@ -22,7 +22,6 @@ use Temporal\Worker\Transport\Goridge;
 use Temporal\Worker\WorkerFactoryInterface;
 use Temporal\Worker\WorkerInterface;
 use Temporal\Worker\WorkerOptions;
-use Temporal\WorkerFactory;
 
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 

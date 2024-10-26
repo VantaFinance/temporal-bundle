@@ -13,10 +13,11 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfiguration;
 
-use Temporal\WorkerFactory;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 use Temporal\Api\Enums\V1\QueryRejectCondition;
+
+use Temporal\WorkerFactory;
 
 /**
  * @phpstan-type PoolWorkerConfiguration array{

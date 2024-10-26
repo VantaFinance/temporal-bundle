@@ -121,7 +121,7 @@ final class WorkerTest extends KernelTestCase
             'config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_factory.yaml');
-            }
+            },
         ]);
 
         $container = $kernel->getContainer();
