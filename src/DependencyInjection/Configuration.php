@@ -16,6 +16,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfigur
 use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 use Temporal\Api\Enums\V1\QueryRejectCondition;
+use Temporal\Worker\WorkerFactoryInterface;
 use Temporal\WorkerFactory;
 
 /**
@@ -69,7 +70,7 @@ use Temporal\WorkerFactory;
  * @phpstan-type RawConfiguration array{
  *  defaultClient: non-empty-string,
  *  defaultScheduleClient: non-empty-string,
- *  workerFactory: non-empty-string,
+ *  workerFactory: class-string<WorkerFactoryInterface>,
  *  clients: array<non-empty-string, Client>,
  *  scheduleClients: array<non-empty-string, ScheduleClient>,
  *  workers: array<non-empty-string, Worker>,
@@ -94,7 +95,25 @@ final class Configuration implements BundleConfiguration
                 ->scalarNode('defaultScheduleClient')
                     ->defaultValue('default')
                 ->end()
-                ->scalarNode('workerFactory')->defaultValue(WorkerFactory::class)->end()
+                ->scalarNode('workerFactory')->defaultValue(WorkerFactory::class)
+                    ->validate()
+                        ->ifTrue(static function (string $v): bool {
+                            $interfaces = class_implements($v);
+
+                            if (!$interfaces) {
+                                return true;
+                            }
+
+
+                            if ($interfaces[WorkerFactoryInterface::class] ?? false) {
+                                return false;
+                            }
+
+                            return true;
+                        })
+                        ->thenInvalid(sprintf('workerFactory does not implement interface: %s', WorkerFactoryInterface::class))
+                    ->end()
+                ->end()
             ->end()
             ->children()
                 ->arrayNode('pool')
