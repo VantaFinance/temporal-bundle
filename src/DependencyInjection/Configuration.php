@@ -16,7 +16,6 @@ use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfigur
 use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 use Temporal\Api\Enums\V1\QueryRejectCondition;
-
 use Temporal\WorkerFactory;
 
 /**

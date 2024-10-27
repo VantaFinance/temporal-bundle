@@ -22,7 +22,6 @@ use Temporal\Worker\Transport\Goridge;
 use Temporal\Worker\WorkerFactoryInterface;
 use Temporal\Worker\WorkerInterface;
 use Temporal\Worker\WorkerOptions;
-
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
@@ -30,7 +29,6 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ActivityDebugCommand;
-
 use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkerDebugCommand;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkflowDebugCommand;
 

@@ -17,9 +17,7 @@ use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-
 use Sentry\SentryBundle\SentryBundle;
-
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Bundle\MonologBundle\MonologBundle;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;

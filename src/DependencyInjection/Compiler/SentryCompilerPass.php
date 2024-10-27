@@ -22,7 +22,6 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 use Vanta\Integration\Temporal\Sentry\SentryActivityInboundInterceptor;
-
 use Vanta\Integration\Temporal\Sentry\SentryWorkflowOutboundCallsInterceptor;
 
 final readonly class SentryCompilerPass implements CompilerPass

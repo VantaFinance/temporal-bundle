@@ -18,7 +18,6 @@ use Symfony\Component\DependencyInjection\Reference;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrinePingConnectionFinalizer;
-
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 use Vanta\Integration\Symfony\Temporal\Interceptor\DoctrineActivityInboundInterceptor;
 

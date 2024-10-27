@@ -21,27 +21,20 @@ use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
-
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
-
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
-
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
-
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Activity\ActivityAHandler;
-
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Activity\ActivityBHandler;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Activity\ActivityCHandler;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Bundle\TestActivityBundle;
