@@ -12,6 +12,8 @@ namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 
 use Nyholm\BundleTest\TestKernel;
 
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use Temporal\Testing\WorkerFactory;
 use function PHPUnit\Framework\assertArrayHasKey;
 use function PHPUnit\Framework\assertContains;
 use function PHPUnit\Framework\assertCount;
@@ -129,7 +131,20 @@ final class WorkerTest extends KernelTestCase
         assertCount(3, $runtime);
 
         $factory = $container->get('temporal.worker_factory');
-        assertInstanceOf(\Temporal\Testing\WorkerFactory::class, $factory);
+        assertInstanceOf(WorkerFactory::class, $factory);
+    }
+
+    public function testRegisterWorkerWithInvalidCustomFactory(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('Invalid configuration for path "temporal.workerFactory": workerFactory does not implement interface: Temporal\Worker\WorkerFactoryInterface');
+
+        self::bootKernel([
+            'config' => static function (TestKernel $kernel): void {
+                $kernel->addTestBundle(TemporalBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_invalid_factory.yaml');
+            },
+        ]);
     }
 
 
