@@ -24,12 +24,14 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
+use Temporal\Testing\WorkerFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
@@ -129,7 +131,20 @@ final class WorkerTest extends KernelTestCase
         assertCount(3, $runtime);
 
         $factory = $container->get('temporal.worker_factory');
-        assertInstanceOf(\Temporal\Testing\WorkerFactory::class, $factory);
+        assertInstanceOf(WorkerFactory::class, $factory);
+    }
+
+    public function testRegisterWorkerWithInvalidCustomFactory(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('Invalid configuration for path "temporal.workerFactory": workerFactory does not implement interface: Temporal\Worker\WorkerFactoryInterface');
+
+        self::bootKernel([
+            'config' => static function (TestKernel $kernel): void {
+                $kernel->addTestBundle(TemporalBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_invalid_factory.yaml');
+            },
+        ]);
     }
 
 
