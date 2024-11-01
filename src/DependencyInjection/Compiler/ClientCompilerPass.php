@@ -18,7 +18,6 @@ use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
 use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
 use Temporal\Client\WorkflowClient as GrpcWorkflowClient;
 use Temporal\Client\WorkflowClientInterface as WorkflowClient;
-
 use Temporal\Interceptor\SimplePipelineProvider;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 

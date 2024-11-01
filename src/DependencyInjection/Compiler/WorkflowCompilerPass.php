@@ -19,10 +19,9 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Interceptor\SimplePipelineProvider;
 use Temporal\Worker\Transport\Goridge;
-use Temporal\Worker\Worker;
+use Temporal\Worker\WorkerFactoryInterface;
+use Temporal\Worker\WorkerInterface;
 use Temporal\Worker\WorkerOptions;
-use Temporal\WorkerFactory;
-
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
@@ -30,7 +29,6 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ActivityDebugCommand;
-
 use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkerDebugCommand;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkflowDebugCommand;
 
@@ -44,8 +42,8 @@ final class WorkflowCompilerPass implements CompilerPass
         /** @var RawConfiguration $config */
         $config = $container->getParameter('temporal.config');
 
-        $factory = $container->register('temporal.worker_factory', WorkerFactory::class)
-            ->setFactory([WorkerFactory::class, 'create'])
+        $factory = $container->register('temporal.worker_factory', WorkerFactoryInterface::class)
+            ->setFactory([$config["workerFactory"], 'create'])
             ->setArguments([
                 new Reference($config['pool']['dataConverter']),
                 definition(Goridge::class)
@@ -80,7 +78,7 @@ final class WorkflowCompilerPass implements CompilerPass
                 $options->addMethodCall($method, [$value], true);
             }
 
-            $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), Worker::class)
+            $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), WorkerInterface::class)
                 ->setFactory([$factory, 'newWorker'])
                 ->setArguments([
                     $worker['taskQueue'],
