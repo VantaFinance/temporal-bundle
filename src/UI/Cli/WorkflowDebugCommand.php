@@ -66,7 +66,7 @@ final class WorkflowDebugCommand extends Command
                 $rows[] = [
                     $workflow->getID(),
                     $workflow->getClass()->getName(),
-                    $workflow->getCronSchedule()?->interval ?? 'None',
+                    $workflow->getCronSchedule()->interval ?? 'None',
                     $workflow->getMethodRetry() ? json_encode($workflow->getMethodRetry(), JSON_PRETTY_PRINT) : 'None',
                 ];
 
@@ -111,7 +111,7 @@ final class WorkflowDebugCommand extends Command
                 $rows[] = [
                     $workflow->getID(),
                     $workflow->getClass()->getName(),
-                    $workflow->getCronSchedule()?->interval ?? 'None',
+                    $workflow->getCronSchedule()->interval ?? 'None',
                     $workflow->getMethodRetry() ? json_encode($workflow->getMethodRetry(), JSON_PRETTY_PRINT) : 'None',
                 ];
 

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 
+use Closure;
 use DateMalformedIntervalStringException;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -31,7 +32,7 @@ use Temporal\WorkerFactory;
  * @phpstan-type GrpcContext array{
  *  timeout: array{
  *    value: positive-int,
- *    format: \DateInterval::FORMAT_*,
+ *    format: DateInterval::FORMAT_*,
  *  },
  *  options: array<non-empty-string, scalar>,
  *  metadata: array<non-empty-string, scalar>,
@@ -40,7 +41,7 @@ use Temporal\WorkerFactory;
  *    maximumInterval: ?non-empty-string,
  *    backoffCoefficient: float,
  *    maximumAttempts: int<0, max>,
- *    nonRetryableExceptions: array<class-string<\Throwable>>
+ *    nonRetryableExceptions: array<class-string<\Throwable>>,
  *  },
  * }
  *
@@ -50,11 +51,12 @@ use Temporal\WorkerFactory;
  *  namespace: non-empty-string,
  *  identity: ?non-empty-string,
  *  dataConverter: non-empty-string,
- *  queryRejectionCondition: ?int,
+ *  queryRejectionCondition?: ?int,
  *  interceptors: list<non-empty-string>,
  *  clientKey: ?non-empty-string,
  *  clientPem: ?non-empty-string,
  *  grpcContext: GrpcContext,
+ * }
  *
  * @phpstan-type ScheduleClient array{
  *   name: non-empty-string,
@@ -62,8 +64,11 @@ use Temporal\WorkerFactory;
  *   namespace: non-empty-string,
  *   identity: ?non-empty-string,
  *   dataConverter: non-empty-string,
- *   queryRejectionCondition: ?int,
- *  }
+ *   queryRejectionCondition?: ?int,
+ *   clientKey: ?non-empty-string,
+ *   clientPem: ?non-empty-string,
+ *   grpcContext: GrpcContext,
+ * }
  *
  * @phpstan-type Worker array{
  *  name: non-empty-string,
@@ -82,7 +87,7 @@ use Temporal\WorkerFactory;
  *  sessionResourceId: ?non-empty-string,
  *  maxConcurrentSessionExecutionSize: int,
  *  finalizers: non-empty-array<int, non-empty-string>,
- *  interceptors: list<non-empty-string>
+ *  interceptors: list<non-empty-string>,
  * }
  *
  *
@@ -93,7 +98,7 @@ use Temporal\WorkerFactory;
  *  clients: array<non-empty-string, Client>,
  *  scheduleClients: array<non-empty-string, ScheduleClient>,
  *  workers: array<non-empty-string, Worker>,
- *  pool: PoolWorkerConfiguration
+ *  pool: PoolWorkerConfiguration,
  * }
  */
 final class Configuration implements BundleConfiguration
@@ -379,9 +384,9 @@ final class Configuration implements BundleConfiguration
 
 
     /**
-     * @param callable(?string): bool $dateIntervalValidator
+     * @param Closure(?string): bool $dateIntervalValidator
      */
-    private function addClient(ArrayNodeDefinition $node, callable $dateIntervalValidator): void
+    private function addClient(ArrayNodeDefinition $node, Closure $dateIntervalValidator): void
     {
 
         //@formatter:off

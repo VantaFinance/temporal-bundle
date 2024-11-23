@@ -36,7 +36,7 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
 
     public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
-        // TODO: Implement collect() method.
+        return;
     }
 
     /**
@@ -52,7 +52,7 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
         // TODO: Implement reset() method.
     }
 
-    public static function getTemplate(): ?string
+    public static function getTemplate(): string
     {
         return '@Temporal/data_collector/layout.html.twig';
     }

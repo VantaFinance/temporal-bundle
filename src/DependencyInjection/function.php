@@ -12,9 +12,7 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 
 use ReflectionAttribute;
 use ReflectionClass;
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
 use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
 
 /**
@@ -26,16 +24,6 @@ use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
 function definition(?string $class = null, array $arguments = []): Definition
 {
     return new Definition($class, $arguments);
-}
-
-/**
- * @internal
- *
- * @phpstan-pure
- */
-function referenceLogger(): Reference
-{
-    return new Reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE);
 }
 
 

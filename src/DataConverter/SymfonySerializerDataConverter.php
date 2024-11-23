@@ -36,7 +36,7 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
         return EncodingKeys::METADATA_ENCODING_JSON;
     }
 
-    public function toPayload($value): ?Payload
+    public function toPayload($value): Payload
     {
         $metadata = [
             EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
