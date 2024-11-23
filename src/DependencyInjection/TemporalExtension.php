@@ -34,6 +34,7 @@ final class TemporalExtension extends Extension
 
         $configuration = new Configuration();
 
+
         $container->setParameter('temporal.config', $this->processConfiguration($configuration, $configs));
         $container->registerAttributeForAutoconfiguration(Workflow::class, workflowConfigurator(...));
         $container->registerAttributeForAutoconfiguration(Activity::class, activityConfigurator(...));

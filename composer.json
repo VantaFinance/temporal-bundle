@@ -38,16 +38,6 @@
     "symfony/runtime": "^6.0|^7.0",
     "temporal/sdk": "^2.9"
   },
-  "suggest": {
-    "vanta/temporal-sentry": "Integration for sentry"
-  },
-  "config": {
-    "allow-plugins": {
-      "symfony/runtime": true,
-      "phpstan/extension-installer": true,
-      "php-http/discovery": false
-    }
-  },
   "require-dev": {
     "symfony/serializer": "^6.0|^7.0",
     "doctrine/doctrine-bundle": "^2.10",
@@ -63,5 +53,15 @@
     "symfony/monolog-bundle": "^3.8",
     "symfony/web-profiler-bundle": "^6.0|^7.0",
     "vanta/temporal-sentry": "^0.1.1"
+  },
+  "suggest": {
+    "vanta/temporal-sentry": "Integration for sentry"
+  },
+  "config": {
+    "allow-plugins": {
+      "symfony/runtime": true,
+      "phpstan/extension-installer": true,
+      "php-http/discovery": false
+    }
   }
 }

@@ -10,14 +10,15 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 
+use DateMalformedIntervalStringException;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfiguration;
 
-use Temporal\Internal\Support\DateInterval;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 use Temporal\Api\Enums\V1\QueryRejectCondition;
+use Temporal\Internal\Support\DateInterval;
 use Temporal\Worker\WorkerFactoryInterface;
 use Temporal\WorkerFactory;
 
@@ -100,6 +101,24 @@ final class Configuration implements BundleConfiguration
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('temporal');
+
+        $dateIntervalValidator = static function (?string $v): bool {
+            if ($v == null) {
+                return false;
+            }
+
+            try {
+                $value = \DateInterval::createFromDateString($v);
+            } catch (DateMalformedIntervalStringException) {
+                return true;
+            }
+
+            if ($value === false) {
+                return true;
+            }
+
+            return false;
+        };
 
         //@formatter:off
         $treeBuilder->getRootNode()
@@ -219,7 +238,7 @@ final class Configuration implements BundleConfiguration
                                       Sets the rate limiting on number of activities that can be executed per second.
 
                                       This is managed by the server and controls activities per second for your
-                                      entire taskqueue whereas WorkerActivityTasksPerSecond controls activities only per worker.
+                                      entire task queue whereas WorkerActivityTasksPerSecond controls activities only per worker.
 
                                       Notice that the number is represented in float, so that you can set it
                                       to less than 1 if needed. For example, set the number to 0.1 means you
@@ -270,6 +289,58 @@ final class Configuration implements BundleConfiguration
                             ->defaultValue(1000)
                             ->info('Sets the maximum number of concurrently running sessions the resource support.')
                         ->end()
+                        ->scalarNode('stickyScheduleToStartTimeout')
+                            ->defaultNull()
+                            ->example('5 seconds')
+                            ->validate()
+                                ->ifTrue($dateIntervalValidator)
+                                ->thenInvalid('Failed parse date-interval')
+                            ->end()
+                            ->info(
+                                <<<STRING
+                                        Optional: Sticky schedule to start timeout. The resolution is seconds.
+                                        Sticky Execution is to run the workflow tasks for one workflow execution on same worker host.
+                                        This is a optimization for workflow execution.
+                                        When sticky execution is enabled, worker keeps the workflow state in memory.
+                                        New workflow task contains the new history events will be dispatched to the same worker.
+                                        If this worker crashes, the sticky workflow task will timeout after StickyScheduleToStartTimeout,
+                                        and temporal server will clear the stickiness for that workflow execution and automatically reschedule a new workflow task that is available for any worker to pick up and resume the progress.
+                                    STRING
+                            )
+                        ->end()
+                        ->scalarNode('workerStopTimeout')
+                            ->defaultNull()
+                            ->example('5 seconds')
+                            ->validate()
+                                ->ifTrue($dateIntervalValidator)
+                                ->thenInvalid('Failed parse date-interval')
+                            ->end()
+                            ->info('Optional: worker graceful stop timeout.')
+                        ->end()
+                        ->scalarNode('deadlockDetectionTimeout')
+                            ->defaultNull()
+                            ->example('5 seconds')
+                            ->validate()
+                                ->ifTrue($dateIntervalValidator)
+                                ->thenInvalid('Failed parse date-interval')
+                            ->end()
+                            ->info('Optional: If set defines maximum amount of time that workflow task will be allowed to run.')
+                        ->end()
+                        ->scalarNode('maxHeartbeatThrottleInterval')
+                            ->defaultNull()
+                            ->example('5 seconds')
+                            ->validate()
+                                ->ifTrue($dateIntervalValidator)
+                                ->thenInvalid('Failed parse date-interval')
+                            ->end()
+                            ->info(
+                                <<<STRING
+                                         Optional: The default amount of time between sending each pending heartbeat to the server.
+                                         This is used if the ActivityOptions do not provide a HeartbeatTimeout.
+                                         Otherwise, the interval becomes a value a bit smaller than the given HeartbeatTimeout.
+                                    STRING
+                            )
+                        ->end()
                     ->end()
                 ->end()
             ->end()
@@ -287,7 +358,7 @@ final class Configuration implements BundleConfiguration
                 ->useAttributeAsKey('name')
         ;
 
-        $this->addClient($clients);
+        $this->addClient($clients, $dateIntervalValidator);
 
         $scheduleClients = $treeBuilder->getRootNode()
             ->children()
@@ -300,34 +371,18 @@ final class Configuration implements BundleConfiguration
             ->useAttributeAsKey('name')
         ;
 
-        $this->addClient($scheduleClients);
+        $this->addClient($scheduleClients, $dateIntervalValidator);
 
         return $treeBuilder;
     }
 
 
-    private function addClient(ArrayNodeDefinition $node): void
+
+    /**
+     * @param callable(?string): bool $dateIntervalValidator
+     */
+    private function addClient(ArrayNodeDefinition $node, callable $dateIntervalValidator): void
     {
-        $dateIntervalValidator = static function(?string $v): bool {
-            if ($v == null){
-                return false;
-            }
-
-            try {
-                $value = \DateInterval::createFromDateString($v);
-            }catch (\DateMalformedIntervalStringException){
-                return true;
-            }
-
-            if ($value === false){
-                return true;
-            }
-
-            return true;
-        };
-
-
-
 
         //@formatter:off
         $node->arrayPrototype()
@@ -427,48 +482,53 @@ final class Configuration implements BundleConfiguration
                                 ->children()
                                     ->scalarNode('initialInterval')
                                         ->defaultNull()
-                                        ->info('Backoff interval for the first retry. Example: 30 seconds')
+                                        ->example('30 seconds')
+                                        ->info('Backoff interval for the first retry.')
                                         ->validate()
                                              ->ifTrue($dateIntervalValidator)
-                                             ->thenInvalid('{client,scheduleClients}.initialInterval is not valid')
+                                             ->thenInvalid('Failed parse date-interval')
                                         ->end()
                                     ->end()
                                     ->scalarNode('maximumInterval')
-                                    ->defaultNull()
+                                        ->defaultNull()
+                                        ->validate()
+                                            ->ifTrue($dateIntervalValidator)
+                                            ->thenInvalid('Failed parse date-interval')
+                                        ->end()
                                         ->info(
                                             <<<STRING
-                                                Maximum backoff interval between retries. 
-                                                Exponential backoff leads to interval increase. 
-                                                This value is the cap of the interval.
-                                                Example: 30 seconds
-                                            STRING
+                                                    Maximum backoff interval between retries.
+                                                    Exponential backoff leads to interval increase.
+                                                    This value is the cap of the interval.
+                                                    Example: 30 seconds
+                                                STRING
                                         )
                                     ->end()
                                     ->floatNode('backoff_coefficient')
                                         ->info(
                                             <<<STRING
-                                                Coefficient used to calculate the next retry backoff interval. 
-                                                The next retry interval is previous interval multiplied by this coefficient. 
-                                                Note: Must be greater than 1.0
-                                            STRING
+                                                    Coefficient used to calculate the next retry backoff interval.
+                                                    The next retry interval is previous interval multiplied by this coefficient.
+                                                    Note: Must be greater than 1.0
+                                                STRING
                                         )
                                     ->end()
                                     ->integerNode('maximumAttempts')
                                         ->info(
                                             <<<STRING
-                                                Maximum number of attempts. 
-                                                When exceeded the retries stop even if not expired yet. 
-                                                If not set or set to 0, it means unlimited
-                                            STRING
+                                                    Maximum number of attempts.
+                                                    When exceeded the retries stop even if not expired yet.
+                                                    If not set or set to 0, it means unlimited
+                                                STRING
                                         )
                                     ->end()
                                     ->arrayNode('nonRetryableExceptions')
                                         ->scalarPrototype()
                                             ->info(
                                                 <<<STRING
-                                                    Non-Retriable errors. This is optional. 
-                                                    Temporal server will stop retry if error type matches this list.
-                                                STRING
+                                                        Non-Retriable errors. This is optional.
+                                                        Temporal server will stop retry if error type matches this list.
+                                                    STRING
                                             )
                                         ->end()
                                     ->end()
