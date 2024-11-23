@@ -36,7 +36,7 @@
     "symfony/dependency-injection": "^6.0|^7.0",
     "symfony/http-kernel": "^6.0|^7.0",
     "symfony/runtime": "^6.0|^7.0",
-    "temporal/sdk": "^2.7"
+    "temporal/sdk": "^2.9"
   },
   "suggest": {
     "vanta/temporal-sentry": "Integration for sentry"
