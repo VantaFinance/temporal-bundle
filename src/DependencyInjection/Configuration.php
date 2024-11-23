@@ -313,7 +313,7 @@ final class Configuration implements BundleConfiguration
                             ->example('5 seconds')
                             ->validate()
                                 ->ifTrue($dateIntervalValidator)
-                                ->thenInvalid('Failed parse date-interval')
+                                ->thenInvalid('Failed parse date-interval, value: %s')
                             ->end()
                             ->info('Optional: worker graceful stop timeout.')
                         ->end()
@@ -322,7 +322,7 @@ final class Configuration implements BundleConfiguration
                             ->example('5 seconds')
                             ->validate()
                                 ->ifTrue($dateIntervalValidator)
-                                ->thenInvalid('Failed parse date-interval')
+                                ->thenInvalid('Failed parse date-interval, value: %s')
                             ->end()
                             ->info('Optional: If set defines maximum amount of time that workflow task will be allowed to run.')
                         ->end()
@@ -331,7 +331,7 @@ final class Configuration implements BundleConfiguration
                             ->example('5 seconds')
                             ->validate()
                                 ->ifTrue($dateIntervalValidator)
-                                ->thenInvalid('Failed parse date-interval')
+                                ->thenInvalid('Failed parse date-interval, value: %s')
                             ->end()
                             ->info(
                                 <<<STRING
@@ -486,14 +486,14 @@ final class Configuration implements BundleConfiguration
                                         ->info('Backoff interval for the first retry.')
                                         ->validate()
                                              ->ifTrue($dateIntervalValidator)
-                                             ->thenInvalid('Failed parse date-interval')
+                                             ->thenInvalid('Failed parse date-interval,value: %s')
                                         ->end()
                                     ->end()
                                     ->scalarNode('maximumInterval')
                                         ->defaultNull()
                                         ->validate()
                                             ->ifTrue($dateIntervalValidator)
-                                            ->thenInvalid('Failed parse date-interval')
+                                            ->thenInvalid('Failed parse date-interval,value: %s')
                                         ->end()
                                         ->info(
                                             <<<STRING
