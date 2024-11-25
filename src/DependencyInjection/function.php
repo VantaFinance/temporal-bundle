@@ -39,7 +39,7 @@ function definition(?string $class = null, array $arguments = []): Definition
  *  address: non-empty-string,
  *  clientKey: ?non-empty-string,
  *  clientPem: ?non-empty-string,
- *  grpcContext?: array<string, mixed>
+ *  grpcContext: array<string, mixed>
  * } $client
  */
 function grpcClient(array $client): Definition
@@ -84,12 +84,14 @@ function grpcContext(array $rawContext): Definition
         }
 
 
+        /** @phpstan-ignore-next-line **/
         if (array_key_exists('value', $value) && array_key_exists('format', $value)) {
             $context->addMethodCall($method, [$value['value'], $value['format']], true);
 
             continue;
         }
 
+        /** @phpstan-ignore-next-line **/
         if ($name == 'retryOptions') {
             $rawRetryOptions = $value;
             $value           = definition(RpcRetryOptions::class)
