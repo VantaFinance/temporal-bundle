@@ -107,16 +107,11 @@ function grpcContext(array $rawContext): Definition
                 }
 
                 if (str_ends_with($retryOptionName, 'Timeout') || str_ends_with($retryOptionName, 'Interval')) {
-                    if ($retryOptionValue == null) {
+                    if (!is_string($retryOptionValue)) {
                         continue;
                     }
 
-                    $retryOptionValue = definition(DateInterval::class)
-                        ->setFactory([DateInterval::class, 'createFromDateString'])
-                        ->setArguments([
-                            $retryOptionValue,
-                        ])
-                    ;
+                    $retryOptionValue = dateIntervalDefinition($retryOptionValue);
                 }
 
                 $value->addMethodCall($retryMethod, [$retryOptionValue], true);
@@ -134,6 +129,16 @@ function grpcContext(array $rawContext): Definition
 
     return $context;
 }
+
+
+function dateIntervalDefinition(string $interval): Definition
+{
+    return definition(DateInterval::class)
+        ->setFactory([DateInterval::class, 'createFromDateString'])
+        ->setArguments([$interval])
+    ;
+}
+
 
 
 /**
