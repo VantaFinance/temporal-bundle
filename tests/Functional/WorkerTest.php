@@ -58,6 +58,10 @@ use Vanta\Integration\Symfony\Temporal\Test\Functional\Workflow\NullWorkflowHand
  *   withEnableSessionWorker: bool,
  *   withSessionResourceId: ?non-empty-string,
  *   withMaxConcurrentSessionExecutionSize: int,
+ *   withStickyScheduleToStartTimeout: ?non-empty-string,
+ *   withWorkerStopTimeout: ?non-empty-string,
+ *   withDeadlockDetectionTimeout: ?non-empty-string,
+ *   withMaxHeartbeatThrottleInterval: ?non-empty-string
  * }
  */
 #[RunTestsInSeparateProcesses]
@@ -226,6 +230,10 @@ final class WorkerTest extends KernelTestCase
                 'withEnableSessionWorker'                     => false,
                 'withSessionResourceId'                       => null,
                 'withMaxConcurrentSessionExecutionSize'       => 1000,
+                'withStickyScheduleToStartTimeout'            => null,
+                'withWorkerStopTimeout'                       => null,
+                'withDeadlockDetectionTimeout'                => null,
+                'withMaxHeartbeatThrottleInterval'            => null,
             ],
         ];
 
@@ -243,6 +251,10 @@ final class WorkerTest extends KernelTestCase
                 'withEnableSessionWorker'                     => true,
                 'withSessionResourceId'                       => 'resource.foo',
                 'withMaxConcurrentSessionExecutionSize'       => 2000,
+                'withStickyScheduleToStartTimeout'            => '30 seconds',
+                'withWorkerStopTimeout'                       => '30 seconds',
+                'withDeadlockDetectionTimeout'                => '30 seconds',
+                'withMaxHeartbeatThrottleInterval'            => '30 seconds',
             ],
 
         ];
@@ -262,6 +274,10 @@ final class WorkerTest extends KernelTestCase
                 'withEnableSessionWorker'                     => false,
                 'withSessionResourceId'                       => 'resource.bar',
                 'withMaxConcurrentSessionExecutionSize'       => 3000,
+                'withStickyScheduleToStartTimeout'            => null,
+                'withWorkerStopTimeout'                       => null,
+                'withDeadlockDetectionTimeout'                => null,
+                'withMaxHeartbeatThrottleInterval'            => null,
             ],
         ];
     }

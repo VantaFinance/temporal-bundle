@@ -14,14 +14,13 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as Comp
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
-use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
-use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
 use Temporal\Client\WorkflowClient as GrpcWorkflowClient;
 use Temporal\Client\WorkflowClientInterface as WorkflowClient;
 use Temporal\Interceptor\SimplePipelineProvider;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
 
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
 
@@ -51,24 +50,10 @@ final class ClientCompilerPass implements CompilerPass
 
             $id = sprintf('temporal.%s.client', $name);
 
-            $serviceClient = definition(ServiceClient::class, [$client['address']])
-                ->setFactory([GrpcServiceClient::class, 'create']);
-
-            if (($client['clientKey'] ?? false) && ($client['clientPem'] ?? false)) {
-                $serviceClient = definition(ServiceClient::class, [
-                    $client['address'],
-                    null, // root CA - Not required for Temporal Cloud
-                    $client['clientKey'],
-                    $client['clientPem'],
-                    null, // Overwrite server name
-                ])
-                    ->setFactory([GrpcServiceClient::class, 'createSSL']);
-            }
-
             $container->register($id, WorkflowClient::class)
                 ->setFactory([GrpcWorkflowClient::class, 'create'])
                 ->setArguments([
-                    '$serviceClient'       => $serviceClient,
+                    '$serviceClient'       => grpcClient($client),
                     '$options'             => $options,
                     '$converter'           => new Reference($client['dataConverter']),
                     '$interceptorProvider' => definition(SimplePipelineProvider::class)

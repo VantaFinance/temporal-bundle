@@ -358,8 +358,10 @@ final class Configuration implements BundleConfiguration
                 ->defaultValue(['default' => [
                     'namespace'     => 'default',
                     'address'       => env('TEMPORAL_ADDRESS')->__toString(),
-                    'dataConverter' => 'temporal.data_converter'],
-                ])
+                    'dataConverter' => 'temporal.data_converter',
+                    'grpcContext'   => ['timeout' => ['value' => 5, 'format' => DateInterval::FORMAT_SECONDS]],
+                    'interceptors'  => [],
+                ]])
                 ->useAttributeAsKey('name')
         ;
 
@@ -371,8 +373,10 @@ final class Configuration implements BundleConfiguration
             ->defaultValue(['default' => [
                 'namespace'     => 'default',
                 'address'       => env('TEMPORAL_ADDRESS')->__toString(),
-                'dataConverter' => 'temporal.data_converter'],
-            ])
+                'dataConverter' => 'temporal.data_converter',
+                'grpcContext'   => ['timeout' => ['value' => 5, 'format' => DateInterval::FORMAT_SECONDS]],
+                'interceptors'  => [],
+            ]])
             ->useAttributeAsKey('name')
         ;
 
@@ -434,11 +438,14 @@ final class Configuration implements BundleConfiguration
                     ->scalarPrototype()->end()
                 ->end()
                 ->arrayNode('grpcContext')
+                    ->addDefaultsIfNotSet()
                     ->children()
                         ->arrayNode('timeout')
+                            ->addDefaultsIfNotSet()
                             ->children()
                                 ->integerNode('value')
                                     ->info('Value connection timeout')
+                                    ->defaultValue(5)
                                 ->end()
                                 ->enumNode('format')
                                     ->info('Interval unit')

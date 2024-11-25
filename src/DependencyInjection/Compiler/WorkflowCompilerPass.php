@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 
 use Closure;
+use DateInterval;
 use Spiral\RoadRunner\Environment as RoadRunnerEnvironment;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
@@ -73,6 +74,19 @@ final class WorkflowCompilerPass implements CompilerPass
 
                 if (!method_exists(WorkerOptions::class, $method)) {
                     continue;
+                }
+
+                if (str_ends_with($option, 'Timeout') || str_ends_with($option, 'Interval')) {
+                    if (!is_string($value)) {
+                        continue;
+                    }
+
+                    $value = definition(DateInterval::class)
+                        ->setFactory([DateInterval::class, 'createFromDateString'])
+                        ->setArguments([
+                            $value,
+                        ])
+                    ;
                 }
 
                 $options->addMethodCall($method, [$value], true);
