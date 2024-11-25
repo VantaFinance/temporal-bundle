@@ -37,7 +37,6 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
 
     public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
-        return;
     }
 
     /**
@@ -50,7 +49,6 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
 
     public function reset(): void
     {
-        // TODO: Implement reset() method.
     }
 
     public static function getTemplate(): string
