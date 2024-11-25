@@ -57,7 +57,7 @@ final class ScheduleClientCompilerPass implements CompilerPass
                     '$converter'     => new Reference($client['dataConverter']),
                 ]);
 
-            if ($name == $config['defaultClient']) {
+            if ($name == $config['defaultScheduleClient']) {
                 $container->setAlias(ScheduleClient::class, $id);
             }
 

@@ -27,8 +27,8 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as Comp
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
-use Temporal\Client\WorkflowClientInterface as WorkflowClient;
-use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ClientCompilerPass;
+use Temporal\Client\ScheduleClientInterface as ScheduleClient;
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
 
 /**
@@ -39,8 +39,8 @@ use Vanta\Integration\Symfony\Temporal\TemporalBundle;
  * }
  */
 #[RunTestsInSeparateProcesses]
-#[CoversClass(ClientCompilerPass::class)]
-final class ClientTest extends KernelTestCase
+#[CoversClass(ScheduleClientCompilerPass::class)]
+final class ScheduleClientTest extends KernelTestCase
 {
     protected static function getKernelClass(): string
     {
@@ -75,10 +75,10 @@ final class ClientTest extends KernelTestCase
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->has('temporal.default.client'));
-                    assertTrue($container->has('temporal.foo.client'));
-                    assertTrue($container->has('temporal.bar.client'));
-                    assertTrue($container->has('temporal.cloud.client'));
+                    assertTrue($container->has('temporal.default.schedule_client'));
+                    assertTrue($container->has('temporal.foo.schedule_client'));
+                    assertTrue($container->has('temporal.bar.schedule_client'));
+                    assertTrue($container->has('temporal.cloud.schedule_client'));
                 }
             });
         }]);
@@ -95,10 +95,10 @@ final class ClientTest extends KernelTestCase
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $defaultWorkflowClient'));
-                    assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $fooWorkflowClient'));
-                    assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $barWorkflowClient'));
-                    assertTrue($container->hasAlias('Temporal\Client\WorkflowClientInterface $cloudWorkflowClient'));
+                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $defaultScheduleClient'));
+                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $fooScheduleClient'));
+                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $barScheduleClient'));
+                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $cloudScheduleClient'));
                 }
             });
         }]);
@@ -168,7 +168,7 @@ final class ClientTest extends KernelTestCase
                     public function process(ContainerBuilder $container): void
                     {
                         /** @var Definition $def */
-                        $def = $container->getDefinition('temporal.cloud.client')
+                        $def = $container->getDefinition('temporal.cloud.schedule_client')
                             ->getArgument('$serviceClient')
                         ;
 
@@ -177,7 +177,7 @@ final class ClientTest extends KernelTestCase
                         assertCount(5, $def->getArguments());
 
                         /** @var Definition $def */
-                        $def = $container->getDefinition('temporal.default.client')
+                        $def = $container->getDefinition('temporal.default.schedule_client')
                             ->getArgument('$serviceClient')
                         ;
 
@@ -196,10 +196,10 @@ final class ClientTest extends KernelTestCase
      */
     public static function registerClientOptionsDataProvider(): iterable
     {
-        yield ['temporal.default.client', ['withNamespace' => 'default', 'withIdentity' => 'default_x', 'withQueryRejectionCondition' => 0]];
-        yield ['temporal.foo.client', ['withNamespace' => 'foo', 'withIdentity' => 'foo_x', 'withQueryRejectionCondition' => 1]];
-        yield ['temporal.bar.client', ['withNamespace' => 'bar', 'withIdentity' => 'bar_x', 'withQueryRejectionCondition' => 2]];
-        yield ['temporal.cloud.client', ['withNamespace' => 'cloud', 'withIdentity' => 'cloud_x', 'withQueryRejectionCondition' => 2]];
+        yield ['temporal.default.schedule_client', ['withNamespace' => 'default', 'withIdentity' => 'default_x', 'withQueryRejectionCondition' => 0]];
+        yield ['temporal.foo.schedule_client', ['withNamespace' => 'foo', 'withIdentity' => 'foo_x', 'withQueryRejectionCondition' => 1]];
+        yield ['temporal.bar.schedule_client', ['withNamespace' => 'bar', 'withIdentity' => 'bar_x', 'withQueryRejectionCondition' => 2]];
+        yield ['temporal.cloud.schedule_client', ['withNamespace' => 'cloud', 'withIdentity' => 'cloud_x', 'withQueryRejectionCondition' => 2]];
     }
 
     public function testRegisterDefaultClient(): void
@@ -212,8 +212,8 @@ final class ClientTest extends KernelTestCase
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasAlias(WorkflowClient::class));
-                    assertEquals('temporal.bar.client', $container->getAlias(WorkflowClient::class)->__toString());
+                    assertTrue($container->hasAlias(ScheduleClient::class));
+                    assertEquals('temporal.bar.schedule_client', $container->getAlias(ScheduleClient::class)->__toString());
                 }
             });
         }]);
