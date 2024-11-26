@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -14,13 +15,12 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as Comp
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
-use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
-use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
 use Temporal\Client\ScheduleClient as GrpcScheduleClient;
 use Temporal\Client\ScheduleClientInterface as ScheduleClient;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
 
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ScheduleClientDebugCommand;
 
@@ -47,20 +47,17 @@ final class ScheduleClientCompilerPass implements CompilerPass
                 $options->addMethodCall('withQueryRejectionCondition', [$client['queryRejectionCondition']], true);
             }
 
-
             $id = sprintf('temporal.%s.schedule_client', $name);
 
             $container->register($id, ScheduleClient::class)
                 ->setFactory([GrpcScheduleClient::class, 'create'])
                 ->setArguments([
-                    '$serviceClient' => definition(ServiceClient::class, [$client['address']])
-                        ->setFactory([GrpcServiceClient::class, 'create']),
-
-                    '$options'   => $options,
-                    '$converter' => new Reference($client['dataConverter']),
+                    '$serviceClient' => grpcClient($client),
+                    '$options'       => $options,
+                    '$converter'     => new Reference($client['dataConverter']),
                 ]);
 
-            if ($name == $config['defaultClient']) {
+            if ($name == $config['defaultScheduleClient']) {
                 $container->setAlias(ScheduleClient::class, $id);
             }
 

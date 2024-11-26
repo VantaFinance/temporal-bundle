@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -12,7 +13,6 @@ namespace Unit\DataConverter;
 
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
-use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertNull;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -42,7 +42,6 @@ final class SymfonySerializerDataConverterTest extends TestCase
 
         $payload = $converter->toPayload(null);
 
-        assertNotNull($payload);
         assertNull($converter->fromPayload($payload, new Type(Type::TYPE_STRING, allowsNull: true)));
     }
 
@@ -73,7 +72,6 @@ final class SymfonySerializerDataConverterTest extends TestCase
 
         $payload = $converter->toPayload($request);
 
-        assertNotNull($payload);
         assertInstanceOf(
             FooRequest::class,
             $converter->fromPayload($payload, new Type(Type::TYPE_OBJECT))

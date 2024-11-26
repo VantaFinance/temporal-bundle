@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -33,6 +34,7 @@ final class TemporalExtension extends Extension
         $loader->load('service.php');
 
         $configuration = new Configuration();
+
 
         $container->setParameter('temporal.config', $this->processConfiguration($configuration, $configs));
         $container->registerAttributeForAutoconfiguration(Workflow::class, workflowConfigurator(...));

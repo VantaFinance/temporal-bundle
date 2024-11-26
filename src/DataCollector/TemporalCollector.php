@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -36,7 +37,6 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
 
     public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
-        // TODO: Implement collect() method.
     }
 
     /**
@@ -49,10 +49,9 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
 
     public function reset(): void
     {
-        // TODO: Implement reset() method.
     }
 
-    public static function getTemplate(): ?string
+    public static function getTemplate(): string
     {
         return '@Temporal/data_collector/layout.html.twig';
     }

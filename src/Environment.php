@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -12,13 +13,17 @@ namespace Vanta\Integration\Symfony\Temporal;
 
 use Spiral\RoadRunner\Environment as RoadRunnerEnvironment;
 
+/**
+ * @phpstan-import-type EnvironmentVariables from RoadRunnerEnvironment
+ */
 final class Environment
 {
     /**
-     * @param array<non-empty-string, non-empty-string> $with
+     * @param EnvironmentVariables $with
      */
     public static function create(array $with): RoadRunnerEnvironment
     {
+        /**@phpstan-ignore-next-line */
         return new RoadRunnerEnvironment([...$_ENV, ...$_SERVER, ...$with]);
     }
 }

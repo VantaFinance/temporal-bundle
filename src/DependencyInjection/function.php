@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -10,11 +11,14 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 
+use DateInterval;
 use ReflectionAttribute;
 use ReflectionClass;
-use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
+use Temporal\Client\Common\RpcRetryOptions;
+use Temporal\Client\GRPC\Context;
+use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
+use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
 use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
 
 /**
@@ -28,15 +32,113 @@ function definition(?string $class = null, array $arguments = []): Definition
     return new Definition($class, $arguments);
 }
 
+
 /**
  * @internal
  *
- * @phpstan-pure
+ * @param array{
+ *  address: non-empty-string,
+ *  clientKey: ?non-empty-string,
+ *  clientPem: ?non-empty-string,
+ *  grpcContext: array<string, mixed>
+ * } $client
  */
-function referenceLogger(): Reference
+function grpcClient(array $client): Definition
 {
-    return new Reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE);
+    $serviceClient = definition(ServiceClient::class, [$client['address']])
+        ->setFactory([GrpcServiceClient::class, 'create'])
+    ;
+
+    if (($client['clientKey'] ?? false) && ($client['clientPem'] ?? false)) {
+        $serviceClient = definition(ServiceClient::class, [
+            $client['address'],
+            null, // root CA - Not required for Temporal Cloud
+            $client['clientKey'],
+            $client['clientPem'],
+            null, // Overwrite server name
+        ])->setFactory([GrpcServiceClient::class, 'createSSL']);
+    }
+
+    return $serviceClient->addMethodCall('withContext', [
+        grpcContext($client['grpcContext']),
+    ], true);
 }
+
+
+/**
+ * @internal
+ *
+ * @param array{} $rawContext
+ */
+function grpcContext(array $rawContext): Definition
+{
+    $context = definition(Context::class)
+        ->setFactory([Context::class, 'default'])
+    ;
+
+    /** @phpstan-ignore-next-line **/
+    foreach ($rawContext as $name => $value) {
+        $method = sprintf('with%s', ucfirst($name));
+
+        if (!method_exists(Context::class, $method)) {
+            continue;
+        }
+
+
+        /** @phpstan-ignore-next-line **/
+        if (array_key_exists('value', $value) && array_key_exists('format', $value)) {
+            $context->addMethodCall($method, [$value['value'], $value['format']], true);
+
+            continue;
+        }
+
+        /** @phpstan-ignore-next-line **/
+        if ($name == 'retryOptions') {
+            $rawRetryOptions = $value;
+            $value           = definition(RpcRetryOptions::class)
+                ->setFactory([RpcRetryOptions::class, 'new'])
+            ;
+
+            foreach ($rawRetryOptions as $retryOptionName => $retryOptionValue) {
+                $retryMethod = sprintf('with%s', ucfirst($retryOptionName));
+
+                if (!method_exists(RpcRetryOptions::class, $retryMethod)) {
+                    continue;
+                }
+
+                if (str_ends_with($retryOptionName, 'Timeout') || str_ends_with($retryOptionName, 'Interval')) {
+                    if (!is_string($retryOptionValue)) {
+                        continue;
+                    }
+
+                    $retryOptionValue = dateIntervalDefinition($retryOptionValue);
+                }
+
+                $value->addMethodCall($retryMethod, [$retryOptionValue], true);
+            }
+
+
+            $context->addMethodCall($method, [$value], true);
+
+            continue;
+        }
+
+
+        $context->addMethodCall($method, [$value], true);
+    }
+
+    return $context;
+}
+
+
+function dateIntervalDefinition(string $interval): Definition
+{
+    return definition(DateInterval::class)
+        ->setFactory([DateInterval::class, 'createFromDateString'])
+        ->setArguments([$interval])
+    ;
+}
+
 
 
 /**

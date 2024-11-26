@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Temporal Bundle
  *
@@ -24,6 +25,7 @@ use Temporal\Worker\WorkerInterface;
 use Temporal\Worker\WorkerOptions;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\dateIntervalDefinition;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 use Vanta\Integration\Symfony\Temporal\Environment;
@@ -73,6 +75,14 @@ final class WorkflowCompilerPass implements CompilerPass
 
                 if (!method_exists(WorkerOptions::class, $method)) {
                     continue;
+                }
+
+                if (str_ends_with($option, 'Timeout') || str_ends_with($option, 'Interval')) {
+                    if (!is_string($value)) {
+                        continue;
+                    }
+
+                    $value = dateIntervalDefinition($value);
                 }
 
                 $options->addMethodCall($method, [$value], true);

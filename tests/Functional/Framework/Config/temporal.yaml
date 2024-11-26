@@ -1,9 +1,9 @@
 temporal:
   defaultClient: bar
+  defaultScheduleClient: bar
   pool:
     dataConverter: temporal.data_converter
     roadrunnerRPC: '%env(RR_RPC)%'
-
   workers:
     default:
       taskQueue: default
@@ -51,6 +51,38 @@ temporal:
       maxConcurrentSessionExecutionSize: 3000
 
   clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: default_x
+      queryRejectionCondition: 0
+
+    foo:
+      namespace: foo
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: foo_x
+      queryRejectionCondition: 1
+
+
+    bar:
+      namespace: bar
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: bar_x
+      queryRejectionCondition: 2
+
+    cloud:
+      namespace: cloud
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: cloud_x
+      queryRejectionCondition: 2
+      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+
+  scheduleClients:
     default:
       namespace: default
       address: '%env(TEMPORAL_ADDRESS)%'
