@@ -19,6 +19,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfigur
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
+use Symfony\Component\DependencyInjection\Loader\Configurator\EnvConfigurator;
 use Temporal\Api\Enums\V1\QueryRejectCondition;
 use Temporal\Internal\Support\DateInterval;
 use Temporal\Worker\WorkerFactoryInterface;
@@ -285,7 +286,6 @@ final class Configuration implements BundleConfiguration
                             ->info(
                                 <<<STRING
                                        The identifier of the resource consumed by sessions.
-
                                        It's the user's responsibility to ensure there's only one worker using this resourceID.
                                        For now, if user doesn't specify one, a new uuid will be used as the resourceID.
                                     STRING
@@ -304,13 +304,13 @@ final class Configuration implements BundleConfiguration
                             ->end()
                             ->info(
                                 <<<STRING
-                                        Optional: Sticky schedule to start timeout. The resolution is seconds.
-                                        Sticky Execution is to run the workflow tasks for one workflow execution on same worker host.
-                                        This is a optimization for workflow execution.
-                                        When sticky execution is enabled, worker keeps the workflow state in memory.
-                                        New workflow task contains the new history events will be dispatched to the same worker.
-                                        If this worker crashes, the sticky workflow task will timeout after StickyScheduleToStartTimeout,
-                                        and temporal server will clear the stickiness for that workflow execution and automatically reschedule a new workflow task that is available for any worker to pick up and resume the progress.
+                                    Optional: Sticky schedule to start timeout. The resolution is seconds.
+                                    Sticky Execution is to run the workflow tasks for one workflow execution on same worker host.
+                                    This is a optimization for workflow execution.
+                                    When sticky execution is enabled, worker keeps the workflow state in memory.
+                                    New workflow task contains the new history events will be dispatched to the same worker.
+                                    If this worker crashes, the sticky workflow task will timeout after StickyScheduleToStartTimeout,
+                                    and temporal server will clear the stickiness for that workflow execution and automatically reschedule a new workflow task that is available for any worker to pick up and resume the progress.
                                     STRING
                             )
                         ->end()
@@ -341,9 +341,9 @@ final class Configuration implements BundleConfiguration
                             ->end()
                             ->info(
                                 <<<STRING
-                                         Optional: The default amount of time between sending each pending heartbeat to the server.
-                                         This is used if the ActivityOptions do not provide a HeartbeatTimeout.
-                                         Otherwise, the interval becomes a value a bit smaller than the given HeartbeatTimeout.
+                                     Optional: The default amount of time between sending each pending heartbeat to the server.
+                                     This is used if the ActivityOptions do not provide a HeartbeatTimeout.
+                                     Otherwise, the interval becomes a value a bit smaller than the given HeartbeatTimeout.
                                     STRING
                             )
                         ->end()
@@ -358,7 +358,7 @@ final class Configuration implements BundleConfiguration
                 ->arrayNode('clients')
                 ->defaultValue(['default' => [
                     'namespace'     => 'default',
-                    'address'       => env('TEMPORAL_ADDRESS')->__toString(),
+                    'address'       => (new EnvConfigurator('TEMPORAL_ADDRESS'))->__toString(),
                     'dataConverter' => 'temporal.data_converter',
                     'grpcContext'   => ['timeout' => ['value' => 5, 'format' => DateInterval::FORMAT_SECONDS]],
                     'interceptors'  => [],
@@ -373,7 +373,7 @@ final class Configuration implements BundleConfiguration
             ->arrayNode('scheduleClients')
             ->defaultValue(['default' => [
                 'namespace'     => 'default',
-                'address'       => env('TEMPORAL_ADDRESS')->__toString(),
+                'address'       => (new EnvConfigurator('TEMPORAL_ADDRESS'))->__toString(),
                 'dataConverter' => 'temporal.data_converter',
                 'grpcContext'   => ['timeout' => ['value' => 5, 'format' => DateInterval::FORMAT_SECONDS]],
                 'interceptors'  => [],
