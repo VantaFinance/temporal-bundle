@@ -16,9 +16,6 @@ use DateMalformedIntervalStringException;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfiguration;
-
-use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
-
 use Symfony\Component\DependencyInjection\Loader\Configurator\EnvConfigurator;
 use Temporal\Api\Enums\V1\QueryRejectCondition;
 use Temporal\Internal\Support\DateInterval;
@@ -402,7 +399,7 @@ final class Configuration implements BundleConfiguration
                     ->isRequired()->cannotBeEmpty()
                 ->end()
                 ->scalarNode('address')
-                    ->defaultValue(env('TEMPORAL_ADDRESS')->__toString())->cannotBeEmpty()
+                    ->defaultValue((new EnvConfigurator('TEMPORAL_ADDRESS')))->cannotBeEmpty()
                 ->end()
                 ->scalarNode('identity')
                 ->end()
