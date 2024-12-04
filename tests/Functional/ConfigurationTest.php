@@ -15,6 +15,7 @@ use Nyholm\BundleTest\TestKernel;
 
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertIsResource;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Bundle\FrameworkBundle\Command\ConfigDumpReferenceCommand;
@@ -27,7 +28,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
-use function PHPUnit\Framework\assertIsResource;
 
 #[CoversClass(Configuration::class)]
 final class ConfigurationTest extends KernelTestCase
