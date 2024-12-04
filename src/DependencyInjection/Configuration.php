@@ -407,8 +407,10 @@ final class Configuration implements BundleConfiguration
                     ->cannotBeEmpty()->defaultValue('temporal.data_converter')
                 ->end()
                 ->scalarNode('clientKey')
+                    ->example('%kernel.project_dir%/resource/temporal.key')
                 ->end()
                 ->scalarNode('clientPem')
+                    ->example('%kernel.project_dir%/resource/temporal.pem')
                 ->end()
                 ->enumNode('queryRejectionCondition')
                     ->values([
