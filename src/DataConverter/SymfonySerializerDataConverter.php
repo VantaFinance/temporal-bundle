@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\DataConverter;
 
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer as ObjectNormalizer;
 use Symfony\Component\Serializer\SerializerInterface as Serializer;
 use Temporal\Api\Common\V1\Payload;
 use Temporal\DataConverter\EncodingKeys;
@@ -43,12 +44,18 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
         ];
 
+        $context = [];
+
         if (is_object($value)) {
             $metadata[self::INPUT_TYPE] = $value::class;
+
+            if (str_starts_with($value::class, 'Temporal\\')) {
+                $context[ObjectNormalizer::PRESERVE_EMPTY_OBJECTS] = true;
+            }
         }
 
         try {
-            $data = $this->serializer->serialize($value, 'json');
+            $data = $this->serializer->serialize($value, 'json', $context);
         } catch (Throwable $e) {
             throw new DataConverterException($e->getMessage(), $e->getCode(), $e);
         }
