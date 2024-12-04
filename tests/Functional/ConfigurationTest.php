@@ -83,6 +83,5 @@ final class ConfigurationTest extends KernelTestCase
         $codeExit = $command->run($input, new StreamOutput($memory));
 
         assertEquals(0, $codeExit);
-
     }
 }
