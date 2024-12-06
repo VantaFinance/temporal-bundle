@@ -29,6 +29,7 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\dateInterval
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 
 use Vanta\Integration\Symfony\Temporal\Environment;
+use Vanta\Integration\Symfony\Temporal\Finalizer\ChainFinalizer;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ActivityDebugCommand;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\WorkerDebugCommand;
@@ -146,17 +147,10 @@ final class WorkflowCompilerPass implements CompilerPass
                 ]);
             }
 
-
-            foreach ($worker['finalizers'] as $id) {
-                $newWorker->addMethodCall('registerActivityFinalizer', [
-                    definition(Closure::class, [[new Reference($id), 'finalize']])
-                        ->setFactory([Closure::class, 'fromCallable']),
-                ]);
-            }
+            $this->registerFinalizers($worker['finalizers'], $container, $workerName, $newWorker);
 
             $configuredWorkers[$workerName] = $newWorker;
         }
-
 
 
         $container->register('temporal.runtime', Runtime::class)
@@ -207,5 +201,29 @@ final class WorkflowCompilerPass implements CompilerPass
         foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
             $container->removeDefinition($id);
         }
+    }
+
+    /**
+     * @param array<int, non-empty-string> $finalizers
+     */
+    public function registerFinalizers(array $finalizers, ContainerBuilder $container, string $workerName, Definition $newWorker): void
+    {
+        if ($finalizers === []) {
+            return;
+        }
+
+        $finalizers = array_map(static fn (string $id): Reference => new Reference($id), $finalizers);
+
+        $chain = $container->register(
+            sprintf('temporal.%s.worker.finalizer', $workerName),
+            ChainFinalizer::class
+        );
+
+        $chain->setArguments([$finalizers]);
+
+        $newWorker->addMethodCall('registerActivityFinalizer', [
+            definition(Closure::class, [[$chain, 'finalize']])
+                ->setFactory([Closure::class, 'fromCallable']),
+        ]);
     }
 }

@@ -93,6 +93,12 @@ final class DoctrineTest extends KernelTestCase
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
+            $kernel->addTestCompilerPass(new class() implements CompilerPass {
+                public function process(ContainerBuilder $container): void
+                {
+                    assertTrue($container->hasDefinition('temporal.doctrine_clear_entity_manager.finalizer'));
+                }
+            });
 
             $kernel->addTestCompilerPass(new class($id, $arguments) implements CompilerPass {
                 /**

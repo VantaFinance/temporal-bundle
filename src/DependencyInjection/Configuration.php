@@ -85,7 +85,7 @@ use Temporal\WorkerFactory;
  *  enableSessionWorker: bool,
  *  sessionResourceId: ?non-empty-string,
  *  maxConcurrentSessionExecutionSize: int,
- *  finalizers: non-empty-array<int, non-empty-string>,
+ *  finalizers: array<int, non-empty-string>,
  *  interceptors: list<non-empty-string>,
  * }
  *
