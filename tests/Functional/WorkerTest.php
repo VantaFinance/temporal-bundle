@@ -35,6 +35,7 @@ use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Temporal\Testing\WorkerFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
+use Vanta\Integration\Symfony\Temporal\Finalizer\ChainFinalizer;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
 use Vanta\Integration\Symfony\Temporal\Test\Functional\Activity\ActivityAHandler;
@@ -328,7 +329,6 @@ final class WorkerTest extends KernelTestCase
     }
 
 
-
     /**
      * @param non-empty-string                    $id
      * @param non-empty-array<int, class-string>  $workflows
@@ -441,5 +441,53 @@ final class WorkerTest extends KernelTestCase
         yield ['temporal.default.worker', [ActivityAHandler::class, ActivityBHandler::class, ActivityCHandler::class]];
         yield ['temporal.foo.worker', [ActivityAHandler::class, ActivityBHandler::class, ActivityCHandler::class]];
         yield ['temporal.bar.worker', [ActivityAHandler::class, ActivityBHandler::class, ActivityCHandler::class]];
+    }
+
+    /**
+     * @param non-empty-string                    $id
+     * @param array{0: non-empty-string, 1: array{0: list<Reference>}}  $arguments
+     */
+    #[DataProvider('registerCustomFinalizers')]
+    public function testRegisterCustomFinalizers(string $id, array $arguments): void
+    {
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $arguments): void {
+            $kernel->addTestBundle(TemporalBundle::class);
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_custom_finalizers.yaml');
+
+            $kernel->addTestCompilerPass(new class($id, $arguments) implements CompilerPass {
+                /**
+                 * @param non-empty-string $id
+                 * @param array{0: non-empty-string, 1: array{0: list<Reference>}}  $arguments
+                 */
+                public function __construct(
+                    private readonly string $id,
+                    private readonly array  $arguments,
+                ) {
+                }
+
+
+                public function process(ContainerBuilder $container): void
+                {
+                    assertTrue($container->hasDefinition($this->id));
+
+                    $definition = $container->getDefinition($this->id);
+                    assertEquals($definition->getClass(), ChainFinalizer::class);
+                    assertEquals($this->arguments, $definition->getArguments());
+                }
+            });
+        }]);
+    }
+
+    /**
+     * @return iterable<array{0: non-empty-string, 1: array{0: list<Reference>}}>
+     */
+    public static function registerCustomFinalizers(): iterable
+    {
+        yield ['temporal.default.worker.finalizer', [
+            [new Reference('test.temporal.finalizer.dummy1'), new Reference('test.temporal.finalizer.dummy2')],
+        ]];
+        yield ['temporal.foo.worker.finalizer', [
+            [new Reference('test.temporal.finalizer.dummy2')],
+        ]];
     }
 }
