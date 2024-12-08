@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Unit\Finalizer;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 use Vanta\Integration\Symfony\Temporal\Finalizer\ChainFinalizer;
 use Vanta\Integration\Symfony\Temporal\Finalizer\Finalizer;
@@ -13,23 +12,26 @@ use Vanta\Integration\Symfony\Temporal\Finalizer\Finalizer;
 #[CoversClass(ChainFinalizer::class)]
 final class ChainFinalizerTest extends TestCase
 {
-    /**
-     * @throws Exception
-     */
     public function testFinalizeCallsAllFinalizers(): void
     {
-        // Create mocks for the Finalizer interface
-        $finalizer1 = $this->createMock(Finalizer::class);
-        $finalizer2 = $this->createMock(Finalizer::class);
+        $this->expectOutputString(
+            'Unit\Finalizer\DummyFinalizer::finalize' . PHP_EOL .
+            'Unit\Finalizer\DummyFinalizer::finalize' . PHP_EOL
+        );
 
-        // Expect the finalize method to be called once on each finalizer
-        $finalizer1->expects($this->once())->method('finalize');
-        $finalizer2->expects($this->once())->method('finalize');
+        $finalizer1 = new class() extends DummyFinalizer {};
+        $finalizer2 = new class() extends DummyFinalizer {};
 
-        // Create the ChainFinalizer with the mocked finalizers
-        $chainFinalizer = new ChainFinalizer([$finalizer1, $finalizer2]);
+        (new ChainFinalizer([$finalizer1, $finalizer2]))->finalize();
+    }
+}
 
-        // Call the finalize method
-        $chainFinalizer->finalize();
+
+
+abstract class DummyFinalizer implements Finalizer
+{
+    final public function finalize(): void
+    {
+        echo self::class . '::' . __FUNCTION__ . PHP_EOL;
     }
 }
