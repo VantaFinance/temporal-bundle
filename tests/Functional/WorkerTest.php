@@ -35,6 +35,10 @@ use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Temporal\Testing\WorkerFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
+
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
+
 use Vanta\Integration\Symfony\Temporal\Finalizer\ChainFinalizer;
 use Vanta\Integration\Symfony\Temporal\Runtime\Runtime;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
@@ -485,9 +489,11 @@ final class WorkerTest extends KernelTestCase
     {
         yield ['temporal.default.worker.finalizer', [
             [new Reference('test.temporal.finalizer.dummy1'), new Reference('test.temporal.finalizer.dummy2')],
+            referenceLogger(),
         ]];
         yield ['temporal.foo.worker.finalizer', [
             [new Reference('test.temporal.finalizer.dummy2')],
+            referenceLogger(),
         ]];
     }
 }

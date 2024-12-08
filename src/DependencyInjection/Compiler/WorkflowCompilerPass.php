@@ -27,6 +27,8 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\dateIntervalDefinition;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
 
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Finalizer\ChainFinalizer;
@@ -97,7 +99,7 @@ final class WorkflowCompilerPass implements CompilerPass
                     new Reference($worker['exceptionInterceptor']),
                     definition(SimplePipelineProvider::class)
                         ->setArguments([
-                            array_map(static fn (string $id): Reference => new Reference($id), $worker['interceptors']),
+                            array_map(reference(...), $worker['interceptors']),
                         ]),
                 ])
                 ->setPublic(true)
@@ -147,7 +149,7 @@ final class WorkflowCompilerPass implements CompilerPass
                 ]);
             }
 
-            $this->registerFinalizers($worker['finalizers'], $container, $workerName, $newWorker);
+            $this->registerFinalizers($worker['finalizers'], $workerName, $container);
 
             $configuredWorkers[$workerName] = $newWorker;
         }
@@ -205,25 +207,26 @@ final class WorkflowCompilerPass implements CompilerPass
 
     /**
      * @param array<int, non-empty-string> $finalizers
+     * @param non-empty-string $workerName
      */
-    public function registerFinalizers(array $finalizers, ContainerBuilder $container, string $workerName, Definition $newWorker): void
+    private function registerFinalizers(array $finalizers, string $workerName, ContainerBuilder $container): void
     {
-        if ($finalizers === []) {
+        if ($finalizers == []) {
             return;
         }
 
-        $finalizers = array_map(static fn (string $id): Reference => new Reference($id), $finalizers);
+        $chain = $container->register(sprintf('temporal.%s.worker.finalizer', $workerName), ChainFinalizer::class)
+            ->setArguments([
+                array_map(reference(...), $finalizers),
+                referenceLogger(),
+            ])
+        ;
 
-        $chain = $container->register(
-            sprintf('temporal.%s.worker.finalizer', $workerName),
-            ChainFinalizer::class
-        );
-
-        $chain->setArguments([$finalizers]);
-
-        $newWorker->addMethodCall('registerActivityFinalizer', [
-            definition(Closure::class, [[$chain, 'finalize']])
-                ->setFactory([Closure::class, 'fromCallable']),
-        ]);
+        $container->getDefinition(sprintf('temporal.%s.worker', $workerName))
+            ->addMethodCall('registerActivityFinalizer', [
+                definition(Closure::class, [[$chain, 'finalize']])
+                    ->setFactory([Closure::class, 'fromCallable']),
+            ])
+        ;
     }
 }

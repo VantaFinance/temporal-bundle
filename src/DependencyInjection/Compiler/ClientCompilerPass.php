@@ -22,6 +22,7 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
 
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
 
@@ -59,7 +60,7 @@ final class ClientCompilerPass implements CompilerPass
                     '$converter'           => new Reference($client['dataConverter']),
                     '$interceptorProvider' => definition(SimplePipelineProvider::class)
                         ->setArguments([
-                            array_map(static fn (string $id): Reference => new Reference($id), $client['interceptors']),
+                            array_map(reference(...), $client['interceptors']),
                         ]),
                 ]);
 

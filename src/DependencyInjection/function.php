@@ -14,7 +14,9 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection;
 use DateInterval;
 use ReflectionAttribute;
 use ReflectionClass;
+use Symfony\Component\DependencyInjection\ContainerInterface as Container;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\Common\RpcRetryOptions;
 use Temporal\Client\GRPC\Context;
 use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
@@ -30,6 +32,36 @@ use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
 function definition(?string $class = null, array $arguments = []): Definition
 {
     return new Definition($class, $arguments);
+}
+
+/**
+ * @internal
+ */
+function dateIntervalDefinition(string $interval): Definition
+{
+    return definition(DateInterval::class)
+        ->setFactory([DateInterval::class, 'createFromDateString'])
+        ->setArguments([$interval])
+    ;
+}
+
+
+/**
+ * @internal
+ *
+ * @param non-empty-string $id
+ */
+function reference(string $id, int $invalidBehavior = Container::EXCEPTION_ON_INVALID_REFERENCE): Reference
+{
+    return new Reference($id, $invalidBehavior);
+}
+
+/**
+ * @internal
+ */
+function referenceLogger(): Reference
+{
+    return reference('monolog.logger.temporal', Container::IGNORE_ON_INVALID_REFERENCE);
 }
 
 
@@ -129,16 +161,6 @@ function grpcContext(array $rawContext): Definition
 
     return $context;
 }
-
-
-function dateIntervalDefinition(string $interval): Definition
-{
-    return definition(DateInterval::class)
-        ->setFactory([DateInterval::class, 'createFromDateString'])
-        ->setArguments([$interval])
-    ;
-}
-
 
 
 /**
