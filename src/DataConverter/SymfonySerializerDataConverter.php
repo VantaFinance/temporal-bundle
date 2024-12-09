@@ -44,14 +44,10 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
         ];
 
-        $context = [];
+        $context = [ObjectNormalizer::PRESERVE_EMPTY_OBJECTS => true];
 
         if (is_object($value)) {
             $metadata[self::INPUT_TYPE] = $value::class;
-
-            if (str_starts_with($value::class, 'Temporal\\')) {
-                $context[ObjectNormalizer::PRESERVE_EMPTY_OBJECTS] = true;
-            }
         }
 
         try {
