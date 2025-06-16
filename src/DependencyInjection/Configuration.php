@@ -251,7 +251,7 @@ final class Configuration implements BundleConfiguration
         };
 
         $trackingSentryDoctrineOpenTransactionValidator = function (array $values) use ($sentryValidator, $loggingDoctrineOpenTransactionValidator): bool {
-            if (!$sentryValidator()) {
+            if ($sentryValidator()) {
                 throw new InvalidArgumentException('Install dependencies `composer req sentry temporal-doctrine`');
             }
 
