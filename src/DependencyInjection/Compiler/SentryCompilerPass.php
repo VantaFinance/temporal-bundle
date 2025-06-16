@@ -21,7 +21,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\trackingSentryDoctrineOpenTransactionInterceptorId;
 
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
