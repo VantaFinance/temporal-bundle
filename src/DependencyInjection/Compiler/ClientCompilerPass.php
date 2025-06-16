@@ -91,7 +91,9 @@ final class ClientCompilerPass implements CompilerPass
                 ]);
 
             if ($name == $config['defaultClient']) {
-                $container->setAlias(WorkflowClient::class, $id);
+                $container->setAlias(WorkflowClient::class, $id)
+                    ->setPublic($config['pool']['testing']['enabled'])
+                ;
             }
 
             $container->registerAliasForArgument($id, WorkflowClient::class, sprintf('%sWorkflowClient', $name));

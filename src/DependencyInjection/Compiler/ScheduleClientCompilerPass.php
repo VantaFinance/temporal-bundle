@@ -77,7 +77,9 @@ final class ScheduleClientCompilerPass implements CompilerPass
                 ]);
 
             if ($name == $config['defaultScheduleClient']) {
-                $container->setAlias(ScheduleClient::class, $id);
+                $container->setAlias(ScheduleClient::class, $id)
+                    ->setPublic($config['pool']['testing']['enabled'])
+                ;
             }
 
             $container->registerAliasForArgument($id, ScheduleClient::class, sprintf('%sScheduleClient', $name));

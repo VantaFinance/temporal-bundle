@@ -47,7 +47,9 @@ final class TestServiceCompilerPass implements CompilerPass
             ;
 
             if ($config['pool']['testing']['defaultTestService'] == $name) {
-                $container->setAlias(TestService::class, $id);
+                $container->setAlias(TestService::class, $id)
+                    ->setPublic(true)
+                ;
             }
 
 
