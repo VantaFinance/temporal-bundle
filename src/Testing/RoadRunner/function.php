@@ -59,7 +59,7 @@ function boostrapTesting(Environment $environment): void
             $downloadRRBinary();
         }
 
-        $rrCommand = sprintf('%s serve -c .rr.testing.yaml', $rrBinaryPath);
+        $rrCommand = sprintf('%s serve -c .rr.temporal.testing.yaml', $rrBinaryPath);
     }
 
 
