@@ -63,7 +63,7 @@ final readonly class SentryCompilerPass implements CompilerPass
         foreach ($connections as $connectionName => $connectionId) {
             $container->register(trackingSentryDoctrineOpenTransactionInterceptorId($connectionName), SentryDoctrineOpenTransactionInterceptor::class)
                 ->setArguments([
-                    referenceLogger(),
+                    new Reference(Hub::class),
                     new Reference($connectionId),
                 ])
             ;
