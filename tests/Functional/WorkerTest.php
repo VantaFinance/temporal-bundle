@@ -18,6 +18,7 @@ use function PHPUnit\Framework\assertContains;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertNotEmpty;
 use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertTrue;
 
@@ -33,6 +34,7 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Temporal\Testing\WorkerFactory;
+use Temporal\Worker\WorkflowPanicPolicy;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
@@ -67,9 +69,12 @@ use Vanta\Integration\Symfony\Temporal\Test\Functional\Workflow\NullWorkflowHand
  *   withStickyScheduleToStartTimeout: ?non-empty-string,
  *   withWorkerStopTimeout: ?non-empty-string,
  *   withDeadlockDetectionTimeout: ?non-empty-string,
- *   withMaxHeartbeatThrottleInterval: ?non-empty-string
+ *   withMaxHeartbeatThrottleInterval: ?non-empty-string,
+ *   withWorkflowPanicPolicy: WorkflowPanicPolicy,
+ *   withEnableLoggingInReplay: bool,
  * }
  */
+
 #[RunTestsInSeparateProcesses]
 #[CoversClass(Runtime::class)]
 #[CoversClass(Configuration::class)]
@@ -147,7 +152,7 @@ final class WorkerTest extends KernelTestCase
     public function testRegisterWorkerWithInvalidCustomFactory(): void
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('Invalid configuration for path "temporal.workerFactory": workerFactory does not implement interface: Temporal\Worker\WorkerFactoryInterface');
+        $this->expectExceptionMessage('Invalid configuration for path "temporal.pool.workerFactory": workerFactory does not implement interface: Temporal\Worker\WorkerFactoryInterface');
 
         self::bootKernel([
             'config' => static function (TestKernel $kernel): void {
@@ -208,7 +213,7 @@ final class WorkerTest extends KernelTestCase
                     foreach ($def->getMethodCalls() as [$method, $arguments, $returnClone]) {
                         assertArrayHasKey($method, $this->options);
                         assertCount(1, $arguments);
-                        assertEquals([$this->options[$method]], $arguments);
+                        assertEquals([$this->options[$method]], $arguments, 'Invalid option' . $method);
                         assertTrue($returnClone);
                     }
                 }
@@ -233,13 +238,23 @@ final class WorkerTest extends KernelTestCase
                 'withMaxConcurrentActivityTaskPollers'        => 0,
                 'withMaxConcurrentWorkflowTaskExecutionSize'  => 0,
                 'withMaxConcurrentWorkflowTaskPollers'        => 0,
+                'maxConcurrentEagerActivityExecutionSize'     => 0,
+                'withMaxConcurrentSessionExecutionSize'       => 1000,
+                'withMaxConcurrentEagerActivityExecutionSize' => 0,
+                'withDisableRegistrationAliasing'             => false,
                 'withEnableSessionWorker'                     => false,
                 'withSessionResourceId'                       => null,
-                'withMaxConcurrentSessionExecutionSize'       => 1000,
                 'withStickyScheduleToStartTimeout'            => null,
                 'withWorkerStopTimeout'                       => null,
                 'withDeadlockDetectionTimeout'                => null,
                 'withMaxHeartbeatThrottleInterval'            => null,
+                'withBuildID'                                 => '',
+                'withUseBuildIDForVersioning'                 => false,
+                'withEnableLoggingInReplay'                   => false,
+                'withDisableWorkflowWorker'                   => false,
+                'withLocalActivityWorkerOnly'                 => false,
+                'withDisableEagerActivities'                  => false,
+                'withWorkflowPanicPolicy'                     => WorkflowPanicPolicy::BlockWorkflow,
             ],
         ];
 
@@ -254,13 +269,23 @@ final class WorkerTest extends KernelTestCase
                 'withMaxConcurrentActivityTaskPollers'        => 1,
                 'withMaxConcurrentWorkflowTaskExecutionSize'  => 1,
                 'withMaxConcurrentWorkflowTaskPollers'        => 1,
-                'withEnableSessionWorker'                     => true,
-                'withSessionResourceId'                       => 'resource.foo',
+                'maxConcurrentEagerActivityExecutionSize'     => 1,
+                'withMaxConcurrentEagerActivityExecutionSize' => 1,
                 'withMaxConcurrentSessionExecutionSize'       => 2000,
+                'withEnableSessionWorker'                     => true,
+                'withDisableRegistrationAliasing'             => true,
+                'withSessionResourceId'                       => 'resource.foo',
                 'withStickyScheduleToStartTimeout'            => '30 seconds',
                 'withWorkerStopTimeout'                       => '30 seconds',
                 'withDeadlockDetectionTimeout'                => '30 seconds',
                 'withMaxHeartbeatThrottleInterval'            => '30 seconds',
+                'withBuildID'                                 => 'test',
+                'withUseBuildIDForVersioning'                 => true,
+                'withEnableLoggingInReplay'                   => true,
+                'withDisableWorkflowWorker'                   => true,
+                'withLocalActivityWorkerOnly'                 => true,
+                'withDisableEagerActivities'                  => true,
+                'withWorkflowPanicPolicy'                     => WorkflowPanicPolicy::FailWorkflow,
             ],
 
         ];
@@ -277,13 +302,23 @@ final class WorkerTest extends KernelTestCase
                 'withMaxConcurrentActivityTaskPollers'        => 2,
                 'withMaxConcurrentWorkflowTaskExecutionSize'  => 2,
                 'withMaxConcurrentWorkflowTaskPollers'        => 2,
-                'withEnableSessionWorker'                     => false,
-                'withSessionResourceId'                       => 'resource.bar',
+                'maxConcurrentEagerActivityExecutionSize'     => 2,
+                'withMaxConcurrentEagerActivityExecutionSize' => 2,
                 'withMaxConcurrentSessionExecutionSize'       => 3000,
+                'withEnableSessionWorker'                     => false,
+                'withDisableRegistrationAliasing'             => false,
+                'withSessionResourceId'                       => 'resource.bar',
+                'withBuildID'                                 => '',
                 'withStickyScheduleToStartTimeout'            => null,
                 'withWorkerStopTimeout'                       => null,
                 'withDeadlockDetectionTimeout'                => null,
                 'withMaxHeartbeatThrottleInterval'            => null,
+                'withUseBuildIDForVersioning'                 => false,
+                'withEnableLoggingInReplay'                   => false,
+                'withDisableWorkflowWorker'                   => false,
+                'withLocalActivityWorkerOnly'                 => false,
+                'withDisableEagerActivities'                  => false,
+                'withWorkflowPanicPolicy'                     => WorkflowPanicPolicy::BlockWorkflow,
             ],
         ];
     }
@@ -341,8 +376,8 @@ final class WorkerTest extends KernelTestCase
     public function testRegisterWorkflow(string $id, array $workflows): void
     {
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $workflows): void {
-            $kernel->addTestBundle(TestWorkflowBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
+            $kernel->addTestBundle(TestWorkflowBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $workflows) implements CompilerPass {
@@ -365,7 +400,15 @@ final class WorkerTest extends KernelTestCase
                         ->getMethodCalls()
                     ;
 
+
+                    assertNotEmpty($calls, 'Not found registered workflows');
+
                     foreach ($calls as [$method, $arguments, $returnClone]) {
+                        if ($method === 'registerActivityFinalizer') {
+                            continue;
+                        }
+
+
                         assertEquals('registerWorkflowTypes', $method);
                         assertCount(1, $arguments);
                         assertArrayHasKey(0, $arguments);
@@ -423,7 +466,13 @@ final class WorkerTest extends KernelTestCase
                         ->getMethodCalls()
                     ;
 
+                    assertNotEmpty($calls, 'Not found registered activity');
+
                     foreach ($calls as [$method, $arguments, $returnClone]) {
+                        if ($method === 'registerActivityFinalizer') {
+                            continue;
+                        }
+
                         assertEquals('registerActivity', $method);
                         assertCount(2, $arguments);
                         assertArrayHasKey(0, $arguments);
@@ -476,6 +525,7 @@ final class WorkerTest extends KernelTestCase
 
                     $definition = $container->getDefinition($this->id);
                     assertEquals($definition->getClass(), ChainFinalizer::class);
+
                     assertEquals($this->arguments, $definition->getArguments());
                 }
             });
@@ -488,11 +538,11 @@ final class WorkerTest extends KernelTestCase
     public static function registerCustomFinalizers(): iterable
     {
         yield ['temporal.default.worker.finalizer', [
-            [new Reference('test.temporal.finalizer.dummy1'), new Reference('test.temporal.finalizer.dummy2')],
+            [new Reference('test.temporal.finalizer.dummy1'), new Reference('test.temporal.finalizer.dummy2'), new Reference('temporal.framework.finalizer')],
             referenceLogger(),
         ]];
         yield ['temporal.foo.worker.finalizer', [
-            [new Reference('test.temporal.finalizer.dummy2')],
+            [new Reference('test.temporal.finalizer.dummy2'), new Reference('temporal.framework.finalizer')],
             referenceLogger(),
         ]];
     }

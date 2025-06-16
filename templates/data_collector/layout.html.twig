@@ -24,8 +24,215 @@
 {% endblock %}
 
 
+{% block head %}
+    {{ parent() }}
+
+    <style>
+        .temporal-item thead th { position: relative; cursor: pointer; user-select: none; padding-right: 35px; }
+        .temporal-item tbody tr td:first-child { width: 170px; }
+
+        .temporal-item .label { float: right; padding: 1px 5px; opacity: .75; margin-left: 5px; }
+        .temporal-item .toggle-button { position: absolute; right: 6px; top: 6px; opacity: .5; pointer-events: none; color: inherit; }
+        .temporal-item .icon svg { height: 24px; width: 24px; }
+        .temporal-item .icon-close svg { transform: rotate(180deg); }
+
+        .temporal-item .sf-toggle-off .icon-close, .sf-toggle-on .icon-open { display: none; }
+        .temporal-item .sf-toggle-off .icon-open, .sf-toggle-on .icon-close { display: block; }
+
+        .temporal .badge.status-some-errors { line-height: 16px; border-bottom: 2px solid #B0413E; }
+
+        .temporal-item tbody.sf-toggle-content.sf-toggle-visible { display: table-row-group; }
+
+        #collector-content .temporal .trace {
+            border: var(--border);
+            background: var(--base-0);
+            padding: 10px;
+            margin: 0.5em 0;
+            overflow: auto;
+        }
+        #collector-content .temporal .trace {
+            font-size: 12px;
+        }
+        #collector-content .temporal .trace li {
+            margin-bottom: 0;
+            padding: 0;
+        }
+        #collector-content .temporal .trace li.selected {
+            background: var(--highlight-selected-line);
+        }
+    </style>
+{% endblock %}
+
+
+
+{% macro operation(dispatchCall, discr, loop, operation, clientName) %}
+    <table class="temporal-item">
+        <thead>
+        <tr>
+            <th colspan="2" class="sf-toggle"
+                data-toggle-selector="#temporal-item-{{ discr }}-{{ loop.index0 }}-details"
+                data-toggle-initial="{{ loop.first ? 'display' }}"
+            >
+                <span class="dump-inline">{{ dispatchCall.workflowType }}</span>
+                <button class="btn btn-link toggle-button" type="button">
+                    <span class="icon icon-close">{{ source('@WebProfiler/Icon/chevron-down.svg') }}</span>
+                    <span class="icon icon-open">{{ source('@WebProfiler/Icon/chevron-down.svg') }}</span>
+                </button>
+            </th>
+        </tr>
+        </thead>
+        <tbody id="temporal-item-{{ discr }}-{{ loop.index0 }}-details" class="sf-toggle-content">
+        <tr>
+            <th scope="row" class="font-normal">Client</th>
+            <td>{{ clientName }}</td>
+        </tr>
+
+        <tr>
+            <th scope="row" class="font-normal">Type operation</th>
+            <td>{{ operation }}</td>
+        </tr>
+
+
+        {% if dispatchCall.workflowId is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Workflow Id</th>
+                <td>{{ dispatchCall.workflowId }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.workflowRunId is defined and dispatchCall.workflowRunId != '' %}
+            <tr>
+                <th scope="row" class="font-normal">Workflow Run Id</th>
+                <td>{{ dispatchCall.workflowRunId }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.workflowArguments is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Workflow Arguments</th>
+                <td>{{ profiler_dump(dispatchCall.workflowArguments, maxDepth=2) }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.workflowHeaders is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Workflow Headers</th>
+                <td>{{ profiler_dump(dispatchCall.workflowHeaders) }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.workflowOptions is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Workflow Options</th>
+                <td>{{ profiler_dump(dispatchCall.workflowOptions) }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.signal is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Signal</th>
+                <td>{{ dispatchCall.signal }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.signalArguments is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Signal Arguments</th>
+                <td>{{ profiler_dump(dispatchCall.signalArguments, maxDepth=2) }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.query is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Query</th>
+                <td>{{ dispatchCall.query }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.queryArguments is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Query Arguments</th>
+                <td>{{ profiler_dump(dispatchCall.queryArguments, maxDepth=2) }}</td>
+            </tr>
+        {% endif %}
+
+
+
+        {% if dispatchCall.update is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Update</th>
+                <td>{{ dispatchCall.Update }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.updateArguments is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Update Arguments</th>
+                <td>{{ profiler_dump(dispatchCall.updateArguments, maxDepth=2) }}</td>
+            </tr>
+        {% endif %}
+
+
+
+        {% if dispatchCall.returnType is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Return Type</th>
+                <td>{{ profiler_dump(dispatchCall.returnType, maxDepth=2) }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.updateId is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Update Id</th>
+                <td>{{ dispatchCall.updateId }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.firstExecutionRunId is defined %}
+            <tr>
+                <th scope="row" class="font-normal">First execution runId</th>
+                <td>{{ dispatchCall.firstExecutionRunId }}</td>
+            </tr>
+        {% endif %}
+
+        {% if dispatchCall.waitPolicy is defined %}
+            <tr>
+                <th scope="row" class="font-normal">WaitPolicy</th>
+                <td>{{ dispatchCall.waitPolicy.value }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.timeout is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Timeout</th>
+                <td>{{ dispatchCall.timeout }}</td>
+            </tr>
+        {% endif %}
+
+
+        {% if dispatchCall.namespace is defined %}
+            <tr>
+                <th scope="row" class="font-normal">Namespace</th>
+                <td>{{ dispatchCall.namespace }}</td>
+            </tr>
+        {% endif %}
+
+
+        </tbody>
+    </table>
+{% endmacro %}
+
+
 
 {% block panel %}
+    {% import _self as macros %}
+
     <style>
         .time-container { position: relative; }
         .time-container .nowrap { position: relative; z-index: 1; text-shadow: 0 0 2px #fff; }
@@ -78,6 +285,105 @@
 
 
     <div class="sf-tabs" style="margin-top: 20px;">
+        <div class="tab {{ collector.isEmptyCallWorkflowClients ? 'disabled' }}">
+            <h3 class="tab-title">Workflow client calls</h3>
+            <div class="tab-content">
+                {% if collector.isEmptyCallWorkflowClients %}
+                    <div class="empty">
+                        <p>Not found calls</p>
+                    </div>
+                {% else %}
+                    {% for dispatchCall in collector.collectorWorkflowClientInterceptors %}
+                        {% for startedWorkflow  in dispatchCall.startedWorkflow  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(startedWorkflow, discr, loop, 'startWorkflow', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                        {% for startedWorkflowWithSignal  in dispatchCall.startedWorkflowWithSignal  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(startedWorkflowWithSignal, discr, loop, 'startWorkflowWithSignal', dispatchCall.clientName) }}
+                        {% endfor %}
+
+                        {% for startedWorkflowWithUpdate  in dispatchCall.startedWorkflowWithUpdate  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(startedWorkflowWithUpdate, discr, loop, 'startWorkflowWithUpdate', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                        {% for sendSignal  in dispatchCall.sendSignal  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(sendSignal, discr, loop, 'sendSignal', dispatchCall.clientName) }}
+                        {% endfor %}
+
+                        {% for sendUpdate  in dispatchCall.sendUpdate  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(sendUpdate, discr, loop, 'sendUpdate', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                        {% for sendQuery  in dispatchCall.sendQuery  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(sendQuery, discr, loop, 'sendQuery', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                        {% for sendCancelWorkflow  in dispatchCall.sendCancelWorkflow  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(sendCancelWorkflow, discr, loop, 'sendCancelWorkflow', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                        {% for sendTerminateWorkflow  in dispatchCall.sendTerminateWorkflow  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(sendTerminateWorkflow, discr, loop, 'sendTerminateWorkflow', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                        {% for getResultWorkflow in dispatchCall.getResultWorkflow  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(getResultWorkflow, discr, loop, 'getResultWorkflow', dispatchCall.clientName) }}
+                        {% endfor %}
+
+
+                    {% endfor %}
+
+
+                {% endif %}
+            </div>
+        </div>
+
+
+        <div class="tab {{ collector.isEmptyCallScheduleClients ? 'disabled' }}">
+            <h3 class="tab-title">Schedule client calls</h3>
+            <div class="tab-content">
+                {% if collector.isEmptyCallScheduleClients %}
+                    <div class="empty">
+                        <p>Not found calls</p>
+                    </div>
+                {% else %}
+                    {% for dispatchCall in collector.collectorScheduleClientInterceptors %}
+                        {% for sendDescribe  in dispatchCall.sendTerminateWorkflow  %}
+                            {% set discr = random() %}
+
+                            {{ macros.operation(sendDescribe, discr, loop, 'sendDescribe', dispatchCall.clientName) }}
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+
+
         <div class="tab {{ collector.clients is empty ? 'disabled' }}">
             <h3 class="tab-title">Clients</h3>
             <div class="tab-content">

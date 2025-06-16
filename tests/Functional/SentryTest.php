@@ -13,7 +13,10 @@ namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 
 use Nyholm\BundleTest\TestKernel;
 
+use function PHPUnit\Framework\assertEmpty;
+use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertFalse;
+use function PHPUnit\Framework\assertInstanceOf;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -23,7 +26,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Bundle\MonologBundle\MonologBundle;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
+use Temporal\Interceptor\SimplePipelineProvider;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\SentryCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\TemporalExtension;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
@@ -121,6 +127,87 @@ final class SentryTest extends KernelTestCase
                     assertTrue($container->hasDefinition('temporal.sentry_activity_inbound.interceptor'));
                     assertTrue($container->hasDefinition('temporal.sentry_workflow_outbound_calls.interceptor'));
                     assertTrue($container->hasDefinition('temporal.sentry_stack_trace_builder'));
+                }
+            });
+        }]);
+    }
+
+
+    public function testRegisterSentryIntegrationForSpecificWorker(): void
+    {
+        InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
+            return in_array($package, ['sentry/sentry-symfony', 'vanta/temporal-sentry']);
+        });
+
+        self::bootKernel(['config' => static function (TestKernel $kernel): void {
+            $kernel->addTestBundle(SentryBundle::class);
+            $kernel->addTestBundle(MonologBundle::class);
+            $kernel->addTestBundle(TemporalBundle::class);
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_use_specific_sentry_worker.yaml');
+
+
+            $kernel->addTestCompilerPass(new class() implements CompilerPass {
+                public function process(ContainerBuilder $container): void
+                {
+                    /** @var Definition|mixed $sentryUseWorkerPipeline */
+                    $sentryUseWorkerPipeline = $container->getDefinition('temporal.sentry_use.worker')->getArgument(3);
+
+                    assertInstanceOf(Definition::class, $sentryUseWorkerPipeline);
+                    assertEquals(SimplePipelineProvider::class, $sentryUseWorkerPipeline->getClass());
+                    assertEquals([
+                        new Reference('temporal.sentry_workflow_outbound_calls.interceptor'),
+                        new Reference('temporal.sentry_activity_inbound.interceptor'),
+                    ], $sentryUseWorkerPipeline->getArgument(0));
+
+
+                    /** @var Definition|mixed $withoutSentryWorkerPipeline */
+                    $withoutSentryWorkerPipeline = $container->getDefinition('temporal.without_sentry.worker')->getArgument(3);
+
+                    assertInstanceOf(Definition::class, $withoutSentryWorkerPipeline);
+                    assertEquals(SimplePipelineProvider::class, $withoutSentryWorkerPipeline->getClass());
+                    assertEmpty($withoutSentryWorkerPipeline->getArgument(0));
+                }
+            });
+        }]);
+    }
+
+
+    public function testRegisterSentryIntegrationForAllWorker(): void
+    {
+        InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
+            return in_array($package, ['sentry/sentry-symfony', 'vanta/temporal-sentry']);
+        });
+
+        self::bootKernel(['config' => static function (TestKernel $kernel): void {
+            $kernel->addTestBundle(SentryBundle::class);
+            $kernel->addTestBundle(MonologBundle::class);
+            $kernel->addTestBundle(TemporalBundle::class);
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_use_global_sentry.yaml');
+
+
+            $kernel->addTestCompilerPass(new class() implements CompilerPass {
+                public function process(ContainerBuilder $container): void
+                {
+                    /** @var Definition|mixed $sentryUseWorkerPipeline */
+                    $sentryUseWorkerPipeline = $container->getDefinition('temporal.sentry_use.worker')->getArgument(3);
+                    $expectedIntegrations    = [
+                        new Reference('temporal.sentry_workflow_outbound_calls.interceptor'),
+                        new Reference('temporal.sentry_activity_inbound.interceptor'),
+                    ];
+
+                    assertInstanceOf(Definition::class, $sentryUseWorkerPipeline);
+                    assertEquals(SimplePipelineProvider::class, $sentryUseWorkerPipeline->getClass());
+                    assertEquals($expectedIntegrations, $sentryUseWorkerPipeline->getArgument(0));
+
+
+                    /** @var Definition|mixed $withoutSentryWorkerPipeline */
+                    $withoutSentryWorkerPipeline = $container->getDefinition('temporal.without_sentry.worker')->getArgument(3);
+
+                    assertInstanceOf(Definition::class, $withoutSentryWorkerPipeline);
+                    assertEquals(SimplePipelineProvider::class, $withoutSentryWorkerPipeline->getClass());
+                    assertEquals($expectedIntegrations, $withoutSentryWorkerPipeline->getArgument(0));
                 }
             });
         }]);

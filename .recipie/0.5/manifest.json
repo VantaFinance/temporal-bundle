@@ -7,10 +7,20 @@
         },
         "copy-from-package": {
           ".rr.temporal.yaml": ".rr.temporal.yaml",
+          ".rr.temporal.testing.yaml": ".rr.temporal.testing.yaml",
           ".docker/docker-compose-temporal.yml": ".docker/docker-compose-temporal.yml",
           ".docker/Dockerfile": ".docker/Dockerfile",
           "temporal.yaml": "%CONFIG_DIR%/packages/temporal.yaml"
         },
+        "add-lines": [
+          {
+            "file": "phpunit.xml.dist",
+            "content": "<extension class=\"Vanta\\Integration\\Symfony\\Temporal\\Testing\\PHPUnit\\IntegrationTestingExtension\", />",
+            "position": "after_target",
+            "target": "<extensions>",
+            "warn_if_missing": false
+          }
+        ],
         "post-install-output": [
           "  * Configure the <fg=green>workers/clients</> in <fg=green>config/packages/temporal.yaml</>",
           "  * Configure the <fg=green>docker</> in dir <fg=green>.docker/</>"
@@ -20,7 +30,7 @@
           "RR_RPC": "tcp://rr_temporal:6001"
         }
       },
-      "ref": "3a1f8a7e2a44c46ff3cc741709b4ed2057a78ed0"
+      "ref": "fe8fd60c7d887ac0b05ed578854d6fc4f7eea65c"
     }
   }
 }

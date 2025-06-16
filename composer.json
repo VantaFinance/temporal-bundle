@@ -23,7 +23,8 @@
       "Vanta\\Integration\\Symfony\\Temporal\\": "src/"
     },
     "files": [
-      "src/DependencyInjection/function.php"
+      "src/DependencyInjection/function.php",
+      "src/Testing/RoadRunner/function.php"
     ]
   },
   "autoload-dev": {
@@ -33,10 +34,10 @@
   },
   "require": {
     "php": "^8.2",
-    "symfony/dependency-injection": "^6.0|^7.0",
-    "symfony/http-kernel": "^6.0|^7.0",
-    "symfony/runtime": "^6.0|^7.0",
-    "temporal/sdk": "^2.9"
+    "symfony/dependency-injection": "^6.4|^7.0",
+    "symfony/http-kernel": "^6.4|^7.0",
+    "symfony/runtime": "^6.4|^7.0",
+    "temporal/sdk": "^2.14"
   },
   "require-dev": {
     "symfony/serializer": "^6.0|^7.0",
@@ -49,13 +50,17 @@
     "psr/log": "^3.0",
     "sentry/sentry-symfony": "^4.10",
     "nyholm/symfony-bundle-test": "^3.0",
-    "phpunit/phpunit": "^10.3",
+    "phpunit/phpunit": "^10",
     "symfony/monolog-bundle": "^3.8",
     "symfony/web-profiler-bundle": "^6.0|^7.0",
-    "vanta/temporal-sentry": "^0.1.1"
+    "vanta/temporal-sentry": "^0.2",
+    "vanta/temporal-doctrine": "^0.1",
+    "codeception/codeception": "^5.3",
+    "spiral/roadrunner-cli": "^2"
   },
   "suggest": {
-    "vanta/temporal-sentry": "Integration for sentry"
+    "vanta/temporal-sentry": "Integration for sentry",
+    "vanta/temporal-doctrine": "Integration for doctrine"
   },
   "config": {
     "allow-plugins": {

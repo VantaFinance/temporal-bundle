@@ -13,6 +13,7 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
 use Temporal\Client\WorkflowClient as GrpcWorkflowClient;
@@ -24,6 +25,7 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
 
+use Vanta\Integration\Symfony\Temporal\Interceptor\ProfilerWorkflowInterceptor;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ClientDebugCommand;
 
 /**
@@ -36,6 +38,15 @@ final class ClientCompilerPass implements CompilerPass
         /** @var RawConfiguration $config */
         $config  = $container->getParameter('temporal.config');
         $clients = [];
+
+        $globalInterceptors    = array_map(reference(...), $config['pool']['globalInterceptors']);
+        $collectorInterceptors = [];
+
+
+        if (!in_array($config['defaultClient'], array_keys($config['clients']))) {
+            throw new InvalidArgumentException(sprintf('No default WorkflowClient "%s" configured', $config['defaultClient']));
+        }
+
 
         foreach ($config['clients'] as $name => $client) {
             $options = definition(ClientOptions::class)
@@ -50,17 +61,32 @@ final class ClientCompilerPass implements CompilerPass
             }
 
 
+            if ($container->getParameter('kernel.debug')) {
+                $collectorId = sprintf('temporal.workflow_client_collector_%s.interceptor', $name);
+
+                $container->register($collectorId, ProfilerWorkflowInterceptor::class)
+                    ->setArgument('$clientName', $name)
+                ;
+
+                $collectorInterceptors[] = reference($collectorId);
+            }
+
             $id = sprintf('temporal.%s.client', $name);
 
             $container->register($id, WorkflowClient::class)
                 ->setFactory([GrpcWorkflowClient::class, 'create'])
+                ->setPublic($config['pool']['testing']['enabled'])
                 ->setArguments([
                     '$serviceClient'       => grpcClient($client),
                     '$options'             => $options,
                     '$converter'           => new Reference($client['dataConverter']),
                     '$interceptorProvider' => definition(SimplePipelineProvider::class)
                         ->setArguments([
-                            array_map(reference(...), $client['interceptors']),
+                            [
+                                ...array_map(reference(...), $client['interceptors']),
+                                ...$collectorInterceptors,
+                                ...$globalInterceptors,
+                            ],
                         ]),
                 ]);
 
@@ -90,6 +116,7 @@ final class ClientCompilerPass implements CompilerPass
 
         $container->getDefinition('temporal.collector')
             ->setArgument('$clients', $clients)
+            ->setArgument('$collectorWorkflowClientInterceptors', $collectorInterceptors)
         ;
     }
 }

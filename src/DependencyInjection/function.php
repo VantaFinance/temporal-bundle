@@ -72,6 +72,7 @@ function referenceLogger(): Reference
  *  address: non-empty-string,
  *  clientKey: ?non-empty-string,
  *  clientPem: ?non-empty-string,
+ *  apiKey: ?non-empty-string,
  *  grpcContext: array<string, mixed>
  * } $client
  */
@@ -89,6 +90,11 @@ function grpcClient(array $client): Definition
             $client['clientPem'],
             null, // Overwrite server name
         ])->setFactory([GrpcServiceClient::class, 'createSSL']);
+    }
+
+
+    if ($client['apiKey'] != null) {
+        $serviceClient->addMethodCall('withAuthKey', [$client['apiKey']], true);
     }
 
     return $serviceClient->addMethodCall('withContext', [
@@ -177,4 +183,105 @@ function getWorkers(ReflectionClass $reflectionClass): array
     }, $reflectionClass->getAttributes(AssignWorker::class));
 
     return array_unique($workers);
+}
+
+
+/**
+ * @internal
+ *
+ * @param non-empty-string $entityManager
+ *
+ * @return non-empty-string
+ */
+function doctrineInterceptorId(string $entityManager): string
+{
+    return sprintf('temporal.doctrine_ping_connection_%s_activity_inbound.interceptor', $entityManager);
+}
+
+
+/**
+ * @internal
+ *
+ * @param non-empty-string $entityManager
+ *
+ * @return non-empty-string
+ */
+function doctrinePingFinalizerId(string $entityManager): string
+{
+    return sprintf('temporal.doctrine_ping_connection_%s.finalizer', $entityManager);
+}
+
+
+/**
+ * @internal
+ *
+ * @return non-empty-string
+ */
+function doctrineClearEntityManagerFinalizerId(): string
+{
+    return 'temporal.doctrine_clear_entity_manager.finalizer';
+}
+
+
+/**
+ * @internal
+ *
+ * @param non-empty-string $connection
+ *
+ * @return non-empty-string
+ */
+function trackingSentryDoctrineOpenTransactionInterceptorId(string $connection): string
+{
+    return sprintf('temporal.tracking_sentry_open_transaction_%s_activity_inbound.interceptor', $connection);
+}
+
+
+/**
+ * @internal
+ *
+ * @param non-empty-string $connection
+ *
+ * @return non-empty-string
+ */
+function loggingDoctrineOpenTransactionInterceptorId(string $connection): string
+{
+    return sprintf('temporal.logging_open_transaction_%s_activity_inbound.interceptor', $connection);
+}
+
+
+/**
+ * @param array<non-empty-string> $useDoctrineIntegration
+ * @param array<non-empty-string> $useTrackingSentryDoctrineOpenTransaction
+ * @param array<non-empty-string> $useLoggingDoctrineOpenTransaction
+ *
+ * @return array<non-empty-string>
+ */
+function getInterceptorsForIntegration(bool $useSentryIntegration, array $useDoctrineIntegration, array $useTrackingSentryDoctrineOpenTransaction, array $useLoggingDoctrineOpenTransaction): array
+{
+    $interceptors = [];
+
+    if ($useSentryIntegration) {
+        $interceptors = [
+            ...$interceptors,
+            'temporal.sentry_workflow_outbound_calls.interceptor',
+            'temporal.sentry_activity_inbound.interceptor',
+        ];
+    }
+
+    $subscribers = [
+        [$useDoctrineIntegration, doctrineInterceptorId(...)],
+        [$useLoggingDoctrineOpenTransaction, loggingDoctrineOpenTransactionInterceptorId(...)],
+        [$useTrackingSentryDoctrineOpenTransaction, trackingSentryDoctrineOpenTransactionInterceptorId(...)],
+    ];
+
+    foreach ($subscribers as [$list, $getServiceId]) {
+        if ($list != []) {
+            $interceptors = [
+                ...$interceptors,
+                ...array_map($getServiceId(...), $list),
+            ];
+        }
+    }
+
+    return $interceptors;
 }

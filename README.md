@@ -13,7 +13,7 @@
 ## Requirements:
 
 - php >= 8.2
-- symfony >= 6.0
+- symfony >= 6.4
 
 ## Installation:
 
@@ -35,17 +35,28 @@ composer req temporal serializer
 
 ## Doctrine integrations
 
-If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the following finalizer is available to you:
+Install packages:
 
-- `temporal.doctrine_ping_connection_<entity-mananger-name>.finalizer`
-- `temporal.doctrine_clear_entity_manager.finalizer`
+```bash
+composer require orm temporal-doctrine
+```
 
 
-And interceptors: 
-- `temporal.doctrine_ping_connection_<entity-mananger-name>_activity_inbound.interceptor`
+If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is use, the following parameters is available to you:
 
+- `pool.useGlobalDoctrineIntegration` - Connect integration to all workers
+- `pool.useGlobalLoggingDoctrineOpenTransaction`        - Connect interceptor to all workers that report unclosed transaction to monolog
+- `pool.useGlobalTrackingSentryDoctrineOpenTransaction` - Connect interceptor to all workers that report unclosed transaction to sentry
+- `workers.useDoctrineIntegration`                      - Connect the integration to a specific worker
+- `workers.useLoggingDoctrineOpenTransaction`           - Connect interceptor to a specific worker that report unclosed transaction to monolog
+- `workers.useTrackingSentryDoctrineOpenTransaction`    - Connect the integration to a specific worker that report unclosed transaction to sentry
+
+These parameters accept a list of entity-managers
 
 Example config:
+
+
+**Specific worker**
 
 ```yaml
 temporal:
@@ -58,11 +69,41 @@ temporal:
     default:
       taskQueue: default
       exceptionInterceptor: temporal.exception_interceptor
-      finalizers: 
-        - temporal.doctrine_ping_connection_default.finalizer
-        - temporal.doctrine_clear_entity_manager.finalizer
-      interceptors:
-        - temporal.doctrine_ping_connection_default_activity_inbound.interceptor
+      useDoctrineIntegration: 
+        - default
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+    cloud:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+```
+
+**Connect integration to all workers**
+
+```yaml
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+    useGlobalDoctrineIntegration:
+      - default
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+
+    test:
+      taskQueue: test
+      exceptionInterceptor: temporal.exception_interceptor
 
   clients:
     default:
@@ -88,46 +129,14 @@ Install packages:
 composer require sentry temporal-sentry
 ```
 
-If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is use, the following interceptors is available to you:
+If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is use, the following parameters is available to you:
 
-- `temporal.sentry_workflow_outbound_calls.interceptor`
-- `temporal.sentry_activity_inbound.interceptor`
-
-
-
+- `pool.useGlobalSentryIntegration` - Connect integration to all workers
+- `workers.useSentryIntegration` -    Connect the integration to a specific worker
 
 Example config:
 
-```yaml
-temporal:
-  defaultClient: default
-  pool:
-    dataConverter: temporal.data_converter
-    roadrunnerRPC: '%env(RR_RPC)%'
-
-  workers:
-    default:
-      taskQueue: default
-      exceptionInterceptor: temporal.exception_interceptor
-      interceptors:
-        - temporal.sentry_workflow_outbound_calls.intercepto
-        - temporal.sentry_activity_inbound.interceptor
-
-  clients:
-    default:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
-```
-
-
-
-## Worker Factory
-
-By default the `Temporal\WorkerFactory` is used to instantiate the workers. However when you are unit-testing you
-may wish to override the default factory with the one provided by the ['Testing framework'](https://github.com/temporalio/sdk-php/tree/master/testing)
-
-Example Config:
+**Specific worker**
 
 ```yaml
 temporal:
@@ -140,20 +149,88 @@ temporal:
     default:
       taskQueue: default
       exceptionInterceptor: temporal.exception_interceptor
-      interceptors:
-        - temporal.sentry_workflow_outbound_calls.intercepto
-        - temporal.sentry_activity_inbound.interceptor
+      useSentryIntegration: true
 
   clients:
     default:
       namespace: default
       address: '%env(TEMPORAL_ADDRESS)%'
       dataConverter: temporal.data_converter
-
-when@test:
-  temporal:
-    workerFactory: Temporal\Testing\WorkerFactory
 ```
+
+**Connect integration to all workers**
+
+```yaml
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+    useGlobalSentryIntegration: true
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+
+    test:
+      taskQueue: test
+      exceptionInterceptor: temporal.exception_interceptor  
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+```
+
+
+
+
+## Testing
+
+The following testing frameworks are supported:
+- [`PHPUnit`](https://github.com/sebastianbergmann/phpunit)
+- [`Codeception`](https://github.com/Codeception/Codeception)
+
+
+
+The following parameters is available to you:
+
+- `pool.testing.enabled` - Activate test mode
+- `pool.testing.activityMocker` - Which ActivityMocker to use. default value: rr_kv, Allowed values: rr_kv, in_memory or service id
+  if you want to use your own implementation ``Temporal\Worker\ActivityInvocationCache\ActivityInvocationCacheInterface``
+- `pool.testServices.<name>` - List configured  ```Temporal\Testing\TestService```
+
+
+
+### Using with PHPUnit
+
+Add the Extension to your PHPUnit XML config
+
+```xml
+<phpunit>
+    ...
+    <extensions>
+        <bootstrap class="Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\IntegrationTestingExtension" />
+    </extensions>
+</phpunit>
+```
+
+
+Added new env to .env.test
+
+```env
+TEMPORAL_ADDRESS=0.0.0.0:7233
+RR_RPC=tcp://0.0.0.0:6001
+```
+
+
+### Using with Codeception
+
+TODO...
+
+
 
 
 

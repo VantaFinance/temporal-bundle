@@ -23,6 +23,7 @@ use Temporal\Exception\ExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\DataCollector\TemporalCollector;
 use Vanta\Integration\Symfony\Temporal\DataConverter\SymfonySerializerDataConverter;
 use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrineClearEntityManagerFinalizer;
+use Vanta\Integration\Symfony\Temporal\Finalizer\FrameworkFinalizer;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 
 return static function (ContainerConfigurator $configurator): void {
@@ -38,6 +39,13 @@ return static function (ContainerConfigurator $configurator): void {
 
         ->set('temporal.collector', TemporalCollector::class)
             ->tag('data_collector', ['id' => 'Temporal'])
+
+
+        ->set('temporal.framework.finalizer', FrameworkFinalizer::class)
+            ->tag('temporal.finalizer')
+            ->args([
+                service('services_resetter'),
+            ])
     ;
 
 

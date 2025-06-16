@@ -19,12 +19,14 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ClientCompil
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\DoctrineCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\SentryCompilerPass;
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\TestServiceCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 
 final class TemporalBundle extends Bundle
 {
     public function build(ContainerBuilder $container): void
     {
+        $container->addCompilerPass(new TestServiceCompilerPass());
         $container->addCompilerPass(new WorkflowCompilerPass());
         $container->addCompilerPass(new ClientCompilerPass());
         $container->addCompilerPass(new DoctrineCompilerPass());
