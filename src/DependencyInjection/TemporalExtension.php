@@ -21,6 +21,7 @@ use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Temporal\Activity\ActivityInterface as Activity;
 use Temporal\Workflow\WorkflowInterface as Workflow;
+use Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor;
 
 final class TemporalExtension extends Extension
 {
@@ -50,9 +51,18 @@ final class TemporalExtension extends Extension
             $connections = array_keys($rawConnections);
         }
 
-        $configuration = new Configuration($connections, $entityManagers);
+        $configuration    = new Configuration($connections, $entityManagers);
+        $rawConfiguration = $this->processConfiguration($configuration, $configs);
 
-        $container->setParameter('temporal.config', $this->processConfiguration($configuration, $configs));
+        if ($rawConfiguration['pool']['testing']['enabled'] && $rawConfiguration['pool']['testing']['disableSearchAttributes']) {
+            $disableSearchAttributesInterceptorId = 'temporal.testing.disable_search_attributes.interceptor';
+
+            $container->register($disableSearchAttributesInterceptorId, DisableSearchAttributesInterceptor::class);
+            $rawConfiguration['pool']['globalInterceptors'][] = $disableSearchAttributesInterceptorId;
+        }
+
+
+        $container->setParameter('temporal.config', $rawConfiguration);
         $container->registerAttributeForAutoconfiguration(Workflow::class, workflowConfigurator(...));
         $container->registerAttributeForAutoconfiguration(Activity::class, activityConfigurator(...));
     }

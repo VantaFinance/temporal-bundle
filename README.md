@@ -204,6 +204,14 @@ The following parameters is available to you:
 
 
 
+Available environment variables:
+
+- `TEMPORAL_TESTING_RR_COMMAND` - Full command to run RoadRunner
+- `TEMPORAL_TESTING_NEED_DOWNLOAD_RR` - Download the Roadrunner executable every time you run tests(default: true)
+- `TEMPORAL_TESTING_SKIP_START_TEMPORAL_SERVER` - Do not start Temporal Test Server every time you run a test(default: false)
+
+
+
 ### Using with PHPUnit
 
 Add the Extension to your PHPUnit XML config
@@ -218,17 +226,17 @@ Add the Extension to your PHPUnit XML config
 ```
 
 
-Added new env to .env.test
-
-```env
-TEMPORAL_ADDRESS=0.0.0.0:7233
-RR_RPC=tcp://0.0.0.0:6001
-```
-
-
 ### Using with Codeception
 
-TODO...
+
+Add the Extension to your Codeception config
+
+```yaml
+extensions:
+    enabled:
+        - Vanta\Integration\Symfony\Temporal\Testing\Codeception\IntegrationTestingExtension:
+```
+
 
 
 

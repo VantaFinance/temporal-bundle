@@ -1,12 +1,12 @@
 <?php
 
-declare(strict_types=1);
 /**
  * Temporal Bundle
  *
  * @author Vlad Shashkov <v.shashkov@pos-credit.ru>
  * @copyright Copyright (c) 2025, The Vanta
  */
+declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\Testing\RoadRunner;
 
@@ -48,22 +48,25 @@ function boostrapTesting(Environment $environment): void
         }
     };
 
+    $needDownloadRRBinary    = $_ENV['TEMPORAL_TESTING_NEED_DOWNLOAD_RR'] ?? true;
+    $skipStartTemporalServer = $_ENV['TEMPORAL_TESTING_SKIP_START_TEMPORAL_SERVER'] ?? false;
 
-    if ($rrCommand == null && $rrBinaryPath == null) {
+    if ($rrCommand == null && $rrBinaryPath == null && $needDownloadRRBinary) {
         $downloadRRBinary();
     }
 
-
     if ($rrBinaryPath != null && $rrCommand == null) {
-        if (!isInstalledRR($rrBinaryPath)) {
+        if (!isInstalledRR($rrBinaryPath) && $needDownloadRRBinary) {
             $downloadRRBinary();
         }
 
         $rrCommand = sprintf('%s serve -c .rr.temporal.testing.yaml', $rrBinaryPath);
     }
 
+    if ($skipStartTemporalServer) {
+        $environment->startTemporalTestServer();
+    }
 
-    $environment->startTemporalTestServer();
     $environment->startRoadRunner($rrCommand, envs:  $_ENV);
 }
 

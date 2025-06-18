@@ -40,6 +40,7 @@ use Vanta\Integration\Temporal\Sentry\SentryWorkflowOutboundCallsInterceptor;
  *  workerApiKey: ?non-empty-string,
  *  testing: array{
  *    enabled: bool,
+ *    disableSearchAttributes: bool,
  *    activityMocker: 'in_memory'|'rr_kv'| non-empty-string,
  *    defaultTestService: non-empty-string,
  *    testServices: non-empty-array<array{address: non-empty-string}>
@@ -351,6 +352,9 @@ final class Configuration implements BundleConfiguration
                             ->children()
                                 ->booleanNode('enabled')
                                     ->defaultFalse()
+                                ->end()
+                                ->booleanNode('disableSearchAttributes')
+                                    ->defaultTrue()
                                 ->end()
                                 ->scalarNode('activityMocker')
                                     ->defaultValue('rr_kv')
