@@ -6,7 +6,7 @@ server:
     - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
 
 rpc:
-  listen: tcp://0.0.0.0:6001
+  listen: tcp://0.0.0.0:6002
 
 temporal:
   address: "0.0.0.0:7233"

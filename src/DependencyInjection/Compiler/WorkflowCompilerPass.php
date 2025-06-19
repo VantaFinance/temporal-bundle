@@ -112,7 +112,9 @@ final class WorkflowCompilerPass implements CompilerPass
                 ->setPublic(true)
             ;
 
-            $container->setAlias(ActivityMocker::class, 'temporal.testing.activity_mocker');
+            $container->setAlias(ActivityMocker::class, 'temporal.testing.activity_mocker')
+                ->setPublic(true)
+            ;
         }
 
         if ($config['pool']['workerApiKey'] != null) {

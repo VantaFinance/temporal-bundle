@@ -26,8 +26,8 @@ final class IntegrationTestingExtension extends Extension
      * @var array<non-empty-string, non-empty-string>
      */
     public static array $events = [
-        Events::SUITE_INIT  => 'suiteInit',
-        Events::SUITE_AFTER => 'suiteAfter',
+        Events::TEST_BEFORE => 'testBefore',
+        Events::TEST_AFTER  => 'testAfter',
     ];
 
     private readonly Environment $environment;
@@ -49,13 +49,13 @@ final class IntegrationTestingExtension extends Extension
     /**
      * @throws Throwable
      */
-    public function suiteInit(): void
+    public function testBefore(): void
     {
         boostrapTesting($this->environment);
     }
 
 
-    public function suiteAfter(): void
+    public function testAfter(): void
     {
         $this->environment->stop();
     }

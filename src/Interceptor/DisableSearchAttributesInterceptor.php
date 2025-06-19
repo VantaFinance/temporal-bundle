@@ -29,7 +29,7 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
     use WorkflowOutboundRequestInterceptorTrait;
     use WorkflowClientCallsInterceptorTrait;
 
-    private function executeChildWorkflowRequest(ExecuteChildWorkflow $request, callable $next): Promise
+    protected function executeChildWorkflowRequest(ExecuteChildWorkflow $request, callable $next): Promise
     {
         $newOptions                                = $request->getOptions();
         $newOptions['options']['SearchAttributes'] = null; //@phpstan-ignore offsetAccess.nonOffsetAccessible

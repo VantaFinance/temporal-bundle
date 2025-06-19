@@ -63,7 +63,7 @@ function boostrapTesting(Environment $environment): void
         $rrCommand = sprintf('%s serve -c .rr.temporal.testing.yaml', $rrBinaryPath);
     }
 
-    if ($skipStartTemporalServer) {
+    if (!$skipStartTemporalServer) {
         $environment->startTemporalTestServer();
     }
 
