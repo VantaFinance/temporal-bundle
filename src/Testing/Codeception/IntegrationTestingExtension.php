@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\Testing\Codeception;
 
-require_once __DIR__ . '/../RoadRunner/function.php';
+require_once __DIR__ . '/../RoadRunner/boostrap.php';
 
 use Codeception\Events;
 use Codeception\Extension;
