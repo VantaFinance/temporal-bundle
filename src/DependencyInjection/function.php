@@ -260,14 +260,6 @@ function getInterceptorsForIntegration(bool $useSentryIntegration, array $useDoc
 {
     $interceptors = [];
 
-    if ($useSentryIntegration) {
-        $interceptors = [
-            ...$interceptors,
-            'temporal.sentry_workflow_outbound_calls.interceptor',
-            'temporal.sentry_activity_inbound.interceptor',
-        ];
-    }
-
     $subscribers = [
         [$useDoctrineIntegration, doctrineInterceptorId(...)],
         [$useLoggingDoctrineOpenTransaction, loggingDoctrineOpenTransactionInterceptorId(...)],
@@ -281,6 +273,15 @@ function getInterceptorsForIntegration(bool $useSentryIntegration, array $useDoc
                 ...array_map($getServiceId(...), $list),
             ];
         }
+    }
+
+
+    if ($useSentryIntegration) {
+        $interceptors = [
+            ...$interceptors,
+            'temporal.sentry_workflow_outbound_calls.interceptor',
+            'temporal.sentry_activity_inbound.interceptor',
+        ];
     }
 
     return $interceptors;
