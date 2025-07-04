@@ -157,9 +157,9 @@ final class WorkflowCompilerPass implements CompilerPass
 
         if ($config['pool']['useGlobalDoctrineIntegration'] != []) {
             $globalFinalizers = [
-                ...$globalFinalizers,
                 ...array_map(doctrinePingFinalizerId(...), $config['pool']['useGlobalDoctrineIntegration']),
                 doctrineClearEntityManagerFinalizerId(),
+                ...$globalFinalizers,
             ];
         }
 
