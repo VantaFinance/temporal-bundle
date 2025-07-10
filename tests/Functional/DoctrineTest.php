@@ -316,9 +316,9 @@ final class DoctrineTest extends KernelTestCase
                     $doctrineUseWorkerPipeline = $container->getDefinition($this->workerId)->getArgument(3);
                     $doctrineChainFinalizer    = definition(ChainFinalizer::class, [
                         [
-                            reference('temporal.framework.finalizer'),
                             reference('temporal.doctrine_ping_connection_default.finalizer'),
                             reference('temporal.doctrine_clear_entity_manager.finalizer'),
+                            reference('temporal.framework.finalizer'),
                         ],
                         referenceLogger(),
                     ]);
