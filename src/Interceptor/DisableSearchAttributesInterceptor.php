@@ -60,7 +60,6 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
 
     public function updateWithStart(UpdateWithStartInput $input, callable $next): UpdateWithStartOutput
     {
-        /**@phpstan-ignore-next-line */
         return $next(
             $input->with(
                 workflowStartInput: $input->workflowStartInput->with(

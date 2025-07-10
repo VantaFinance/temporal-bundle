@@ -234,7 +234,6 @@ final class ProfilerWorkflowInterceptor implements WorkflowClientCallsIntercepto
             'workflowHeaders'   => $varCloner->cloneVar(iterator_to_array($input->workflowStartInput->header->getIterator())),
         ];
 
-        /**@phpstan-ignore-next-line */
         return $next($input);
     }
 
@@ -296,7 +295,6 @@ final class ProfilerWorkflowInterceptor implements WorkflowClientCallsIntercepto
             'namespace'     => $input->namespace,
         ];
 
-        /**@phpstan-ignore-next-line */
         return $next($input);
     }
 
