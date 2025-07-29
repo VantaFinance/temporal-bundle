@@ -3,6 +3,7 @@ parameters:
 	paths:
 		- src
 		- tests
+		- config
 
 	scanFiles:
 	    - vendor/symfony/dependency-injection/Loader/Configurator/ContainerConfigurator.php
