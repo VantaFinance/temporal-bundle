@@ -29,6 +29,14 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
     use WorkflowOutboundRequestInterceptorTrait;
     use WorkflowClientCallsInterceptorTrait;
 
+
+    /**
+     * @template T
+     *
+     * @param callable(ExecuteChildWorkflow): Promise<T> $next
+     *
+     * @return Promise<T>
+     */
     protected function executeChildWorkflowRequest(ExecuteChildWorkflow $request, callable $next): Promise
     {
         $newOptions                                = $request->getOptions();
