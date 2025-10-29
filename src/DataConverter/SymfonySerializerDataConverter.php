@@ -52,7 +52,9 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
         }
 
         if (array_key_exists(self::INPUT_TYPE, $metadata) && str_starts_with($metadata[self::INPUT_TYPE], 'Temporal\\')) {
-            return $this->payloadConverter->toPayload($value);
+            return $this->payloadConverter->toPayload($value) ?? throw new DataConverterException(
+                'Failed to convert temporal serialized data to payload.'
+            );
         }
 
         try {
