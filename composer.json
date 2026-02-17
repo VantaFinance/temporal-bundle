@@ -33,13 +33,13 @@
   },
   "require": {
     "php": "^8.2",
-    "symfony/dependency-injection": "^6.0|^7.0",
-    "symfony/http-kernel": "^6.0|^7.0",
-    "symfony/runtime": "^6.0|^7.0",
+    "symfony/dependency-injection": "^6.0 || ^7.0 || ^8.0",
+    "symfony/http-kernel": "^6.0 || ^7.0 || ^8.0",
+    "symfony/runtime": "^6.0 || ^7.0 || ^8.0",
     "temporal/sdk": "^2.9"
   },
   "require-dev": {
-    "symfony/serializer": "^6.0|^7.0",
+    "symfony/serializer": "^6.0 || ^7.0 || ^8.0",
     "doctrine/doctrine-bundle": "^2.10",
     "doctrine/orm": "^2.15",
     "phpstan/phpstan": "^2.0",
@@ -51,7 +51,7 @@
     "nyholm/symfony-bundle-test": "^3.0",
     "phpunit/phpunit": "^10.3",
     "symfony/monolog-bundle": "^3.8",
-    "symfony/web-profiler-bundle": "^6.0|^7.0",
+    "symfony/web-profiler-bundle": "^6.0 || ^7.0 || ^8.0",
     "vanta/temporal-sentry": "^0.1.1"
   },
   "suggest": {
