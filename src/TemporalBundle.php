@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal;
 
-use function dirname;
-
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ClientCompilerPass;
@@ -20,6 +18,8 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\DoctrineComp
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\SentryCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\TemporalExtension;
+use function dirname;
 
 final class TemporalBundle extends Bundle
 {
@@ -30,6 +30,11 @@ final class TemporalBundle extends Bundle
         $container->addCompilerPass(new DoctrineCompilerPass());
         $container->addCompilerPass(new SentryCompilerPass());
         $container->addCompilerPass(new ScheduleClientCompilerPass());
+    }
+
+    protected function getContainerExtensionClass(): string
+    {
+        return TemporalExtension::class;
     }
 
     public function getPath(): string
