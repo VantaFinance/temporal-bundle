@@ -31,7 +31,10 @@
   "autoload-dev": {
     "psr-4": {
       "Vanta\\Integration\\Symfony\\Temporal\\Test\\": "tests/"
-    }
+    },
+    "files": [
+      "tests/App/app.php"
+    ]
   },
   "require": {
     "php": "^8.2",
@@ -41,6 +44,7 @@
     "temporal/sdk": "^2.14"
   },
   "require-dev": {
+    "symfony/framework-bundle": "^6.0|^7.0|^8.0",
     "symfony/serializer": "^6.0 || ^7.0 || ^8.0",
     "doctrine/doctrine-bundle": "^2.10",
     "doctrine/orm": "^2.15",
@@ -60,7 +64,8 @@
     "spiral/roadrunner-cli": "^2",
     "codeception/module-symfony": "^3.6",
     "bnf/phpstan-psr-container": "^1.1",
-    "amphp/amp": "^3.1"
+    "amphp/amp": "^3.1",
+    "internal/dload": "^1.9"
   },
   "suggest": {
     "vanta/temporal-sentry": "Integration for sentry",

@@ -10,13 +10,21 @@
          failOnRisky="true"
          failOnWarning="true">
     <testsuites>
-        <testsuite name="Temporal">
-            <directory>tests</directory>
+        <testsuite name="Temporal Functional">
+            <directory>tests/Functional</directory>
+        </testsuite>
+
+        <testsuite name="Temporal Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Temporal E2E">
+            <directory>tests/E2e</directory>
         </testsuite>
     </testsuites>
     <php>
-        <env name="TEMPORAL_ADDRESS" value="temporal:7233" />
-        <env name="RR_RPC" value="tcp://temporal_php:6001" />
+        <env name="TEMPORAL_ADDRESS" value="0.0.0.0:7233" />
+        <env name="RR_RPC" value="tcp://0.0.0.0:6001" />
+        <env name="KERNEL_CLASS" value="Vanta\Integration\Symfony\Temporal\Test\App\Kernel"/>
         <env name="DATABASE_URL" value="postgresql://symfony:symfony@symfony_db:5432/symfony_db?serverVersion=14&amp;charset=utf8" />
     </php>
 

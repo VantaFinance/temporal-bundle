@@ -1,0 +1,21 @@
+version: '3'
+
+server:
+    command: 'php app.php'
+    env:
+        - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
+        - APP_ENV: prod
+
+rpc:
+  listen: tcp://0.0.0.0:6001
+
+temporal:
+  address: "0.0.0.0:7233"
+  activities:
+    num_workers: 1
+
+logs:
+  level: info
+  encoding: json
+  file_logger_options:
+    log_output: "../../var/log/rr-worker.log"
