@@ -76,6 +76,10 @@
       "symfony/runtime": true,
       "phpstan/extension-installer": true,
       "php-http/discovery": false
+    },
+    "audit": {
+      "abandoned": "ignore",
+      "block-insecure": false
     }
   }
 }
