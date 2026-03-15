@@ -24,7 +24,6 @@
     <php>
         <env name="TEMPORAL_ADDRESS" value="0.0.0.0:7233" />
         <env name="RR_RPC" value="tcp://0.0.0.0:6001" />
-        <env name="KERNEL_CLASS" value="Vanta\Integration\Symfony\Temporal\Test\App\Kernel"/>
         <env name="DATABASE_URL" value="postgresql://symfony:symfony@symfony_db:5432/symfony_db?serverVersion=14&amp;charset=utf8" />
     </php>
 
