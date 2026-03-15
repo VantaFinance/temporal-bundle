@@ -41,7 +41,7 @@
     "symfony/dependency-injection": "^6.0 || ^7.0 || ^8.0",
     "symfony/http-kernel": "^6.0 || ^7.0 || ^8.0",
     "symfony/runtime": "^6.0 || ^7.0 || ^8.0",
-    "temporal/sdk": "^2.14"
+    "temporal/sdk": "^2.16"
   },
   "require-dev": {
     "symfony/framework-bundle": "^6.0|^7.0|^8.0",

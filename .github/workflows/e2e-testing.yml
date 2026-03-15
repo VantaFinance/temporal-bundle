@@ -8,14 +8,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - php: 8.1
-            symfony: '6.4.*'
-            rr: '2024.*'
-
-          - php: 8.1
-            symfony: '6.4.*'
-            rr: '2025.*'
-
           - php: 8.2
             symfony: '6.4.*'
             rr: '2024.*'
