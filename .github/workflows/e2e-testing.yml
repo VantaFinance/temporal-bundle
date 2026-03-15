@@ -1,4 +1,4 @@
-name: Integration-Testing CI
+name: E2E-Testing CI
 on: [ push, pull_request ]
 
 jobs:

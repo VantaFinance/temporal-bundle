@@ -18,48 +18,54 @@ use Symfony\Component\HttpKernel\Bundle\BundleInterface as Bundle;
 use Symfony\Component\HttpKernel\Kernel as BaseKernel;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
 
-return static function (Input $input, array $context): object {
-    $kernel = new class($context['APP_ENV'], (bool) $context['APP_DEBUG']) extends BaseKernel {
-        use MicroKernelTrait;
+/**
+ * @noinspection PhpIllegalPsrClassPathInspection
+ */
+final class Kernel extends BaseKernel
+{
+    use MicroKernelTrait;
 
-        /**
-         * @return array<Bundle>
-         */
-        public function registerBundles(): array
-        {
-            return [
-                new FrameworkBundle(),
-                new TemporalBundle(),
-                new SentryBundle(),
-            ];
-        }
+    /**
+     * @return array<Bundle>
+     */
+    public function registerBundles(): array
+    {
+        return [
+            new FrameworkBundle(),
+            new TemporalBundle(),
+            new SentryBundle(),
+        ];
+    }
 
-        protected function configureContainer(ContainerConfigurator $container, Loader $loader, ContainerBuilder $builder): void
-        {
-            $container->extension('framework', [
-                'secret' => 'S0ME_SECRET',
-                'test'   => true,
-            ]);
+    protected function configureContainer(ContainerConfigurator $container, Loader $loader, ContainerBuilder $builder): void
+    {
+        $container->extension('framework', [
+            'secret' => 'S0ME_SECRET',
+            'test'   => true,
+        ]);
 
-            $container->parameters()
-                ->set('.container.dumper.inline_factories', true)
-            ;
+        $container->parameters()
+            ->set('.container.dumper.inline_factories', true)
+        ;
 
-            $container->import('Config/temporal.yaml');
+        $container->import('Config/temporal.yaml');
 
-            $container->services()
-                ->defaults()
+        $container->services()
+            ->defaults()
                 ->autowire()
                 ->autoconfigure()
 
-                ->load(__NAMESPACE__ . '\\', __DIR__ . '/')
+            ->load(__NAMESPACE__ . '\\', __DIR__ . '/')
                 ->exclude([
                     __DIR__ . '/*.php',
                     __DIR__ . '/Sdk/',
                 ])
-            ;
-        }
-    };
+        ;
+    }
+}
+
+return static function (Input $input, array $context): object {
+    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
 
     if (array_key_exists('RR_MODE', $context) && $context['RR_MODE'] == 'temporal') {
         return $kernel;
