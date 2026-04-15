@@ -17,7 +17,6 @@ use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface as BundleConfiguration;
 use Symfony\Component\DependencyInjection\Loader\Configurator\EnvConfigurator;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
 use Temporal\Api\Enums\V1\QueryRejectCondition;
 use Temporal\Internal\Support\DateInterval;
 use Temporal\Worker\WorkerFactoryInterface;
@@ -433,7 +432,7 @@ final class Configuration implements BundleConfiguration
                 ->arrayNode('interceptors')
                     ->arrayPrototype()
                         ->children()
-                            ->stringNode('service_id')->end()
+                            ->node('service_id', 'string')->end()
                         ->end()
                     ->end()
                     ->info('Interceptors service ids')
