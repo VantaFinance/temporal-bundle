@@ -21,6 +21,7 @@ use Temporal\Client\Common\RpcRetryOptions;
 use Temporal\Client\GRPC\Context;
 use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
 use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
+use Temporal\Internal\Interceptor\Pipeline;
 use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
 
 /**
@@ -91,9 +92,27 @@ function grpcClient(array $client): Definition
         ])->setFactory([GrpcServiceClient::class, 'createSSL']);
     }
 
-    return $serviceClient->addMethodCall('withContext', [
+    $serviceClient->addMethodCall('withContext', [
         grpcContext($client['grpcContext']),
     ], true);
+
+    if (array_key_exists('interceptors', $client)) {
+        foreach ($client['interceptors'] as $interceptor) {
+            $serviceClient->addMethodCall(
+                'withInterceptorPipeline',
+                [
+                    \Vanta\Integration\Symfony\Temporal\DependencyInjection\definition()
+                        ->setFactory([Pipeline::class, 'prepare'])
+                        ->setArguments([
+                            [definition($interceptor)],
+                        ]),
+                ],
+                true,
+            );
+        }
+    }
+
+    return $serviceClient;
 }
 
 
