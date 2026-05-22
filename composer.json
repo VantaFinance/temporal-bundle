@@ -31,10 +31,7 @@
   "autoload-dev": {
     "psr-4": {
       "Vanta\\Integration\\Symfony\\Temporal\\Test\\": "tests/"
-    },
-    "files": [
-      "tests/App/app.php"
-    ]
+    }
   },
   "require": {
     "php": "^8.2",

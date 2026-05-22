@@ -5,6 +5,7 @@ server:
     env:
         - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
         - APP_ENV: prod
+        - TEMPORAL_TESTING_AUTOLOAD: true
 
 rpc:
   listen: tcp://0.0.0.0:6001
