@@ -154,11 +154,11 @@ final class Configuration implements BundleConfiguration
 
             try {
                 $value = \DateInterval::createFromDateString($v);
-            } catch (DateMalformedIntervalStringException) { /** @phpstan-ignore catch.neverThrown */
+            } catch (DateMalformedIntervalStringException) {  /* @phpstan-ignore catch.neverThrown  */
                 return true;
             }
 
-            if ($value === false) {
+            if ($value === false) {   /* @phpstan-ignore identical.alwaysFalse  */
                 return true;
             }
 
