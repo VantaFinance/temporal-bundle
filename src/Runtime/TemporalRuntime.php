@@ -30,8 +30,6 @@ final class TemporalRuntime extends SymfonyRuntime
             }
         }
 
-        dd($application);
-
         throw new LogicException('Is not a temporal runtime');
     }
 }

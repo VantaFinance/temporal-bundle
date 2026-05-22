@@ -22,7 +22,7 @@ final readonly class TemporalTestingTools
     public ActivityMocker $activityMocker;
     public WorkflowClient $workflowClient;
 
-    public function __construct(private Symfony $symfony)
+    public function __construct(private Symfony $symfony) /** @phpstan-ignore property.onlyWritten */
     {
         $this->testService    = $symfony->kernel->getContainer()->get(TestService::class);
         $this->activityMocker = $symfony->kernel->getContainer()->get(ActivityMocker::class);
