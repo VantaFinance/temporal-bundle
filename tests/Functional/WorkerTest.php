@@ -20,6 +20,7 @@ use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
 use function PHPUnit\Framework\assertNotEmpty;
 use function PHPUnit\Framework\assertNotNull;
+use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -522,11 +523,10 @@ final class WorkerTest extends KernelTestCase
                 public function process(ContainerBuilder $container): void
                 {
                     assertTrue($container->hasDefinition($this->id));
-
                     $definition = $container->getDefinition($this->id);
-                    assertEquals($definition->getClass(), ChainFinalizer::class);
 
-                    assertEquals($this->arguments, $definition->getArguments());
+                    assertEquals($definition->getClass(), ChainFinalizer::class);
+                    assertEquals($this->arguments, unserialize(serialize($definition->getArguments())));
                 }
             });
         }]);

@@ -27,6 +27,4 @@ jobs:
         uses: ramsey/composer-install@v1
 
       - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }}
-        env:
-          KERNEL_CLASS: Vanta\\Integration\\Symfony\\Temporal\\Test\\App\\Kernel
         run: ./vendor/bin/phpunit --exclude-testsuite='Temporal E2E'

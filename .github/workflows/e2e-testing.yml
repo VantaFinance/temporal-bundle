@@ -157,8 +157,6 @@ jobs:
         run: make get-deps
 
       - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }}
-        env:
-          KERNEL_CLASS: Vanta\\Integration\\Symfony\\Temporal\\Test\\App\\Kernel
         run: |
           make start-temporal
           make start-rr
