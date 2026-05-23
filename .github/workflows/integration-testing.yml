@@ -30,6 +30,8 @@ jobs:
         env:
           SYMFONY_REQUIRE: ${{ matrix.symfony }}
         uses: ramsey/composer-install@v4
+        with:
+          custom-cache-key: ${{ matrix.symfony }}-${{ matrix.php }}
 
       - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }}
         run: ./vendor/bin/phpunit --exclude-testsuite='Temporal E2E'
