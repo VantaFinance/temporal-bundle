@@ -46,7 +46,7 @@
     "doctrine/doctrine-bundle": "^2.10|^3.2",
     "doctrine/orm": "^2.15",
     "psr/log": "^3.0",
-    "sentry/sentry-symfony": "^4.10",
+    "sentry/sentry-symfony": "^4.10|^5.10",
     "nyholm/symfony-bundle-test": "^3.0",
     "phpunit/phpunit": "^10",
     "symfony/monolog-bundle": "^3.8",
