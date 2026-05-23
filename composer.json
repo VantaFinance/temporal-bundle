@@ -49,7 +49,7 @@
     "sentry/sentry-symfony": "^4.10|^5.10",
     "nyholm/symfony-bundle-test": "^3.0",
     "phpunit/phpunit": "^10",
-    "symfony/monolog-bundle": "^3.8",
+    "symfony/monolog-bundle": "^3.8|^4.0",
     "symfony/web-profiler-bundle": "^6.0 || ^7.0 || ^8.0",
     "vanta/temporal-sentry": "^0.2",
     "vanta/temporal-doctrine": "^0.1",
