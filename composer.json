@@ -44,7 +44,7 @@
     "symfony/framework-bundle": "^6.0|^7.0|^8.0",
     "symfony/serializer": "^6.0 || ^7.0 || ^8.0",
     "doctrine/doctrine-bundle": "^2.10|^3.2",
-    "doctrine/orm": "^2.15",
+    "doctrine/orm": "^2.15|^3.6",
     "psr/log": "^3.0",
     "sentry/sentry-symfony": "^4.10|^5.10",
     "nyholm/symfony-bundle-test": "^3.0",
