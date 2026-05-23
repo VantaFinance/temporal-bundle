@@ -20,7 +20,6 @@ use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
 use function PHPUnit\Framework\assertNotEmpty;
 use function PHPUnit\Framework\assertNotNull;
-use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
