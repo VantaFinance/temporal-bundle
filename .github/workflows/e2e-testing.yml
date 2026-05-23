@@ -148,7 +148,9 @@ jobs:
       - name: Download PHP dependencies
         env:
           SYMFONY_REQUIRE: ${{ matrix.symfony }}
-        uses: ramsey/composer-install@v1
+        uses: ramsey/composer-install@v4
+        with:
+          custom-cache-key: ${{ matrix.symfony }}-${{ matrix.php }}
 
       - name: Download RoadRunner ${{ matrix.rr }} and Temporal
         env:
