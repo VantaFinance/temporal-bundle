@@ -16,6 +16,9 @@ analysis-code:
 get-deps:
 	./vendor/bin/dload get --force --no-ansi --no-interaction ${RR_VERSION} ${TEMPORAL_VERSION}
 
+clear-vendor:
+	rm -rf composer.lock vendor vendor-bin/tools/vendor
+
 testing:
 	./vendor/bin/phpunit
 

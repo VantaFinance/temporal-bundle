@@ -15,7 +15,6 @@ use Closure;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Nyholm\BundleTest\TestKernel;
 
-use function PHPUnit\Framework\assertArrayHasKey;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
 use function PHPUnit\Framework\assertTrue;
@@ -70,20 +69,28 @@ final class DoctrineTest extends KernelTestCase
             return $package == 'doctrine/doctrine-bundle';
         });
 
-        self::bootKernel(['config' => static function (TestKernel $kernel): void {
+        $hasDefinition = false;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasDefinition): void {
             $kernel->addTestBundle(DoctrineBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
+            $kernel->addTestCompilerPass(new class($hasDefinition) implements CompilerPass {
+                public function __construct(
+                    public bool &$hasDefinition,
+                ) {
+                }
 
-            $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition('temporal.doctrine_clear_entity_manager.finalizer'));
+                    $this->hasDefinition = $container->hasDefinition('temporal.doctrine_clear_entity_manager.finalizer');
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
     }
 
 
@@ -98,41 +105,59 @@ final class DoctrineTest extends KernelTestCase
             return $package == 'doctrine/doctrine-bundle';
         });
 
+        $hasFinalizerDefinition = false;
+        $hasDefinition          = false;
+        $hasArgument            = false;
+        $firstArgument          = null;
+        $innerArguments         = null;
 
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $arguments): void {
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasFinalizerDefinition, &$hasDefinition, &$hasArgument, &$firstArgument, &$innerArguments): void {
             $kernel->addTestBundle(DoctrineBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
-            $kernel->addTestCompilerPass(new class() implements CompilerPass {
-                public function process(ContainerBuilder $container): void
-                {
-                    assertTrue($container->hasDefinition('temporal.doctrine_clear_entity_manager.finalizer'));
-                }
-            });
-
-            $kernel->addTestCompilerPass(new class($id, $arguments) implements CompilerPass {
-                /**
-                 * @param non-empty-string $id
-                 * @param array{0: Reference, 1: non-empty-string}  $arguments
-                 */
+            $kernel->addTestCompilerPass(new class($hasFinalizerDefinition) implements CompilerPass {
                 public function __construct(
-                    private readonly string $id,
-                    private readonly array $arguments,
+                    public bool &$hasFinalizerDefinition,
                 ) {
                 }
 
+                public function process(ContainerBuilder $container): void
+                {
+                    $this->hasFinalizerDefinition = $container->hasDefinition('temporal.doctrine_clear_entity_manager.finalizer');
+                }
+            });
+
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $hasArgument, $firstArgument, $innerArguments) implements CompilerPass {
+                /**
+                 * @param non-empty-string $id
+                 */
+                public function __construct(
+                    private readonly string  $id,
+                    public bool             &$hasDefinition,
+                    public bool             &$hasArgument,
+                    public mixed            &$firstArgument,
+                    public mixed            &$innerArguments,
+                ) {
+                }
 
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-                    assertArrayHasKey(0, $container->getDefinition($this->id)->getArguments());
-                    assertInstanceOf(Definition::class, $container->getDefinition($this->id)->getArguments()[0]);
-                    assertEquals($this->arguments, $container->getDefinition($this->id)->getArguments()[0]->getArguments());
+                    $this->hasDefinition  = $container->hasDefinition($this->id);
+                    $arguments            = $container->getDefinition($this->id)->getArguments();
+                    $this->hasArgument    = array_key_exists(0, $arguments);
+                    $this->firstArgument  = $arguments[0] ?? null;
+                    $this->innerArguments = $this->firstArgument instanceof Definition ? $this->firstArgument->getArguments() : null;
                 }
             });
         }]);
+
+        assertTrue($hasFinalizerDefinition);
+        assertTrue($hasDefinition);
+        assertTrue($hasArgument);
+        assertInstanceOf(Definition::class, $firstArgument);
+        assertEquals($arguments, $innerArguments);
     }
 
 
@@ -156,30 +181,32 @@ final class DoctrineTest extends KernelTestCase
             return $package == 'doctrine/doctrine-bundle';
         });
 
+        $hasDefinition = false;
 
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id): void {
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition): void {
             $kernel->addTestBundle(DoctrineBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_finalizers.yaml');
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
-
-            $kernel->addTestCompilerPass(new class($id) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition) implements CompilerPass {
                 /**
-                 * @param non-empty-string                $id
+                 * @param non-empty-string $id
                  */
                 public function __construct(
                     private readonly string $id,
+                    public bool            &$hasDefinition,
                 ) {
                 }
 
-
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
+                    $this->hasDefinition = $container->hasDefinition($this->id);
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
     }
 
 

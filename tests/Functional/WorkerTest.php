@@ -18,6 +18,9 @@ use function PHPUnit\Framework\assertContains;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertIsArray;
+use function PHPUnit\Framework\assertIsInt;
+use function PHPUnit\Framework\assertIsString;
 use function PHPUnit\Framework\assertNotEmpty;
 use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertTrue;
@@ -170,55 +173,42 @@ final class WorkerTest extends KernelTestCase
     #[DataProvider('registerWorkerOptionsDataProvider')]
     public function testRegisterWorkerOptions(string $id, array $options): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $options): void {
+        $hasDefinition = false;
+        $def           = null;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$def): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
-
-            $kernel->addTestCompilerPass(new class($id, $options) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $def) implements CompilerPass {
                 /**
                  * @param non-empty-string $id
-                 * @param array{
-                 *    withMaxConcurrentActivityExecutionSize: int,
-                 *    withWorkerActivitiesPerSecond: int,
-                 *    withMaxConcurrentLocalActivityExecutionSize: int,
-                 *    withWorkerLocalActivitiesPerSecond: int,
-                 *    withTaskQueueActivitiesPerSecond: int,
-                 *    withMaxConcurrentActivityTaskPollers: int,
-                 *    withMaxConcurrentWorkflowTaskExecutionSize: int,
-                 *    withMaxConcurrentWorkflowTaskPollers: int,
-                 *    withEnableSessionWorker: bool,
-                 *    withSessionResourceId: ?non-empty-string,
-                 *    withMaxConcurrentSessionExecutionSize: int,
-                 *  } $options
                  */
                 public function __construct(
-                    private readonly string $id,
-                    private readonly array $options,
+                    private readonly string                                    $id,
+                    public bool                                               &$hasDefinition,
+                    public ?Definition                                        &$def,
                 ) {
                 }
 
-
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-
-                    /** @var Definition $def */
-                    $def = $container->getDefinition($this->id)
-                        ->getArgument(1)
-                    ;
-
-                    assertInstanceOf(Definition::class, $def);
-
-                    foreach ($def->getMethodCalls() as [$method, $arguments, $returnClone]) {
-                        assertArrayHasKey($method, $this->options);
-                        assertCount(1, $arguments);
-                        assertEquals([$this->options[$method]], $arguments, 'Invalid option' . $method);
-                        assertTrue($returnClone);
-                    }
+                    $this->hasDefinition = $container->hasDefinition($this->id);
+                    $argument            = $container->getDefinition($this->id)->getArgument(1);
+                    $this->def           = $argument instanceof Definition ? $argument : null;
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
+        assertInstanceOf(Definition::class, $def);
+
+        foreach ($def->getMethodCalls() as [$method, $arguments, $returnClone]) {
+            assertArrayHasKey($method, $options);
+            assertCount(1, $arguments);
+            assertEquals([$options[$method]], $arguments, 'Invalid option ' . $method);
+            assertTrue($returnClone);
+        }
     }
 
 
@@ -331,29 +321,34 @@ final class WorkerTest extends KernelTestCase
     #[DataProvider('registerWorkerTaskQueueDataProvider')]
     public function testRegisterWorkerTaskQueue(string $id, string $taskQueue): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $taskQueue): void {
+        $hasDefinition = false;
+        $argument      = null;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$argument): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
-
-            $kernel->addTestCompilerPass(new class($id, $taskQueue) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $argument) implements CompilerPass {
                 /**
                  * @param non-empty-string $id
-                 * @param non-empty-string $taskQueue
                  */
                 public function __construct(
                     private readonly string $id,
-                    private readonly string $taskQueue,
+                    public bool            &$hasDefinition,
+                    public mixed           &$argument,
                 ) {
                 }
 
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-                    assertEquals($this->taskQueue, $container->getDefinition($this->id)->getArgument(0));
+                    $this->hasDefinition = $container->hasDefinition($this->id);
+                    $this->argument      = $container->getDefinition($this->id)->getArgument(0);
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
+        assertEquals($taskQueue, $argument);
     }
 
 
@@ -375,51 +370,54 @@ final class WorkerTest extends KernelTestCase
     #[DataProvider('registerWorkflowDataProvider')]
     public function testRegisterWorkflow(string $id, array $workflows): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $workflows): void {
+        $hasDefinition = false;
+        /** @var array<int, array{0: string, 1: array<int, mixed>, 2: bool}> $calls */
+        $calls             = [];
+        $taggedWorkflowIds = null;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$calls, &$taggedWorkflowIds): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestBundle(TestWorkflowBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
-            $kernel->addTestCompilerPass(new class($id, $workflows) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $calls, $taggedWorkflowIds) implements CompilerPass {
                 /**
-                 * @param non-empty-string                    $id
-                 * @param non-empty-array<int, class-string>  $workflows
+                 * @param non-empty-string $id
+                 * @param array<int, array{0: string, 1: array<int, mixed>, 2: bool}> $calls
                  */
                 public function __construct(
                     private readonly string $id,
-                    private readonly array $workflows,
+                    public bool            &$hasDefinition,
+                    public mixed           &$calls,
+                    public mixed           &$taggedWorkflowIds,
                 ) {
                 }
 
-
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-
-                    $calls = $container->getDefinition($this->id)
-                        ->getMethodCalls()
-                    ;
-
-
-                    assertNotEmpty($calls, 'Not found registered workflows');
-
-                    foreach ($calls as [$method, $arguments, $returnClone]) {
-                        if ($method === 'registerActivityFinalizer') {
-                            continue;
-                        }
-
-
-                        assertEquals('registerWorkflowTypes', $method);
-                        assertCount(1, $arguments);
-                        assertArrayHasKey(0, $arguments);
-                        assertContains($arguments[0], $this->workflows);
-                    }
-
-
-                    assertCount(0, $container->findTaggedServiceIds('temporal.workflow'));
+                    $this->hasDefinition     = $container->hasDefinition($this->id);
+                    $this->calls             = $container->getDefinition($this->id)->getMethodCalls();
+                    $this->taggedWorkflowIds = $container->findTaggedServiceIds('temporal.workflow');
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
+        assertNotEmpty($calls, 'Not found registered workflows');
+
+        foreach ($calls as [$method, $arguments, $returnClone]) {
+            if ($method === 'registerActivityFinalizer') {
+                continue;
+            }
+
+            assertEquals('registerWorkflowTypes', $method);
+            assertCount(1, $arguments);
+            assertArrayHasKey(0, $arguments);
+            assertContains($arguments[0], $workflows);
+        }
+
+        assertIsArray($taggedWorkflowIds);
+        assertCount(0, $taggedWorkflowIds);
     }
 
 
@@ -441,48 +439,52 @@ final class WorkerTest extends KernelTestCase
     #[DataProvider('registerActivityDataProvider')]
     public function testRegisterActivity(string $id, array $activity): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $activity): void {
+        $hasDefinition = false;
+        /** @var array<int, array{0: string, 1: array<int, mixed>, 2: bool}> $calls */
+        $calls = [];
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$calls): void {
             $kernel->addTestBundle(TestActivityBundle::class);
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
-            $kernel->addTestCompilerPass(new class($id, $activity) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $calls) implements CompilerPass {
                 /**
-                 * @param non-empty-string                   $id
-                 * @param non-empty-array<int, class-string> $activity
+                 * @param non-empty-string $id
+                 * @param array<int, array{0: string, 1: array<int, mixed>, 2: bool}> $calls
                  */
                 public function __construct(
                     private readonly string $id,
-                    private readonly array $activity,
+                    public bool            &$hasDefinition,
+                    public mixed           &$calls,
                 ) {
                 }
 
-
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-
-                    $calls = $container->getDefinition($this->id)
-                        ->getMethodCalls()
-                    ;
-
-                    assertNotEmpty($calls, 'Not found registered activity');
-
-                    foreach ($calls as [$method, $arguments, $returnClone]) {
-                        if ($method === 'registerActivityFinalizer') {
-                            continue;
-                        }
-
-                        assertEquals('registerActivity', $method);
-                        assertCount(2, $arguments);
-                        assertArrayHasKey(0, $arguments);
-                        assertContains($arguments[0], $this->activity);
-                        assertArrayHasKey(1, $arguments);
-                        assertEquals(new ServiceClosureArgument(new Reference($arguments[0])), $arguments[1]);
-                    }
+                    $this->hasDefinition = $container->hasDefinition($this->id);
+                    $this->calls         = $container->getDefinition($this->id)->getMethodCalls();
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
+        assertNotEmpty($calls, 'Not found registered activity');
+
+        foreach ($calls as [$method, $arguments, $returnClone]) {
+            if ($method === 'registerActivityFinalizer') {
+                continue;
+            }
+
+            assertEquals('registerActivity', $method);
+            assertCount(2, $arguments);
+            assertArrayHasKey(0, $arguments);
+            assertContains($arguments[0], $activity);
+            assertArrayHasKey(1, $arguments);
+            assertIsString($arguments[0]);
+            assertIsInt($arguments[1]);
+            assertEquals(new ServiceClosureArgument(new Reference($arguments[0])), $arguments[1]);
+        }
     }
 
 
@@ -503,32 +505,39 @@ final class WorkerTest extends KernelTestCase
     #[DataProvider('registerCustomFinalizers')]
     public function testRegisterCustomFinalizers(string $id, array $arguments): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $arguments): void {
+        $hasDefinition   = false;
+        $definitionClass = null;
+        $actualArguments = null;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$definitionClass, &$actualArguments): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_custom_finalizers.yaml');
 
-            $kernel->addTestCompilerPass(new class($id, $arguments) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $definitionClass, $actualArguments) implements CompilerPass {
                 /**
                  * @param non-empty-string $id
-                 * @param array{0: non-empty-string, 1: array{0: list<Reference>}}  $arguments
                  */
                 public function __construct(
                     private readonly string $id,
-                    private readonly array  $arguments,
+                    public bool            &$hasDefinition,
+                    public mixed           &$definitionClass,
+                    public mixed           &$actualArguments,
                 ) {
                 }
 
-
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-                    $definition = $container->getDefinition($this->id);
-
-                    assertEquals($definition->getClass(), ChainFinalizer::class);
-                    assertEquals($this->arguments, unserialize(serialize($definition->getArguments())));
+                    $this->hasDefinition   = $container->hasDefinition($this->id);
+                    $definition            = $container->getDefinition($this->id);
+                    $this->definitionClass = $definition->getClass();
+                    $this->actualArguments = unserialize(serialize($definition->getArguments()));
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
+        assertEquals(ChainFinalizer::class, $definitionClass);
+        assertEquals($arguments, $actualArguments);
     }
 
     /**
