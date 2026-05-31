@@ -66,7 +66,7 @@
   },
   "scripts": {
     "tools-install": [
-      "[ $COMPOSER_DEV_MODE -eq 0 ] || composer bin tools install"
+      "@php -r \"if ((getenv('SKIP_TOOLS_INSTALL') ?: '0') === '1') exit(0); passthru('composer bin tools install', $c); exit($c);\""
     ],
     "post-install-cmd": [
       "@tools-install"
