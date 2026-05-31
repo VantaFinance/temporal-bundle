@@ -162,8 +162,7 @@ jobs:
       - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }}
         with:
           name: logs
-          path: |
-            var/log
+          path: var/log/*
         env:
           KERNEL_CLASS: Vanta\Integration\Symfony\Temporal\Test\App\Kernel
         run: |
