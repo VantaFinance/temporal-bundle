@@ -19,7 +19,6 @@ use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
 use function PHPUnit\Framework\assertIsArray;
-use function PHPUnit\Framework\assertIsInt;
 use function PHPUnit\Framework\assertIsString;
 use function PHPUnit\Framework\assertNotEmpty;
 use function PHPUnit\Framework\assertNotNull;
@@ -456,7 +455,7 @@ final class WorkerTest extends KernelTestCase
                 public function __construct(
                     private readonly string $id,
                     public bool            &$hasDefinition,
-                    public mixed           &$calls,
+                    public array           &$calls,
                 ) {
                 }
 
@@ -482,7 +481,6 @@ final class WorkerTest extends KernelTestCase
             assertContains($arguments[0], $activity);
             assertArrayHasKey(1, $arguments);
             assertIsString($arguments[0]);
-            assertIsInt($arguments[1]);
             assertEquals(new ServiceClosureArgument(new Reference($arguments[0])), $arguments[1]);
         }
     }
