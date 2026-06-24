@@ -10,131 +10,131 @@ jobs:
         include:
           - php: 8.2
             symfony: '6.4.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.2
             symfony: '6.4.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.3
             symfony: '6.4.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.3
             symfony: '6.4.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.4
             symfony: '6.4.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.4
             symfony: '6.4.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.2
             symfony: '7.0.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.2
             symfony: '7.0.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.3
             symfony: '7.0.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.3
             symfony: '7.0.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.4
             symfony: '7.0.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.4
             symfony: '7.0.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.2
             symfony: '7.1.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.2
             symfony: '7.1.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.3
             symfony: '7.1.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.3
             symfony: '7.1.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.4
             symfony: '7.1.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.4
             symfony: '7.1.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.2
             symfony: '7.2.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.2
             symfony: '7.2.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.3
             symfony: '7.2.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.3
             symfony: '7.2.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.4
             symfony: '7.2.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.4
             symfony: '7.2.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.2
             symfony: '7.3.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.2
             symfony: '7.3.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.3
             symfony: '7.3.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.3
             symfony: '7.3.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.4
             symfony: '7.3.*'
-            rr: '2024.*'
+            rr: '^2024'
 
           - php: 8.4
             symfony: '7.3.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.4
             symfony: '8.0.*'
-            rr: '2025.*'
+            rr: '^2025'
 
           - php: 8.5
             symfony: '8.0.*'
-            rr: '2025.*'
+            rr: '^2025'
     steps:
       - uses: actions/checkout@master
 
