@@ -172,5 +172,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: var
-          path: var
+          path: var/
           retention-days: 2
