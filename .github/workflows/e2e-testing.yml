@@ -7,134 +7,33 @@ jobs:
     name: PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }}
     strategy:
       matrix:
-        include:
+        php: [ 8.2, 8.3, 8.4, 8.5 ]
+        symfony: [ '6.4.*', '7.0.*', '7.1.*', '7.2.*', '7.3.*', '8.0.*' ]
+        rr: [ '2024', '2025' ]
+
+        exclude:
+          # Symfony 8.0 не поддерживается на PHP 8.2 и 8.3
           - php: 8.2
-            symfony: '6.4.*'
-            rr: '2024'
-
-          - php: 8.2
-            symfony: '6.4.*'
-            rr: '2025'
-
-          - php: 8.3
-            symfony: '6.4.*'
-            rr: '2024'
-
-          - php: 8.3
-            symfony: '6.4.*'
-            rr: '2025'
-
-          - php: 8.4
-            symfony: '6.4.*'
-            rr: '2024'
-
-          - php: 8.4
-            symfony: '6.4.*'
-            rr: '2025'
-
-          - php: 8.2
-            symfony: '7.0.*'
-            rr: '2024'
-
-          - php: 8.2
-            symfony: '7.0.*'
-            rr: '2025'
-
-          - php: 8.3
-            symfony: '7.0.*'
-            rr: '2024'
-
-          - php: 8.3
-            symfony: '7.0.*'
-            rr: '2025'
-
-          - php: 8.4
-            symfony: '7.0.*'
-            rr: '2024'
-
-          - php: 8.4
-            symfony: '7.0.*'
-            rr: '2025'
-
-          - php: 8.2
-            symfony: '7.1.*'
-            rr: '2024'
-
-          - php: 8.2
-            symfony: '7.1.*'
-            rr: '2025'
-
-          - php: 8.3
-            symfony: '7.1.*'
-            rr: '2024'
-
-          - php: 8.3
-            symfony: '7.1.*'
-            rr: '2025'
-
-          - php: 8.4
-            symfony: '7.1.*'
-            rr: '2024'
-
-          - php: 8.4
-            symfony: '7.1.*'
-            rr: '2025'
-
-          - php: 8.2
-            symfony: '7.2.*'
-            rr: '2024'
-
-          - php: 8.2
-            symfony: '7.2.*'
-            rr: '2025'
-
-          - php: 8.3
-            symfony: '7.2.*'
-            rr: '2024'
-
-          - php: 8.3
-            symfony: '7.2.*'
-            rr: '2025'
-
-          - php: 8.4
-            symfony: '7.2.*'
-            rr: '2024'
-
-          - php: 8.4
-            symfony: '7.2.*'
-            rr: '2025'
-
-          - php: 8.2
-            symfony: '7.3.*'
-            rr: '2024'
-
-          - php: 8.2
-            symfony: '7.3.*'
-            rr: '2025'
-
-          - php: 8.3
-            symfony: '7.3.*'
-            rr: '2024'
-
-          - php: 8.3
-            symfony: '7.3.*'
-            rr: '2025'
-
-          - php: 8.4
-            symfony: '7.3.*'
-            rr: '2024'
-
-          - php: 8.4
-            symfony: '7.3.*'
-            rr: '2025'
-
-          - php: 8.4
             symfony: '8.0.*'
-            rr: '2025'
+
+          - php: 8.3
+            symfony: '8.0.*'
+
+          # PHP 8.5 только для Symfony 8.0
+          - php: 8.5
+            symfony: '6.4.*'
 
           - php: 8.5
-            symfony: '8.0.*'
-            rr: '2025'
+            symfony: '7.0.*'
+
+          - php: 8.5
+            symfony: '7.1.*'
+
+          - php: 8.5
+            symfony: '7.2.*'
+
+          - php: 8.5
+            symfony: '7.3.*'
     steps:
       - uses: actions/checkout@master
 
