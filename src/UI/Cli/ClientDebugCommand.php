@@ -73,7 +73,6 @@ final class ClientDebugCommand extends Command
             $rows[] = new TableSeparator();
 
 
-            /**@phpstan-ignore-next-line **/
             if (!is_array(end($rows))) {
                 array_pop($rows);
             }

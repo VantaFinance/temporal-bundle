@@ -23,7 +23,9 @@
       "Vanta\\Integration\\Symfony\\Temporal\\": "src/"
     },
     "files": [
-      "src/DependencyInjection/function.php"
+      "src/DependencyInjection/function.php",
+      "src/Testing/RoadRunner/boostrap.php",
+      "src/Testing/Tools/tools.php"
     ]
   },
   "autoload-dev": {
@@ -33,35 +35,63 @@
   },
   "require": {
     "php": "^8.2",
-    "symfony/dependency-injection": "^6.0|^7.0",
-    "symfony/http-kernel": "^6.0|^7.0",
-    "symfony/runtime": "^6.0|^7.0",
-    "temporal/sdk": "^2.9"
+    "symfony/dependency-injection": "^6.0 || ^7.0 || ^8.0",
+    "symfony/http-kernel": "^6.0 || ^7.0 || ^8.0",
+    "symfony/runtime": "^6.0 || ^7.0 || ^8.0",
+    "temporal/sdk": "^2.16"
   },
   "require-dev": {
-    "symfony/serializer": "^6.0|^7.0",
-    "doctrine/doctrine-bundle": "^2.10",
-    "doctrine/orm": "^2.15",
-    "phpstan/phpstan": "^2.0",
-    "friendsofphp/php-cs-fixer": "3.65.0",
-    "phpstan/extension-installer": "^1.4",
-    "phpstan/phpstan-symfony": "^2.0",
-    "psr/log": "^3.0",
-    "sentry/sentry-symfony": "^4.10",
+    "symfony/framework-bundle": "^6.0|^7.0|^8.0",
+    "symfony/serializer": "^6.0 || ^7.0 || ^8.0",
+    "doctrine/doctrine-bundle": "^2|^3",
+    "doctrine/orm": "^2|^3",
+    "psr/log": "^2|^3",
+    "sentry/sentry-symfony": "^4|^5",
     "nyholm/symfony-bundle-test": "^3.0",
-    "phpunit/phpunit": "^10.3",
-    "symfony/monolog-bundle": "^3.8",
-    "symfony/web-profiler-bundle": "^6.0|^7.0",
-    "vanta/temporal-sentry": "^0.1.1"
+    "phpunit/phpunit": "^10|^11",
+    "symfony/monolog-bundle": "^3|^4",
+    "symfony/web-profiler-bundle": "^6.0 || ^7.0 || ^8.0",
+    "vanta/temporal-sentry": "^0.2",
+    "vanta/temporal-doctrine": "^0.1",
+    "codeception/codeception": "^5.3",
+    "codeception/module-symfony": "^3.9",
+    "amphp/amp": "^3.1",
+    "internal/dload": "^1.9",
+    "bamarni/composer-bin-plugin": "^1.9",
+    "spiral/roadrunner-cli": "^2"
   },
   "suggest": {
-    "vanta/temporal-sentry": "Integration for sentry"
+    "vanta/temporal-sentry": "Integration for sentry",
+    "vanta/temporal-doctrine": "Integration for doctrine"
+  },
+  "scripts": {
+    "tools-install": [
+      "@php -r \"if ((getenv('SKIP_TOOLS_INSTALL') ?: '0') === '1') exit(0); passthru('composer bin tools install', $c); exit($c);\""
+    ],
+    "post-install-cmd": [
+      "@tools-install"
+    ],
+    "post-update-cmd": [
+      "@tools-install"
+    ]
   },
   "config": {
     "allow-plugins": {
       "symfony/runtime": true,
       "phpstan/extension-installer": true,
-      "php-http/discovery": false
+      "php-http/discovery": false,
+      "bamarni/composer-bin-plugin": true
+    },
+    "audit": {
+      "abandoned": "ignore",
+      "block-insecure": false
+    }
+  },
+  "extra": {
+    "bamarni-bin": {
+      "bin-links": true,
+      "target-directory": "vendor-bin",
+      "forward-command": true
     }
   }
 }

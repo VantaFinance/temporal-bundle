@@ -22,8 +22,11 @@ use Temporal\DataConverter\JsonConverter;
 use Temporal\Exception\ExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\DataCollector\TemporalCollector;
 use Vanta\Integration\Symfony\Temporal\DataConverter\SymfonySerializerDataConverter;
-use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrineClearEntityManagerFinalizer;
+use Vanta\Integration\Symfony\Temporal\Finalizer\FrameworkFinalizer;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
+use Vanta\Integration\Symfony\Temporal\Serializer\CarbonIntervalNormalizer;
+use Vanta\Integration\Symfony\Temporal\Serializer\UuidNormalizer;
+use Vanta\Integration\Temporal\Doctrine\Finalizer\DoctrineClearEntityManagerFinalizer;
 
 return static function (ContainerConfigurator $configurator): void {
     $services = $configurator->services();
@@ -38,6 +41,13 @@ return static function (ContainerConfigurator $configurator): void {
 
         ->set('temporal.collector', TemporalCollector::class)
             ->tag('data_collector', ['id' => 'Temporal'])
+
+
+        ->set('temporal.framework.finalizer', FrameworkFinalizer::class)
+            ->tag('temporal.finalizer')
+            ->args([
+                service('services_resetter'),
+            ])
     ;
 
 
@@ -49,6 +59,9 @@ return static function (ContainerConfigurator $configurator): void {
                         service('serializer'),
                     ]),
             ])
+
+            ->set('temporal.carbon_interval.normalizer', CarbonIntervalNormalizer::class)
+            ->set('temporal.uuid.normalizer', UuidNormalizer::class)
         ;
     }
 

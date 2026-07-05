@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\DataConverter;
 
+use Generator;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer as ObjectNormalizer;
 use Symfony\Component\Serializer\SerializerInterface as Serializer;
 use Temporal\Api\Common\V1\Payload;
@@ -50,6 +51,12 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             $metadata[self::INPUT_TYPE] = $value::class;
         }
 
+        if (array_key_exists(self::INPUT_TYPE, $metadata) && str_starts_with($metadata[self::INPUT_TYPE], 'Temporal\\')) {
+            return $this->payloadConverter->toPayload($value) ?? throw new DataConverterException(
+                'Failed to convert temporal serialized data to payload.'
+            );
+        }
+
         try {
             $data = $this->serializer->serialize($value, 'json', $context);
         } catch (Throwable $e) {
@@ -76,8 +83,23 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             return $this->payloadConverter->fromPayload($payload, $type);
         }
 
+
+        if ($type == Generator::class) {
+            return null;
+        }
+
+        if (str_starts_with($type->getName(), 'Temporal\\')) {
+            return $this->payloadConverter->fromPayload($payload, $type);
+        }
+
+        $typeName = $inputType ?? $type->getName();
+
+        if ($typeName == Generator::class) {
+            return null;
+        }
+
         try {
-            return $this->serializer->deserialize($payload->getData(), $inputType ?? $type->getName(), 'json');
+            return $this->serializer->deserialize($payload->getData(), $typeName, 'json');
         } catch (Throwable $e) {
             throw new DataConverterException($e->getMessage(), $e->getCode(), $e);
         }

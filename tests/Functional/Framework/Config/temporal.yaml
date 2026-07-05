@@ -31,9 +31,18 @@ temporal:
       maxConcurrentActivityTaskPollers: 1
       maxConcurrentWorkflowTaskExecutionSize: 1
       maxConcurrentWorkflowTaskPollers: 1
+      maxConcurrentEagerActivityExecutionSize: 1
       enableSessionWorker: true
       sessionResourceId: resource.foo
       maxConcurrentSessionExecutionSize: 2000
+      buildID: test
+      useBuildIDForVersioning: true
+      disableRegistrationAliasing: true
+      enableLoggingInReplay: true
+      disableWorkflowWorker: true
+      localActivityWorkerOnly: true
+      disableEagerActivities: true
+      workflowPanicPolicy: !php/enum \Temporal\Worker\WorkflowPanicPolicy::FailWorkflow
 
     bar:
       taskQueue: bar
@@ -46,6 +55,7 @@ temporal:
       maxConcurrentActivityTaskPollers: 2
       maxConcurrentWorkflowTaskExecutionSize: 2
       maxConcurrentWorkflowTaskPollers: 2
+      maxConcurrentEagerActivityExecutionSize: 2
       enableSessionWorker: false
       sessionResourceId: resource.bar
       maxConcurrentSessionExecutionSize: 3000

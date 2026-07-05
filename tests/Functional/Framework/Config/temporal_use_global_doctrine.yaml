@@ -1,0 +1,46 @@
+temporal:
+  defaultClient: default
+  defaultScheduleClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+    useGlobalDoctrineIntegration:
+      - default
+  workers:
+    doctrine_use:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+      maxConcurrentActivityExecutionSize: 0
+      workerActivitiesPerSecond: 0
+      maxConcurrentLocalActivityExecutionSize: 0
+      workerLocalActivitiesPerSecond: 0
+      taskQueueActivitiesPerSecond: 0
+      maxConcurrentActivityTaskPollers: 0
+      maxConcurrentWorkflowTaskExecutionSize: 0
+      maxConcurrentWorkflowTaskPollers: 0
+      enableSessionWorker: false
+      sessionResourceId: null
+      maxConcurrentSessionExecutionSize: 1000
+
+    without_doctrine:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+      maxConcurrentActivityExecutionSize: 0
+      workerActivitiesPerSecond: 0
+      maxConcurrentLocalActivityExecutionSize: 0
+      workerLocalActivitiesPerSecond: 0
+      taskQueueActivitiesPerSecond: 0
+      maxConcurrentActivityTaskPollers: 0
+      maxConcurrentWorkflowTaskExecutionSize: 0
+      maxConcurrentWorkflowTaskPollers: 0
+      enableSessionWorker: false
+      sessionResourceId: null
+      maxConcurrentSessionExecutionSize: 1000
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
+      identity: default_x
+      queryRejectionCondition: 0

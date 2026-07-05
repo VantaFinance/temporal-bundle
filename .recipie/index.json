@@ -2,18 +2,20 @@
   "aliases": {
     "temporal": "vanta/temporal-bundle",
     "temporal-sentry": "vanta/temporal-sentry",
+    "temporal-doctrine": "vanta/temporal-doctrine",
     "sentry": "sentry/sentry-symfony"
   },
   "recipes": {
     "vanta/temporal-bundle": [
-      "0.1"
+      "0.1",
+      "0.5"
     ]
   },
   "branch": "master",
   "is_contrib": false,
   "_links": {
     "repository": "github.com/VantaFinance/temporal-bundle/.recipie",
-    "origin_template": "github.com/VantaFinance/temporal-bundle/.recipie/{version}:master",
+    "origin_template": "github.com/VantaFinance/temporal-bundle/.recipie/{version}:0.5",
     "recipe_template": "https://raw.githubusercontent.com/VantaFinance/temporal-bundle/main/.recipie/{version}/manifest.json"
   }
 }

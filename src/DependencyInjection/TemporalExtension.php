@@ -21,6 +21,7 @@ use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Temporal\Activity\ActivityInterface as Activity;
 use Temporal\Workflow\WorkflowInterface as Workflow;
+use Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor;
 
 final class TemporalExtension extends Extension
 {
@@ -33,12 +34,64 @@ final class TemporalExtension extends Extension
 
         $loader->load('service.php');
 
-        $configuration = new Configuration();
+        $entityManagers = [];
+        $connections    = [];
+
+        if ($container->hasParameter('doctrine.entity_managers')) {
+            /** @var array<non-empty-string, non-empty-string> $rawEntityManagers */
+            $rawEntityManagers = $container->getParameter('doctrine.entity_managers');
+
+            $entityManagers = array_keys($rawEntityManagers);
+        }
+
+        if ($container->hasParameter('doctrine.connections')) {
+            /** @var array<non-empty-string, non-empty-string> $rawConnections */
+            $rawConnections = $container->getParameter('doctrine.connections');
+
+            $connections = array_keys($rawConnections);
+        }
+
+        $configuration    = new Configuration($connections, $entityManagers);
+        $rawConfiguration = $this->processConfiguration($configuration, $configs);
+
+        if ($rawConfiguration['pool']['testing']['enabled'] && $rawConfiguration['pool']['testing']['disableSearchAttributes']) {
+            $disableSearchAttributesInterceptorId = 'temporal.testing.disable_search_attributes.interceptor';
+
+            $container->register($disableSearchAttributesInterceptorId, DisableSearchAttributesInterceptor::class);
+            $rawConfiguration['pool']['globalInterceptors'][] = $disableSearchAttributesInterceptorId;
+        }
 
 
-        $container->setParameter('temporal.config', $this->processConfiguration($configuration, $configs));
+        $container->setParameter('temporal.config', $rawConfiguration);
         $container->registerAttributeForAutoconfiguration(Workflow::class, workflowConfigurator(...));
         $container->registerAttributeForAutoconfiguration(Activity::class, activityConfigurator(...));
+    }
+
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    public function getConfiguration(array $config, ContainerBuilder $container): Configuration
+    {
+        $entityManagers = [];
+        $connections    = [];
+
+        if ($container->hasParameter('doctrine.entity_managers')) {
+            /** @var array<non-empty-string, non-empty-string> $rawEntityManagers */
+            $rawEntityManagers = $container->getParameter('doctrine.entity_managers');
+
+            $entityManagers = array_keys($rawEntityManagers);
+        }
+
+        if ($container->hasParameter('doctrine.connections')) {
+            /** @var array<non-empty-string, non-empty-string> $rawConnections */
+            $rawConnections = $container->getParameter('doctrine.connections');
+
+            $connections = array_keys($rawConnections);
+        }
+
+
+        return new Configuration($connections, $entityManagers);
     }
 }
 

@@ -1,4 +1,3 @@
-version: "3.5"
 services:
   temporal-php-worker:
     container_name: temporal-php-worker
@@ -27,7 +26,7 @@ services:
     networks:
       - temporal-network
     ports:
-      - 5432:5432
+      - "5432:5432"
     volumes:
       - temporal_pgsql:/var/lib/postgresql/data
     healthcheck:
@@ -48,11 +47,11 @@ services:
       - POSTGRES_PWD=temporal
       - POSTGRES_SEEDS=temporal-postgresql
       - TEMPORAL_ADDRESS=temporal:7233
-    image: temporalio/auto-setup:1.21.5
+    image: temporalio/auto-setup:1.27.2
     networks:
       - temporal-network
     ports:
-      - 7233:7233
+      - "7233:7233"
     healthcheck:
       test: [ "CMD", "temporal", "workflow", "list" ]
       interval: 1s
@@ -67,7 +66,7 @@ services:
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CLI_ADDRESS=temporal:7233
-    image: temporalio/admin-tools:1.21.4
+    image: temporalio/admin-tools:1.27.2-tctl-1.18.2-cli-1.3
     networks:
       - temporal-network
     stdin_open: true
@@ -82,11 +81,11 @@ services:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
       - TEMPORAL_CSRF_COOKIE_INSECURE=true
-    image: temporalio/ui:2.17.2
+    image: temporalio/ui:v2.37.4
     networks:
       - temporal-network
     ports:
-      - 8080:8080
+      - "8080:8080"
 
 networks:
   temporal-network:

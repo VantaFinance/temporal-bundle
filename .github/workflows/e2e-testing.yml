@@ -1,0 +1,76 @@
+name: E2E-Testing CI
+on: [ push, pull_request ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }}
+    strategy:
+      matrix:
+        php: [ 8.2, 8.3, 8.4]
+        symfony: [ '6.4.*', '7.0.*', '7.1.*', '7.2.*', '7.3.*', '8.0.*' ]
+        rr: [ '2024', '2025' ]
+
+        exclude:
+          # Symfony 8.0 не поддерживается на PHP 8.2 и 8.3
+          - php: 8.2
+            symfony: '8.0.*'
+
+          - php: 8.3
+            symfony: '8.0.*'
+
+          # PHP 8.5 только для Symfony 8.0
+          - php: 8.5
+            symfony: '6.4.*'
+
+          - php: 8.5
+            symfony: '7.0.*'
+
+          - php: 8.5
+            symfony: '7.1.*'
+
+          - php: 8.5
+            symfony: '7.2.*'
+
+          - php: 8.5
+            symfony: '7.3.*'
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: flex
+          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc, xdebug
+
+      - name: Download PHP dependencies
+        env:
+          SYMFONY_REQUIRE: ${{ matrix.symfony }}
+          SKIP_TOOLS_INSTALL: 1
+        uses: ramsey/composer-install@v4
+        with:
+          custom-cache-key: ${{ matrix.symfony }}-${{ matrix.php }}
+
+      - name: Download RoadRunner ${{ matrix.rr }} and Temporal
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RR_VERSION: rr:^${{ matrix.rr }}
+        run: make get-deps
+
+      - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }}
+        env:
+          KERNEL_CLASS: Vanta\Integration\Symfony\Temporal\Test\App\Kernel
+        run: |
+          make start-temporal
+          make start-rr
+          vendor/bin/phpunit --testsuite='Temporal E2E'
+          
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: var
+          path: var/
+          retention-days: 2

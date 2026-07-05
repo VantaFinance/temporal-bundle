@@ -13,6 +13,7 @@ namespace Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
 use Temporal\Client\ScheduleClient as GrpcScheduleClient;
@@ -21,7 +22,9 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
 
+use Vanta\Integration\Symfony\Temporal\Interceptor\ProfilerWorkflowInterceptor;
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ScheduleClientDebugCommand;
 
 /**
@@ -32,8 +35,13 @@ final class ScheduleClientCompilerPass implements CompilerPass
     public function process(ContainerBuilder $container): void
     {
         /** @var RawConfiguration $config */
-        $config  = $container->getParameter('temporal.config');
-        $clients = [];
+        $config                = $container->getParameter('temporal.config');
+        $clients               = [];
+        $collectorInterceptors = [];
+
+        if (!in_array($config['defaultScheduleClient'], array_keys($config['scheduleClients']))) {
+            throw new InvalidArgumentException(sprintf('No default ScheduleClient "%s" configured', $config['defaultScheduleClient']));
+        }
 
         foreach ($config['scheduleClients'] as $name => $client) {
             $options = definition(ClientOptions::class)
@@ -47,10 +55,21 @@ final class ScheduleClientCompilerPass implements CompilerPass
                 $options->addMethodCall('withQueryRejectionCondition', [$client['queryRejectionCondition']], true);
             }
 
+            if ($container->getParameter('kernel.debug')) {
+                $collectorId = sprintf('temporal.schedule_client_collector_%s.interceptor', $name);
+
+                $container->register($collectorId, ProfilerWorkflowInterceptor::class)
+                    ->setArgument('$clientName', $name)
+                ;
+
+                $collectorInterceptors[] = reference($collectorId);
+            }
+
             $id = sprintf('temporal.%s.schedule_client', $name);
 
             $container->register($id, ScheduleClient::class)
                 ->setFactory([GrpcScheduleClient::class, 'create'])
+                ->setPublic($config['pool']['testing']['enabled'])
                 ->setArguments([
                     '$serviceClient' => grpcClient($client),
                     '$options'       => $options,
@@ -58,7 +77,9 @@ final class ScheduleClientCompilerPass implements CompilerPass
                 ]);
 
             if ($name == $config['defaultScheduleClient']) {
-                $container->setAlias(ScheduleClient::class, $id);
+                $container->setAlias(ScheduleClient::class, $id)
+                    ->setPublic($config['pool']['testing']['enabled'])
+                ;
             }
 
             $container->registerAliasForArgument($id, ScheduleClient::class, sprintf('%sScheduleClient', $name));
@@ -83,6 +104,7 @@ final class ScheduleClientCompilerPass implements CompilerPass
 
         $container->getDefinition('temporal.collector')
             ->setArgument('$scheduleClients', $clients)
+            ->setArgument('$collectorScheduleClientInterceptors', $collectorInterceptors)
         ;
     }
 }
