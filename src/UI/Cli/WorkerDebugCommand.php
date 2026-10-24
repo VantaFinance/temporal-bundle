@@ -64,13 +64,15 @@ final class WorkerDebugCommand extends Command
 
         $io->title('Temporal Workers');
 
-        $io->definitionList(
-            ['temporal/sdk' => InstalledVersions::isInstalled('temporal/sdk') ? (string) InstalledVersions::getPrettyVersion('temporal/sdk') : 'unknown'],
+        $details = [
+            'temporal/sdk' => InstalledVersions::isInstalled('temporal/sdk') ? (string) InstalledVersions::getPrettyVersion('temporal/sdk') : 'unknown',
             // roadrunner/* replaces spiral/*: only the RoadRunner 3 line installs roadrunner/worker
-            ['RoadRunner packages' => InstalledVersions::isInstalled('roadrunner/worker') ? 'roadrunner/* (RoadRunner 3)' : 'spiral/* (RoadRunner 2025)'],
-            ['Feature flags' => $this->featureFlags == [] ? 'temporal/sdk defaults' : implode(', ', array_map(static fn (string $flag, bool $value): string => sprintf('%s: %s', $flag, $value ? 'true' : 'false'), array_keys($this->featureFlags), $this->featureFlags))],
-            ['Plugins'       => $this->plugins == [] ? 'none' : implode(', ', $this->plugins)],
-        );
+            'RoadRunner packages' => InstalledVersions::isInstalled('roadrunner/worker') ? 'roadrunner/* (RoadRunner 3)' : 'spiral/* (RoadRunner 2025)',
+            'Feature flags'       => $this->featureFlags == [] ? 'temporal/sdk defaults' : implode(', ', array_map(static fn (string $flag, bool $value): string => sprintf('%s: %s', $flag, $value ? 'true' : 'false'), array_keys($this->featureFlags), $this->featureFlags)),
+            'Plugins'             => $this->plugins == [] ? 'none' : implode(', ', $this->plugins),
+        ];
+
+        $io->definitionList(...array_map(static fn (string $term, string $value): array => [$term => $value], array_keys($details), $details));
 
         foreach ($workers as $name => $worker) {
             $rows[] = [$name, json_encode($worker->getOptions(), JSON_PRETTY_PRINT)];
