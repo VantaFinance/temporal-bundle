@@ -18,6 +18,7 @@ use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Interceptor\SimplePipelineProvider;
 use Temporal\Testing;
@@ -140,9 +141,30 @@ final class WorkflowCompilerPass implements CompilerPass
         ;
 
 
-        $configuredWorkers        = [];
-        $activitiesWithoutWorkers = [];
-        $workflowsWithoutWorkers  = [];
+        // PHP turns numeric worker names into integer keys; #[AssignWorker] names are strings
+        $workerNames = array_map(strval(...), array_keys($config['workers']));
+
+        $this->assertAssignedWorkersExist($container, $workerNames);
+
+        $workflows  = $this->assignments($container, 'temporal.workflow');
+        $activities = $this->assignments($container, 'temporal.activity');
+
+        $workflowsWithoutWorkers  = array_keys(array_filter($workflows, static fn (array $assignment): bool => $assignment['workers'] == null));
+        $activitiesWithoutWorkers = array_keys(array_filter($activities, static fn (array $assignment): bool => $assignment['workers'] == null));
+
+        $defaultWorker = $config['defaultWorker'];
+        $unassigned    = [...$workflowsWithoutWorkers, ...$activitiesWithoutWorkers];
+
+        if ($unassigned != [] && !in_array($defaultWorker, $workerNames, true)) {
+            throw new InvalidArgumentException(sprintf(
+                'Classes without #[AssignWorker] run on the default worker "%s" (temporal.defaultWorker), which is not configured: %s; configured workers: %s',
+                $defaultWorker,
+                implode(', ', $unassigned),
+                implode(', ', $workerNames),
+            ));
+        }
+
+        $configuredWorkers = [];
 
 
         $globalInterceptors = [
@@ -181,6 +203,8 @@ final class WorkflowCompilerPass implements CompilerPass
         }
 
         foreach ($config['workers'] as $workerName => $worker) {
+            $workerName = (string) $workerName;
+
             $options = definition(WorkerOptions::class)
                 ->setFactory([WorkerOptions::class, 'new'])
             ;
@@ -250,41 +274,17 @@ final class WorkflowCompilerPass implements CompilerPass
                 ->setPublic(true)
             ;
 
-            foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
-                $class = $container->getDefinition($id)->getClass();
-
-                if ($class == null) {
-                    continue;
-                }
-
-                $workerNames = $attributes[0]['workers'] ?? null;
-
-                if ($workerNames == null) {
-                    $workflowsWithoutWorkers[] = $class;
-                }
-
-                if ($workerNames != null && !in_array($workerName, $workerNames)) {
+            // Without #[AssignWorker] a workflow / activity runs on the default worker only
+            foreach ($workflows as $class => ['workers' => $assignedWorkers]) {
+                if (!in_array($workerName, $assignedWorkers ?? [$defaultWorker], true)) {
                     continue;
                 }
 
                 $newWorker->addMethodCall('registerWorkflowTypes', [$class]);
             }
 
-            foreach ($container->findTaggedServiceIds('temporal.activity') as $id => $attributes) {
-                $class = $container->getDefinition($id)->getClass();
-
-                if ($class == null) {
-                    continue;
-                }
-
-                $workerNames = $attributes[0]['workers'] ?? null;
-
-                if ($workerNames == null) {
-                    $activitiesWithoutWorkers[] = $class;
-                }
-
-
-                if ($workerNames != null && !in_array($workerName, $workerNames)) {
+            foreach ($activities as $class => ['id' => $id, 'workers' => $assignedWorkers]) {
+                if (!in_array($workerName, $assignedWorkers ?? [$defaultWorker], true)) {
                     continue;
                 }
 
@@ -320,6 +320,7 @@ final class WorkflowCompilerPass implements CompilerPass
             ->setArguments([
                 '$workers'                 => $configuredWorkers,
                 '$workflowsWithoutWorkers' => $workflowsWithoutWorkers,
+                '$defaultWorker'           => $defaultWorker,
             ])
             ->addTag('console.command')
         ;
@@ -329,6 +330,7 @@ final class WorkflowCompilerPass implements CompilerPass
             ->setArguments([
                 '$workers'                  => $configuredWorkers,
                 '$activitiesWithoutWorkers' => $activitiesWithoutWorkers,
+                '$defaultWorker'            => $defaultWorker,
             ])
             ->addTag('console.command')
         ;
@@ -345,6 +347,58 @@ final class WorkflowCompilerPass implements CompilerPass
 
         foreach ($container->findTaggedServiceIds('temporal.workflow') as $id => $attributes) {
             $container->removeDefinition($id);
+        }
+    }
+
+    /**
+     * One entry per class: a class registered under several service ids is still registered once per worker.
+     *
+     * @return array<class-string, array{id: string, workers: list<non-empty-string>|null}> workers is null without #[AssignWorker]
+     */
+    private function assignments(ContainerBuilder $container, string $tag): array
+    {
+        $assignments = [];
+
+        foreach ($container->findTaggedServiceIds($tag) as $id => $attributes) {
+            /** @var class-string|null $class */
+            $class = $container->getDefinition($id)->getClass();
+
+            if ($class == null || isset($assignments[$class])) {
+                continue;
+            }
+
+            /** @var list<non-empty-string>|null $workers */
+            $workers = $attributes[0]['workers'] ?? null;
+
+            $assignments[$class] = ['id' => $id, 'workers' => $workers];
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * @param list<non-empty-string> $workers
+     */
+    private function assertAssignedWorkersExist(ContainerBuilder $container, array $workers): void
+    {
+        foreach (['temporal.workflow', 'temporal.activity'] as $tag) {
+            foreach ($container->findTaggedServiceIds($tag) as $id => $attributes) {
+                /** @var list<non-empty-string> $assignedWorkers */
+                $assignedWorkers = $attributes[0]['workers'] ?? [];
+
+                foreach ($assignedWorkers as $assignedWorker) {
+                    if (in_array($assignedWorker, $workers, true)) {
+                        continue;
+                    }
+
+                    throw new InvalidArgumentException(sprintf(
+                        "#[AssignWorker('%s')] on %s refers to an unknown worker; configured workers: %s",
+                        $assignedWorker,
+                        $container->getDefinition($id)->getClass() ?? $id,
+                        implode(', ', $workers),
+                    ));
+                }
+            }
         }
     }
 

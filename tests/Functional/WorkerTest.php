@@ -449,8 +449,8 @@ final class WorkerTest extends KernelTestCase
     public static function registerWorkflowDataProvider(): iterable
     {
         yield ['temporal.default.worker', [NullWorkflowHandler::class]];
-        yield ['temporal.foo.worker', [AssignWorkflowHandler::class, NullWorkflowHandler::class]];
-        yield ['temporal.bar.worker', [AssignWorkflowHandlerV2::class, NullWorkflowHandler::class]];
+        yield ['temporal.foo.worker', [AssignWorkflowHandler::class]];
+        yield ['temporal.bar.worker', [AssignWorkflowHandlerV2::class]];
     }
 
 
@@ -514,9 +514,8 @@ final class WorkerTest extends KernelTestCase
      */
     public static function registerActivityDataProvider(): iterable
     {
+        // Activities without #[AssignWorker] run on the default worker only, see WorkerAssignmentTest
         yield ['temporal.default.worker', [ActivityAHandler::class, ActivityBHandler::class, ActivityCHandler::class]];
-        yield ['temporal.foo.worker', [ActivityAHandler::class, ActivityBHandler::class, ActivityCHandler::class]];
-        yield ['temporal.bar.worker', [ActivityAHandler::class, ActivityBHandler::class, ActivityCHandler::class]];
     }
 
     /**

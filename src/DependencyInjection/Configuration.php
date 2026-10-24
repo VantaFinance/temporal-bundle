@@ -124,6 +124,7 @@ use Vanta\Integration\Temporal\Sentry\SentryWorkflowOutboundCallsInterceptor;
  * @phpstan-type RawConfiguration array{
  *  defaultClient: non-empty-string,
  *  defaultScheduleClient: non-empty-string,
+ *  defaultWorker: non-empty-string,
  *  clients: array<non-empty-string, Client>,
  *  scheduleClients: array<non-empty-string, ScheduleClient>,
  *  workers: array<non-empty-string, Worker>,
@@ -273,6 +274,11 @@ final class Configuration implements BundleConfiguration
                 ->end()
                 ->scalarNode('defaultScheduleClient')
                     ->defaultValue('default')
+                ->end()
+                ->scalarNode('defaultWorker')
+                    ->defaultValue('default')
+                    ->cannotBeEmpty()
+                    ->info('Worker that runs workflows and activities without #[AssignWorker]')
                 ->end()
             ->end()
             ->children()
