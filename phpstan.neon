@@ -6,5 +6,9 @@ parameters:
 		- tests
 		- config
 
+	# PHPDoc of the newest dependency versions, so that the lowest and the latest dependencies are analysed alike
+	stubFiles:
+		- stubs/Type.stub
+
 	scanFiles:
 	    - vendor/symfony/dependency-injection/Loader/Configurator/ContainerConfigurator.php

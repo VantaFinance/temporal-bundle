@@ -44,6 +44,9 @@ final readonly class CarbonIntervalNormalizer implements Normalizer, Denormalize
         );
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
         return $type == CarbonInterval::class;
@@ -71,6 +74,9 @@ final readonly class CarbonIntervalNormalizer implements Normalizer, Denormalize
         return $this->normalizer->normalize($object->toDateInterval(), $format, $context);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
         return $data instanceof CarbonInterval;

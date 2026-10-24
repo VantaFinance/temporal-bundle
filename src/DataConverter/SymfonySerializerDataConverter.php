@@ -70,6 +70,9 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
         return $payload;
     }
 
+    /**
+     * @param Type<bool> $type
+     */
     public function fromPayload(Payload $payload, Type $type): mixed
     {
         if ("null" == $payload->getData() && $type->allowsNull()) {
@@ -83,10 +86,6 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             return $this->payloadConverter->fromPayload($payload, $type);
         }
 
-
-        if ($type == Generator::class) {
-            return null;
-        }
 
         if (str_starts_with($type->getName(), 'Temporal\\')) {
             return $this->payloadConverter->fromPayload($payload, $type);

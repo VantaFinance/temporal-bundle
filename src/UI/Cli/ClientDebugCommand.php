@@ -13,7 +13,6 @@ namespace Vanta\Integration\Symfony\Temporal\UI\Cli;
 
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface as Input;
 use Symfony\Component\Console\Output\OutputInterface as Output;
@@ -69,13 +68,6 @@ final class ClientDebugCommand extends Command
                 $client['dataConverter'],
                 json_encode($client['options'], JSON_PRETTY_PRINT),
             ];
-
-            $rows[] = new TableSeparator();
-
-
-            if (!is_array(end($rows))) {
-                array_pop($rows);
-            }
 
             $io->table(['Id', 'Address', 'DataConverterId','Options'], $rows);
         }

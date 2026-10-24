@@ -34,7 +34,7 @@ function awaitWithTimeout(callable $conditions, CarbonInterval $timeout = new Ca
             $wait = false;
         }
 
-        if (CarbonImmutable::now()->diff($watchEndAt)->totalSeconds <= 0) {
+        if (CarbonImmutable::now()->greaterThanOrEqualTo($watchEndAt)) {
             $wait = false;
         }
     }
@@ -58,7 +58,7 @@ function waitWithTime(callable $conditions, CarbonInterval $timeout = new Carbon
             $wait = false;
         }
 
-        if (CarbonImmutable::now()->diff($watchEndAt)->totalSeconds <= 0) {
+        if (CarbonImmutable::now()->greaterThanOrEqualTo($watchEndAt)) {
             $wait = false;
         }
     }
