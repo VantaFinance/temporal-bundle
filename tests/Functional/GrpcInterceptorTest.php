@@ -75,8 +75,15 @@ final class GrpcInterceptorTest extends KernelTestCase
 
                 public function process(ContainerBuilder $container): void
                 {
-                    $this->pipelines['service_client']          = $container->getDefinition('temporal.default.service_client')->getArgument('$interceptors');
-                    $this->pipelines['schedule_service_client'] = $container->getDefinition('temporal.default.schedule_service_client')->getArgument('$interceptors');
+                    foreach (['service_client', 'schedule_service_client'] as $key) {
+                        foreach ($container->getDefinition(sprintf('temporal.default.%s', $key))->getMethodCalls() as [$method, $arguments]) {
+                            $factory = $arguments[0] instanceof Definition ? $arguments[0]->getFactory() : null;
+
+                            if ($method == 'withInterceptorPipeline' && is_array($factory) && $factory[0] instanceof Definition) {
+                                $this->pipelines[$key] = $factory[0]->getArgument(0);
+                            }
+                        }
+                    }
 
                     $client = $container->getDefinition('temporal.default.client')->getArgument('$interceptorProvider');
                     $worker = $container->getDefinition('temporal.default.worker')->getArgument(3);

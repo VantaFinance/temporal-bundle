@@ -27,13 +27,11 @@ use Temporal\DataConverter\Bytes;
 use Temporal\DataConverter\DataConverterInterface;
 use Temporal\DataConverter\EncodingKeys;
 use Temporal\DataConverter\Type;
-use Vanta\Integration\Symfony\Temporal\DataConverter\DataConverterFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\TemporalExtension;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
 
 #[RunTestsInSeparateProcesses]
 #[CoversClass(TemporalExtension::class)]
-#[CoversClass(DataConverterFactory::class)]
 final class DataConverterTest extends KernelTestCase
 {
     protected static function getKernelClass(): string

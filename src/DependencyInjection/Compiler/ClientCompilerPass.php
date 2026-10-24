@@ -16,12 +16,11 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ActivityCompletionClientInterface as ActivityCompletionClient;
+use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
 use Temporal\Client\WorkflowClient as GrpcWorkflowClient;
 use Temporal\Client\WorkflowClientInterface as WorkflowClient;
 use Temporal\Interceptor\SimplePipelineProvider;
-use Vanta\Integration\Symfony\Temporal\Client\GrpcServiceClientFactory;
 
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\apiKey;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\clientLogger;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\clientOptions;
 
@@ -30,6 +29,7 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\connectionSummary;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\definition;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcInterceptorPipeline;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\isGrpcInterceptor;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\isGrpcOnlyInterceptor;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
@@ -102,12 +102,11 @@ final class ClientCompilerPass implements CompilerPass
 
             $serviceClientId = sprintf('temporal.%s.service_client', $name);
 
-            $container->setDefinition($serviceClientId, grpcClient($client, $path))
-                ->setArgument('$interceptors', array_map(reference(...), array_values(array_unique([
-                    ...array_filter($client['interceptors'], static fn (string $id): bool => isGrpcInterceptor($container, $id)),
-                    ...$globalGrpcInterceptors,
-                ]))))
-            ;
+            $serviceClient = $container->setDefinition($serviceClientId, grpcClient($client, $path));
+            grpcInterceptorPipeline($serviceClient, array_values(array_unique([
+                ...array_filter($client['interceptors'], static fn (string $id): bool => isGrpcInterceptor($container, $id)),
+                ...$globalGrpcInterceptors,
+            ])));
 
             $id = sprintf('temporal.%s.client', $name);
 
@@ -151,10 +150,13 @@ final class ClientCompilerPass implements CompilerPass
 
             $container->registerAliasForArgument($completionClientId, ActivityCompletionClient::class, sprintf('%sActivityCompletionClient', $name));
 
-            if (SdkFeature::hasClass(self::OPERATOR_CLIENT)) {
+            // The operator client shares the connection; an environment configuration profile creates a ServiceClient only
+            $factory = $serviceClient->getFactory();
+
+            if (SdkFeature::hasClass(self::OPERATOR_CLIENT) && is_array($factory) && $factory[0] === GrpcServiceClient::class) {
                 $operatorClientId = sprintf('temporal.%s.operator_client', $name);
 
-                $container->setDefinition($operatorClientId, (clone $container->getDefinition($serviceClientId))->setArgument('$class', self::OPERATOR_CLIENT))
+                $container->setDefinition($operatorClientId, (clone $serviceClient)->setFactory([self::OPERATOR_CLIENT, $factory[1]]))
                     ->setClass(self::OPERATOR_CLIENT_INTERFACE)
                     ->setPublic($public)
                 ;
@@ -165,6 +167,7 @@ final class ClientCompilerPass implements CompilerPass
 
                 $container->registerAliasForArgument($operatorClientId, self::OPERATOR_CLIENT_INTERFACE, sprintf('%sOperatorClient', $name));
             }
+
 
 
             $clients[] = [
@@ -185,13 +188,9 @@ final class ClientCompilerPass implements CompilerPass
             SdkFeature::requireClass(self::CLOUD_CLIENT, 'temporal.cloudClient', '2.19');
 
             $cloudClientDefinition = $container->register('temporal.cloud_client', self::CLOUD_CLIENT_INTERFACE)
-                ->setFactory([GrpcServiceClientFactory::class, 'create'])
-                ->setArguments([
-                    '$address' => $cloudClient['address'],
-                    '$apiKey'  => apiKey($cloudClient['apiKey']),
-                    '$tls'     => ['enabled' => true],
-                    '$class'   => self::CLOUD_CLIENT,
-                ])
+                ->setFactory([self::CLOUD_CLIENT, 'createSSL'])
+                ->setArguments([$cloudClient['address']])
+                ->addMethodCall('withAuthKey', [str_starts_with((string) $cloudClient['apiKey'], '@') ? new Reference(substr((string) $cloudClient['apiKey'], 1)) : $cloudClient['apiKey']], true)
                 ->setPublic($public)
             ;
 

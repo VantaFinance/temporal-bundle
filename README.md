@@ -435,8 +435,7 @@ installed.
 
 ## Connections: TLS, API key, Temporal Cloud
 
-The bundle decides how a client connects when the application starts, after env variables are resolved. Each client
-and schedule client has its own connection:
+Each client and schedule client has its own connection:
 
 ```yaml
 temporal:
@@ -453,9 +452,9 @@ temporal:
         serverName: ~                                 # overrides the TLS server name
 ```
 
-With `tls.enabled: ~` (the default) the client uses TLS when a certificate, `serverName` or a non-empty `apiKey` is set,
-so an API key is never sent without TLS. If the `apiKey` env variable is empty, a local server keeps working without
-TLS. To send a key to a server without TLS, set `tls.enabled: false`.
+With `tls.enabled: ~` (the default) the client uses TLS when `apiKey`, a certificate or `serverName` is configured, so
+an API key is never sent without TLS. The decision is made when the container is built: an `apiKey` that points to an
+empty env variable still turns TLS on. For a local server without TLS, set `tls.enabled: false`.
 
 `clientKey` and `clientPem` at the client level still work but are deprecated. Move them to `tls.clientKey` and
 `tls.clientPem`.
@@ -498,8 +497,9 @@ temporal:
       # namespace: overrides the profile namespace
 ```
 
-With `envConfig.enabled` you cannot set `address`, `apiKey` or `tls`: the profile provides them. Reading a TOML file
-needs `composer require internal/toml`.
+With `envConfig.enabled` you cannot set `address`, `apiKey` or `tls`: the profile provides them. The SDK reads the
+`TEMPORAL_*` variables with `getenv()`, so they must be real process env variables; values from `.env` files are seen
+only when Symfony Dotenv runs with `usePutenv`. Reading a TOML file needs `composer require internal/toml`.
 
 ## Worker options
 

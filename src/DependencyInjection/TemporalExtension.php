@@ -28,7 +28,6 @@ use Temporal\DataConverter\ProtoConverter;
 use Temporal\DataConverter\ProtoJsonConverter;
 use Temporal\Workflow\WorkflowInterface as Workflow;
 use Vanta\Integration\Symfony\Temporal\Attribute\AsPlugin;
-use Vanta\Integration\Symfony\Temporal\DataConverter\DataConverterFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\PluginCompilerPass;
 use Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor;
 
@@ -110,13 +109,11 @@ final class TemporalExtension extends Extension
             ];
         }
 
-        $dataConverter
-            ->setFactory([DataConverterFactory::class, 'create'])
-            ->setArguments([
-                array_map(static fn (string $id): Reference => new Reference($id), $payloadConverters),
-                $converters,
-            ])
-        ;
+        $payloadConverters = array_map(static fn (string $id): Reference => new Reference($id), $payloadConverters);
+
+        // DataConverter keeps one converter per encoding, in the order of the first one: custom converters are tried
+        // first and replace a default converter with the same encoding
+        $dataConverter->setArguments([...$payloadConverters, ...$converters, ...$payloadConverters]);
     }
 
 

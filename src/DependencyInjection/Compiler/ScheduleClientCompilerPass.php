@@ -26,8 +26,8 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\connectionSummary;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcClient;
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\grpcInterceptorPipeline;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\isGrpcInterceptor;
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
 
 use Vanta\Integration\Symfony\Temporal\UI\Cli\ScheduleClientDebugCommand;
 
@@ -66,9 +66,10 @@ final class ScheduleClientCompilerPass implements CompilerPass
 
             $serviceClientId = sprintf('temporal.%s.schedule_service_client', $name);
 
-            $container->setDefinition($serviceClientId, grpcClient($client, $path))
-                ->setArgument('$interceptors', array_map(reference(...), array_values(array_unique([...$client['interceptors'], ...$globalGrpcInterceptors]))))
-            ;
+            grpcInterceptorPipeline(
+                $container->setDefinition($serviceClientId, grpcClient($client, $path)),
+                array_values(array_unique([...$client['interceptors'], ...$globalGrpcInterceptors])),
+            );
 
             $id = sprintf('temporal.%s.schedule_client', $name);
 

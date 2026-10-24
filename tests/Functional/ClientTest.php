@@ -18,7 +18,6 @@ use function PHPUnit\Framework\assertArrayNotHasKey;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
-use function PHPUnit\Framework\assertIsArray;
 use function PHPUnit\Framework\assertStringContainsString;
 use function PHPUnit\Framework\assertTrue;
 
@@ -33,10 +32,9 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Temporal\Client\ActivityCompletionClientInterface;
+use Temporal\Client\GRPC\Context;
+use Temporal\Client\GRPC\ServiceClient;
 use Temporal\Client\WorkflowClientInterface as WorkflowClient;
-use Vanta\Integration\Symfony\Temporal\Client\EnvConfigFactory;
-use Vanta\Integration\Symfony\Temporal\Client\GrpcContextFactory;
-use Vanta\Integration\Symfony\Temporal\Client\GrpcServiceClientFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\SdkFeature;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
@@ -211,26 +209,20 @@ final class ClientTest extends KernelTestCase
 
                     public function process(ContainerBuilder $container): void
                     {
-                        $context       = $container->getDefinition('temporal.default.service_client')->getArgument('$context');
-                        $this->context = $context instanceof Definition ? $context : null;
+                        foreach ($container->getDefinition('temporal.default.service_client')->getMethodCalls() as [$method, $arguments]) {
+                            if ($method == 'withContext' && $arguments[0] instanceof Definition) {
+                                $this->context = clone $arguments[0];
+                            }
+                        }
                     }
                 });
             },
         ]);
 
         assertInstanceOf(Definition::class, $context);
-        assertEquals([GrpcContextFactory::class, 'create'], $context->getFactory());
-        assertEquals(['value' => 5, 'format' => 'seconds'], $context->getArgument(0));
-        assertEquals([], $context->getArgument(2));
-        assertEquals([
-            'initialInterval'           => null,
-            'maximumInterval'           => null,
-            'backoffCoefficient'        => null,
-            'maximumAttempts'           => null,
-            'nonRetryableExceptions'    => [],
-            'congestionInitialInterval' => null,
-            'maximumJitterCoefficient'  => null,
-        ], $context->getArgument(3));
+        assertEquals([Context::class, 'default'], $context->getFactory());
+        // No withMetadata() / withRetryOptions(): the SDK defaults stay
+        assertEquals([['withTimeout', [5, 'seconds'], true]], $context->getMethodCalls());
     }
 
 
@@ -267,8 +259,7 @@ final class ClientTest extends KernelTestCase
                         $operator = $container->getDefinition('temporal.foo.operator_client');
 
                         $this->result['operatorFactory']  = $operator->getFactory();
-                        $this->result['operatorClass']    = $operator->getArguments()['$class'] ?? null;
-                        $this->result['operatorAddress']  = $operator->getArguments()['$address'] ?? null;
+                        $this->result['operatorAddress']  = $operator->getArgument(0);
                         $this->result['operatorAlias']    = (string) $container->getAlias('Temporal\Client\GRPC\OperatorClientInterface');
                         $this->result['operatorArgument'] = $container->hasAlias('Temporal\Client\GRPC\OperatorClientInterface $fooOperatorClient');
                     }
@@ -286,8 +277,7 @@ final class ClientTest extends KernelTestCase
             return;
         }
 
-        assertEquals([GrpcServiceClientFactory::class, 'create'], $result['operatorFactory']);
-        assertEquals('Temporal\Client\GRPC\OperatorClient', $result['operatorClass']);
+        assertEquals(['Temporal\Client\GRPC\OperatorClient', 'create'], $result['operatorFactory']);
         assertStringContainsString('TEMPORAL_ADDRESS', (string) $result['operatorAddress']); // @phpstan-ignore cast.string
         assertEquals('temporal.bar.operator_client', $result['operatorAlias']);
         assertTrue($result['operatorArgument']);
@@ -323,11 +313,10 @@ final class ClientTest extends KernelTestCase
         ]);
 
         assertInstanceOf(Definition::class, $cloudClient);
-        assertEquals([GrpcServiceClientFactory::class, 'create'], $cloudClient->getFactory());
-        assertEquals('saas-api.tmprl.cloud:443', $cloudClient->getArgument('$address'));
-        assertEquals(['enabled' => true], $cloudClient->getArgument('$tls'));
-        assertEquals('Temporal\Client\GRPC\CloudClient', $cloudClient->getArgument('$class'));
-        assertEquals([['withApiVersion', ['2024-10-01-00'], true]], $cloudClient->getMethodCalls());
+        assertEquals(['Temporal\Client\GRPC\CloudClient', 'createSSL'], $cloudClient->getFactory());
+        assertEquals(['saas-api.tmprl.cloud:443'], $cloudClient->getArguments());
+        assertEquals(['withAuthKey', 'withApiVersion'], array_column($cloudClient->getMethodCalls(), 0));
+        assertEquals(['2024-10-01-00'], $cloudClient->getMethodCalls()[1][1]);
     }
 
 
@@ -367,16 +356,27 @@ final class ClientTest extends KernelTestCase
         ]);
 
         assertInstanceOf(Definition::class, $serviceClient);
-        assertEquals([EnvConfigFactory::class, 'serviceClient'], $serviceClient->getFactory());
-        assertEquals('prod', $serviceClient->getArgument('$profile'));
+        $factory = $serviceClient->getFactory();
+
+        self::assertIsArray($factory);
+        assertInstanceOf(Definition::class, $factory[0]);
+        assertEquals(['Temporal\Common\EnvConfig\ConfigClient', 'load'], $factory[0]->getFactory());
+        assertEquals('prod', $factory[0]->getArgument(0));
+        assertEquals('toServiceClient', $factory[1]);
 
         assertInstanceOf(Definition::class, $options);
-        assertEquals([EnvConfigFactory::class, 'clientOptions'], $options->getFactory());
-        assertEquals('prod', $options->getArgument(0));
-        assertEquals(null, $options->getArgument(2));
+        $factory = $options->getFactory();
+
+        self::assertIsArray($factory);
+        assertEquals('toClientOptions', $factory[1]);
+        // The profile namespace stays: no withNamespace()
+        assertEquals([], array_filter($options->getMethodCalls(), static fn (array $call): bool => $call[0] == 'withNamespace'));
 
         assertInstanceOf(Definition::class, $scheduleClient);
-        assertEquals([EnvConfigFactory::class, 'serviceClient'], $scheduleClient->getFactory());
+        $factory = $scheduleClient->getFactory();
+
+        self::assertIsArray($factory);
+        assertEquals('toServiceClient', $factory[1]);
     }
 
 
@@ -449,18 +449,14 @@ final class ClientTest extends KernelTestCase
         assertEquals(new Reference('temporal.cloud.service_client'), $cloudArgument);
 
         assertInstanceOf(Definition::class, $cloudDef);
-        assertEquals([GrpcServiceClientFactory::class, 'create'], $cloudDef->getFactory());
-        $tls = $cloudDef->getArgument('$tls');
-
-        assertIsArray($tls);
-        assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $tls['clientKey']); // @phpstan-ignore cast.string
-        assertStringContainsString('TEMPORAL_CLIENT_CERT_PATH', (string) $tls['clientPem']); // @phpstan-ignore cast.string
+        assertEquals([ServiceClient::class, 'createSSL'], $cloudDef->getFactory());
+        assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $cloudDef->getArgument(2)); // @phpstan-ignore cast.string
+        assertStringContainsString('TEMPORAL_CLIENT_CERT_PATH', (string) $cloudDef->getArgument(3)); // @phpstan-ignore cast.string
 
         assertInstanceOf(Definition::class, $defaultDef);
-        assertEquals([GrpcServiceClientFactory::class, 'create'], $defaultDef->getFactory());
-        assertStringContainsString('TEMPORAL_ADDRESS', (string) $defaultDef->getArgument('$address')); // @phpstan-ignore cast.string
-        assertEquals(['enabled' => null, 'rootCa' => null, 'clientKey' => null, 'clientPem' => null, 'serverName' => null], $defaultDef->getArgument('$tls'));
-        assertInstanceOf(Definition::class, $defaultDef->getArgument('$context'));
+        assertEquals([ServiceClient::class, 'create'], $defaultDef->getFactory());
+        assertStringContainsString('TEMPORAL_ADDRESS', (string) $defaultDef->getArgument(0)); // @phpstan-ignore cast.string
+        assertEquals(['withContext'], array_column($defaultDef->getMethodCalls(), 0));
     }
 
 

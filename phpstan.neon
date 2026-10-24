@@ -24,5 +24,4 @@ parameters:
 		-
 			identifiers: [class.notFound, method.notFound, argument.type]
 			paths:
-				- src/Client/EnvConfigFactory.php
 				- tests/Unit/DataConverter/SerializationContextAwareSymfonyConverterTest.php

@@ -17,7 +17,6 @@ use function PHPUnit\Framework\assertArrayHasKey;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
-use function PHPUnit\Framework\assertIsArray;
 use function PHPUnit\Framework\assertStringContainsString;
 use function PHPUnit\Framework\assertTrue;
 
@@ -30,8 +29,8 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
+use Temporal\Client\GRPC\ServiceClient;
 use Temporal\Client\ScheduleClientInterface as ScheduleClient;
-use Vanta\Integration\Symfony\Temporal\Client\GrpcServiceClientFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
 
@@ -221,18 +220,14 @@ final class ScheduleClientTest extends KernelTestCase
         assertEquals(new Reference('temporal.cloud.schedule_service_client'), $cloudArgument);
 
         assertInstanceOf(Definition::class, $cloudDef);
-        assertEquals([GrpcServiceClientFactory::class, 'create'], $cloudDef->getFactory());
-        $tls = $cloudDef->getArgument('$tls');
-
-        assertIsArray($tls);
-        assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $tls['clientKey']); // @phpstan-ignore cast.string
-        assertStringContainsString('TEMPORAL_CLIENT_CERT_PATH', (string) $tls['clientPem']); // @phpstan-ignore cast.string
+        assertEquals([ServiceClient::class, 'createSSL'], $cloudDef->getFactory());
+        assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $cloudDef->getArgument(2)); // @phpstan-ignore cast.string
+        assertStringContainsString('TEMPORAL_CLIENT_CERT_PATH', (string) $cloudDef->getArgument(3)); // @phpstan-ignore cast.string
 
         assertInstanceOf(Definition::class, $defaultDef);
-        assertEquals([GrpcServiceClientFactory::class, 'create'], $defaultDef->getFactory());
-        assertStringContainsString('TEMPORAL_ADDRESS', (string) $defaultDef->getArgument('$address')); // @phpstan-ignore cast.string
-        assertEquals(['enabled' => null, 'rootCa' => null, 'clientKey' => null, 'clientPem' => null, 'serverName' => null], $defaultDef->getArgument('$tls'));
-        assertInstanceOf(Definition::class, $defaultDef->getArgument('$context'));
+        assertEquals([ServiceClient::class, 'create'], $defaultDef->getFactory());
+        assertStringContainsString('TEMPORAL_ADDRESS', (string) $defaultDef->getArgument(0)); // @phpstan-ignore cast.string
+        assertEquals(['withContext'], array_column($defaultDef->getMethodCalls(), 0));
     }
 
 

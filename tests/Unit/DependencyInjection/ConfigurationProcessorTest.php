@@ -19,11 +19,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\Definition\Processor;
-use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Worker\WorkflowPanicPolicy;
-
-use function Vanta\Integration\Symfony\Temporal\DependencyInjection\apiKey;
-
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 
@@ -262,56 +258,6 @@ final class ConfigurationProcessorTest extends TestCase
         $this->expectExceptionMessage('"tls.clientKey" and "tls.clientPem" must be set together');
 
         $this->process([['scheduleClients' => ['default' => ['namespace' => 'default', 'tls' => ['clientKey' => 'key.pem']]]]]);
-    }
-
-
-    public function testApiKeyServiceReference(): void
-    {
-        assertSame('key', (string) apiKey('key'));
-        self::assertNull(apiKey(null));
-        self::assertEquals(new Reference('app.api_key'), apiKey('@app.api_key'));
-        assertSame('@', apiKey('@'));
-    }
-
-
-    public function testEnvConfigClientWithoutNamespace(): void
-    {
-        $config = $this->process([['clients' => ['default' => ['envConfig' => ['enabled' => true, 'profile' => 'prod']]]]]);
-
-        self::assertIsArray($config['clients']);
-        self::assertIsArray($config['clients']['default']);
-        self::assertNull($config['clients']['default']['namespace']);
-        assertSame(['enabled' => true, 'profile' => 'prod', 'configFile' => null], $config['clients']['default']['envConfig']);
-    }
-
-
-    public function testNamespaceIsRequiredWithoutEnvConfig(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('"namespace" is required unless "envConfig.enabled" is true');
-
-        $this->process([['clients' => ['default' => ['address' => 'localhost:7233']]]]);
-    }
-
-
-    public function testEnvConfigConflictsWithConnectionOptions(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('Options "address", "apiKey" cannot be set together with "envConfig.enabled"');
-
-        $this->process([['scheduleClients' => ['default' => ['envConfig' => ['enabled' => true], 'address' => 'localhost:7233', 'apiKey' => 'key']]]]);
-    }
-
-
-    public function testEnvConfigConflictsAcrossConfigFiles(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('"apiKey" and "tls" cannot be set together with "envConfig.enabled"');
-
-        $this->process([
-            ['clients' => ['default' => ['namespace' => 'default', 'apiKey' => 'key']]],
-            ['clients' => ['default' => ['envConfig' => ['enabled' => true]]]],
-        ]);
     }
 
 

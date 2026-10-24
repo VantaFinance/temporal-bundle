@@ -23,14 +23,15 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Client\ClientOptions;
+use Temporal\Client\Common\RpcRetryOptions;
+use Temporal\Client\GRPC\Context;
 use Temporal\Client\GRPC\ContextInterface;
+use Temporal\Client\GRPC\ServiceClient as GrpcServiceClient;
 use Temporal\Client\GRPC\ServiceClientInterface as ServiceClient;
 use Temporal\Interceptor\GrpcClientInterceptor;
+use Temporal\Interceptor\SimplePipelineProvider;
 use Throwable;
 use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
-use Vanta\Integration\Symfony\Temporal\Client\EnvConfigFactory;
-use Vanta\Integration\Symfony\Temporal\Client\GrpcContextFactory;
-use Vanta\Integration\Symfony\Temporal\Client\GrpcServiceClientFactory;
 
 /**
  * @internal
@@ -125,26 +126,68 @@ function grpcClient(array $client, string $path): Definition
         assertEnvConfigSupported($client['envConfig'], $path);
 
         return definition(ServiceClient::class)
-            ->setFactory([EnvConfigFactory::class, 'serviceClient'])
-            ->setArguments([
-                '$profile'      => $client['envConfig']['profile'],
-                '$configFile'   => $client['envConfig']['configFile'],
-                '$context'      => grpcContext($client['grpcContext']),
-                '$interceptors' => [],
-            ])
+            ->setFactory([envConfigProfile($client['envConfig']), 'toServiceClient'])
+            ->addMethodCall('withContext', [grpcContext($client['grpcContext'])], true)
         ;
     }
 
-    return definition(ServiceClient::class)
-        ->setFactory([GrpcServiceClientFactory::class, 'create'])
-        ->setArguments([
-            '$address'      => $client['address'],
-            '$apiKey'       => apiKey($client['apiKey']),
-            '$tls'          => $client['tls'],
-            '$context'      => grpcContext($client['grpcContext']),
-            '$interceptors' => [],
-        ])
+    $tls = $client['tls'];
+
+    // An API key is never sent without TLS unless tls.enabled is false
+    $useTls = $tls['enabled'] ?? ($client['apiKey'] !== null || $tls['rootCa'] !== null || $tls['clientKey'] !== null || $tls['clientPem'] !== null || $tls['serverName'] !== null);
+
+    $serviceClient = definition(ServiceClient::class, [$client['address']])
+        ->setFactory([GrpcServiceClient::class, 'create'])
     ;
+
+    if ($useTls) {
+        $serviceClient = definition(ServiceClient::class, [$client['address'], $tls['rootCa'], $tls['clientKey'], $tls['clientPem'], $tls['serverName']])
+            ->setFactory([GrpcServiceClient::class, 'createSSL'])
+        ;
+    }
+
+    $apiKey = $client['apiKey'];
+
+    // "@service_id": a \Stringable service, so that the key can be rotated without a container rebuild
+    if ($apiKey !== null) {
+        $serviceClient->addMethodCall('withAuthKey', [str_starts_with($apiKey, '@') ? new Reference(substr($apiKey, 1)) : $apiKey], true);
+    }
+
+    return $serviceClient->addMethodCall('withContext', [grpcContext($client['grpcContext'])], true);
+}
+
+
+/**
+ * @internal
+ *
+ * @param array{enabled: bool, profile: ?non-empty-string, configFile: ?non-empty-string} $envConfig
+ */
+function envConfigProfile(array $envConfig): Definition
+{
+    return (new Definition('Temporal\Common\EnvConfig\Client\ConfigProfile'))
+        ->setFactory(['Temporal\Common\EnvConfig\ConfigClient', 'load'])
+        ->setArguments([$envConfig['profile'], $envConfig['configFile']])
+    ;
+}
+
+
+/**
+ * @internal
+ *
+ * @param list<non-empty-string> $interceptors
+ */
+function grpcInterceptorPipeline(Definition $serviceClient, array $interceptors): void
+{
+    if ($interceptors == []) {
+        return;
+    }
+
+    // Added last: the pipeline is bound to the client instance it is created for
+    $serviceClient->addMethodCall('withInterceptorPipeline', [
+        definition('Temporal\Internal\Interceptor\Pipeline')
+            ->setFactory([definition(SimplePipelineProvider::class, [array_map(reference(...), $interceptors)]), 'getPipeline'])
+            ->setArguments([GrpcClientInterceptor::class]),
+    ], true);
 }
 
 
@@ -164,17 +207,10 @@ function clientOptions(array $client, string $path): Definition
     $options = definition(ClientOptions::class);
 
     if ($client['envConfig']['enabled']) {
-        $options
-            ->setFactory([EnvConfigFactory::class, 'clientOptions'])
-            ->setArguments([
-                $client['envConfig']['profile'],
-                $client['envConfig']['configFile'],
-                $client['namespace'],
-            ])
-        ;
+        $options->setFactory([envConfigProfile($client['envConfig']), 'toClientOptions']);
     }
 
-    if (!$client['envConfig']['enabled']) {
+    if ($client['namespace'] !== null) {
         $options->addMethodCall('withNamespace', [$client['namespace']], true);
     }
 
@@ -319,21 +355,6 @@ function connectionSummary(array $client): string
 
 /**
  * @internal
- */
-function apiKey(?string $apiKey): Reference|string|null
-{
-    $id = $apiKey !== null && str_starts_with($apiKey, '@') ? substr($apiKey, 1) : '';
-
-    if ($id !== '') {
-        return reference($id);
-    }
-
-    return $apiKey;
-}
-
-
-/**
- * @internal
  *
  * @param array{
  *  timeout: array{value: int, format: string},
@@ -352,15 +373,45 @@ function apiKey(?string $apiKey): Reference|string|null
  */
 function grpcContext(array $rawContext): Definition
 {
-    return definition(ContextInterface::class)
-        ->setFactory([GrpcContextFactory::class, 'create'])
-        ->setArguments([
-            $rawContext['timeout'],
-            $rawContext['options'],
-            $rawContext['metadata'],
-            $rawContext['retryOptions'],
-        ])
+    $context = definition(ContextInterface::class)
+        ->setFactory([Context::class, 'default'])
+        ->addMethodCall('withTimeout', [$rawContext['timeout']['value'], $rawContext['timeout']['format']], true)
     ;
+
+    if ($rawContext['options'] != []) {
+        $context->addMethodCall('withOptions', [$rawContext['options']], true);
+    }
+
+    // withMetadata() replaces the SDK headers (client-name, client-version)
+    if ($rawContext['metadata'] != []) {
+        $context->addMethodCall('withMetadata', [[
+            ...Context::default()->getMetadata(),
+            ...array_map(static fn (array $values): array => array_map(strval(...), $values), $rawContext['metadata']),
+        ]], true);
+    }
+
+    // Starts from the SDK retry options: 500 ms initial interval, unlimited attempts
+    $retryOptions = definition(RpcRetryOptions::class)
+        ->setFactory([definition(Context::class)->setFactory([Context::class, 'default']), 'getRetryOptions'])
+    ;
+
+    foreach ($rawContext['retryOptions'] as $option => $value) {
+        if ($value === null || $value === []) {
+            continue;
+        }
+
+        if (is_string($value)) {
+            $value = dateIntervalDefinition($value);
+        }
+
+        $retryOptions->addMethodCall(sprintf('with%s', ucfirst($option)), [$value], true);
+    }
+
+    if ($retryOptions->getMethodCalls() != []) {
+        $context->addMethodCall('withRetryOptions', [$retryOptions], true);
+    }
+
+    return $context;
 }
 
 
