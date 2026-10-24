@@ -22,6 +22,10 @@ clear-vendor:
 testing:
 	./vendor/bin/phpunit
 
+# Temporal and RoadRunner are started by the tests themselves (tests/E2e/E2eTestCase.php)
+testing-e2e:
+	./vendor/bin/phpunit --testsuite='Temporal E2E'
+
 start-temporal:
 	@echo "Starting Temporal..."
 	@./temporal server start-dev > var/log/temporal.log 2>&1 &

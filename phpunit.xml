@@ -21,6 +21,12 @@
             <directory>tests/E2e</directory>
         </testsuite>
     </testsuites>
+    <extensions>
+        <bootstrap class="Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension">
+            <parameter name="logFile" value="var/log/test-environment.log"/>
+        </bootstrap>
+    </extensions>
+
     <php>
         <env name="TEMPORAL_ADDRESS" value="0.0.0.0:7233" />
         <env name="RR_RPC" value="tcp://0.0.0.0:6001" />

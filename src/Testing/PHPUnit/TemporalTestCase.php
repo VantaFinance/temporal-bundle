@@ -24,6 +24,9 @@ abstract class TemporalTestCase extends KernelTestCase
 
     protected function setUp(): void
     {
+        // A failed #[WithTemporalEnvironment] start is only a warning in PHPUnit: fail the test instead
+        TemporalEnvironmentExtension::rethrowStartFailure();
+
         $this->testService    = static::getContainer()->get(TestService::class);
         $this->activityMocker = static::getContainer()->get(ActivityMocker::class);
         $this->workflowClient = static::getContainer()->get(WorkflowClient::class);

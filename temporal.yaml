@@ -13,3 +13,9 @@ temporal:
       namespace: default
       address: '%env(TEMPORAL_ADDRESS)%'
       dataConverter: temporal.data_converter
+
+when@test:
+  temporal:
+    pool:
+      testing:
+        enabled: true

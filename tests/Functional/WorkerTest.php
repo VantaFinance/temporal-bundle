@@ -22,11 +22,13 @@ use function PHPUnit\Framework\assertIsArray;
 use function PHPUnit\Framework\assertIsString;
 use function PHPUnit\Framework\assertNotEmpty;
 use function PHPUnit\Framework\assertNotNull;
+use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use ReflectionProperty;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
@@ -149,6 +151,27 @@ final class WorkerTest extends KernelTestCase
 
         $factory = $container->get('temporal.worker_factory');
         assertInstanceOf(WorkerFactory::class, $factory);
+    }
+
+    public function testRegisterWorkerInTestingModeSharesOneFactory(): void
+    {
+        $kernel = self::bootKernel([
+            'config' => static function (TestKernel $kernel): void {
+                $kernel->addTestBundle(TemporalBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing.yaml');
+            },
+        ]);
+
+        $container = $kernel->getContainer();
+
+        $factory = $container->get('temporal.worker_factory');
+        assertInstanceOf(WorkerFactory::class, $factory);
+
+        /** @var Runtime $runtime */
+        $runtime = $container->get('temporal.runtime');
+
+        assertCount(2, $runtime);
+        assertSame($factory, (new ReflectionProperty(Runtime::class, 'factory'))->getValue($runtime));
     }
 
     public function testRegisterWorkerWithInvalidCustomFactory(): void

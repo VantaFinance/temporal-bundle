@@ -40,6 +40,10 @@ use function Vanta\Integration\Symfony\Temporal\DependencyInjection\getIntercept
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\reference;
 use function Vanta\Integration\Symfony\Temporal\DependencyInjection\referenceLogger;
 
+use const Vanta\Integration\Symfony\Temporal\DependencyInjection\WORKER_FACTORY_ID;
+
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\workerId;
+
 use Vanta\Integration\Symfony\Temporal\Environment;
 use Vanta\Integration\Symfony\Temporal\Finalizer\ChainFinalizer;
 use Vanta\Integration\Symfony\Temporal\InstalledVersions;
@@ -129,7 +133,7 @@ final class WorkflowCompilerPass implements CompilerPass
         }
 
 
-        $factory = $container->register('temporal.worker_factory', WorkerFactoryInterface::class)
+        $container->register(WORKER_FACTORY_ID, WorkerFactoryInterface::class)
             ->setFactory([$workerFactoryClass, 'create'])
             ->setArguments($factoryArguments)
             ->setPublic(true)
@@ -231,8 +235,8 @@ final class WorkflowCompilerPass implements CompilerPass
 
             $loggerWorkerReference = $loggerWorkerReference ?: $globalLoggerReference;
 
-            $newWorker = $container->register(sprintf('temporal.%s.worker', $workerName), WorkerInterface::class)
-                ->setFactory([$factory, 'newWorker'])
+            $newWorker = $container->register(workerId($workerName), WorkerInterface::class)
+                ->setFactory([reference(WORKER_FACTORY_ID), 'newWorker'])
                 ->setArguments([
                     $worker['taskQueue'],
                     $options,
@@ -292,13 +296,13 @@ final class WorkflowCompilerPass implements CompilerPass
 
             $this->registerFinalizers(array_unique($finalizers), $workerName, $container);
 
-            $configuredWorkers[$workerName] = $newWorker;
+            $configuredWorkers[$workerName] = reference(workerId($workerName));
         }
 
 
         $container->register('temporal.runtime', Runtime::class)
             ->setArguments([
-                $factory,
+                reference(WORKER_FACTORY_ID),
                 $configuredWorkers,
             ])
             ->setPublic(true)
@@ -331,10 +335,8 @@ final class WorkflowCompilerPass implements CompilerPass
 
 
         $container->getDefinition('temporal.collector')
-            ->setArgument('$workers', array_map(static function (Definition $worker): Definition {
-                $worker = clone $worker;
-
-                return $worker->addMethodCall('getOptions', returnsClone: true);
+            ->setArgument('$workers', array_map(static function (Reference $worker): Definition {
+                return definition(WorkerOptions::class)->setFactory([$worker, 'getOptions']);
             }, $configuredWorkers))
             ->setArgument('$workflows', $container->findTaggedServiceIds('temporal.workflow'))
             ->setArgument('$activities', $container->findTaggedServiceIds('temporal.activity'))
@@ -363,7 +365,7 @@ final class WorkflowCompilerPass implements CompilerPass
             ])
         ;
 
-        $container->getDefinition(sprintf('temporal.%s.worker', $workerName))
+        $container->getDefinition(workerId($workerName))
             ->addMethodCall('registerActivityFinalizer', [
                 definition(Closure::class, [[$chain, 'finalize']])
                     ->setFactory([Closure::class, 'fromCallable']),

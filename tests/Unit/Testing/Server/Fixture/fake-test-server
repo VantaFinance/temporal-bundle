@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Fake temporal-test-server: `<port> [--enable-time-skipping]`, listens on 127.0.0.1:<port>.
+
+$server = stream_socket_server(sprintf('tcp://127.0.0.1:%d', (int) ($argv[1] ?? 0)), $errorCode, $errorMessage);
+
+if ($server === false) {
+    fwrite(STDERR, sprintf("fake-test-server: %s\n", $errorMessage));
+
+    exit(1);
+}
+
+while (true) {
+    $connection = @stream_socket_accept($server, 1);
+
+    if ($connection !== false) {
+        fclose($connection);
+    }
+}

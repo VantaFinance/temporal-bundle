@@ -6,17 +6,15 @@ server:
     - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
 
 rpc:
-  listen: tcp://0.0.0.0:6002
+  listen: tcp://127.0.0.1:6001
 
 temporal:
-  address: "0.0.0.0:7233"
+  address: "127.0.0.1:7233"
   activities:
     num_workers: 1
 
 logs:
-  level: debug
-  channels:
-    temporal.level: error
+  level: error
 
 
 

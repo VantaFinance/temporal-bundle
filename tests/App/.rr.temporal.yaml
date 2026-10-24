@@ -5,7 +5,6 @@ server:
     env:
         - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
         - APP_ENV: prod
-        - TEMPORAL_TESTING_AUTOLOAD: true
 
 rpc:
   listen: tcp://0.0.0.0:6001
@@ -20,3 +19,9 @@ logs:
   encoding: json
   file_logger_options:
     log_output: "../../var/log/rr-worker.log"
+
+kv:
+  test:
+    driver: memory
+    config:
+      interval: 10

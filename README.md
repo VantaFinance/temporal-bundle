@@ -29,7 +29,8 @@ profiler, so workflows and activities can be declared and run with idiomatic Sym
 - **Debug console commands** — introspect workers, clients, workflows, activities, and schedule
   clients (`debug:temporal:*`). See [Debug commands](#debug-commands).
 - **Web profiler** — a data collector surfaces Temporal activity in the Symfony profiler.
-- **Test helpers** — first-class support for PHPUnit and Codeception against a local Temporal test server.
+- **Test helpers** — PHPUnit base test case, Codeception helper, and explicit, code-driven control of Temporal and
+  RoadRunner test servers.
 
 ## Requirements
 
@@ -429,132 +430,103 @@ Client: default
 
 ## Testing
 
-The following testing frameworks are supported:
+Tests run against real Temporal and RoadRunner processes that are started and stopped for every test marked with
+`#[WithTemporalEnvironment]`, or explicitly from your test code. The bundle provides:
 
-- [`PHPUnit`](https://github.com/sebastianbergmann/phpunit)
-- [`Codeception`](https://github.com/Codeception/Codeception)
+- `Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment` — marks a test class or method that
+  needs Temporal and RoadRunner.
+- `Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension` /
+  `Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalEnvironmentExtension` — start and stop the servers
+  around every marked test.
+- `Vanta\Integration\Symfony\Temporal\Testing\Server\*` — classes that start and stop Temporal and RoadRunner.
+- `Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase` — a [`PHPUnit`](https://github.com/sebastianbergmann/phpunit)
+  base test case with `$workflowClient`, `$activityMocker` and `$testService` from the container.
+- `Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalTestingTools` — the same services for
+  [`Codeception`](https://github.com/Codeception/Codeception).
+- `Vanta\Integration\Symfony\Temporal\Testing\Tools\awaitWithTimeout()` / `waitWithTime()` — polling helpers.
 
-The following parameters are available to you:
+### Quick start
 
-- `pool.testing.enabled` — activate test mode
-- `pool.testing.activityMocker` — which ActivityMocker to use. Default value: `rr_kv`. Allowed values:
-  `rr_kv`, `in_memory`, or a service id if you want to use your own implementation of
-  `Temporal\Worker\ActivityInvocationCache\ActivityInvocationCacheInterface`
-- `pool.testServices.<name>` — list of configured `Temporal\Testing\TestService`
+The steps below take a Symfony application to a green workflow test.
 
-Available environment variables:
+**1. Install PHPUnit and download the binaries** — ideally **before** installing the bundle, so that its recipe can
+wire the test setup (step 2). [`dload`](https://github.com/php-internal/dload) puts `rr` and `temporal` into the
+project root:
 
-- `TEMPORAL_TESTING_RR_COMMAND` — full command to run RoadRunner
-- `TEMPORAL_TESTING_NEED_DOWNLOAD_RR` — download the RoadRunner executable every time you run tests (default: `true`)
-- `TEMPORAL_TESTING_SKIP_START_TEMPORAL_SERVER` — do not start the Temporal Test Server every time you run a test (default: `false`)
-
-### Test environment setup
-
-Both frameworks share the same setup. The bundle's testing extension boots a full
-Temporal environment for you — it downloads the RoadRunner binary if it is missing,
-starts the [Temporal test server](https://docs.temporal.io/dev-guide/php/testing) and
-a RoadRunner worker before the run, and stops them afterwards. You only need to
-provide three things.
-
-**1. Enable test mode** in your Temporal config (`config/packages/temporal.yaml`):
-
-```yaml
-temporal:
-  defaultClient: default
-  pool:
-    dataConverter: temporal.data_converter
-    roadrunnerRPC: '%env(RR_RPC)%'
-    testing:
-      enabled: true
-
-  workers:
-    default:
-      taskQueue: default
-      exceptionInterceptor: temporal.exception_interceptor
-
-  clients:
-    default:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
+```bash
+composer require --dev symfony/test-pack internal/dload
+vendor/bin/dload get rr temporal
 ```
 
-**2. Provide a RoadRunner worker entry point** (referenced by the RoadRunner config
-below). It boots the Symfony kernel through the bundled `TemporalRuntime`:
+Then install the bundle as described in [Installation](#installation).
 
-```php
-<?php
+**2. Check what the recipe did.** It adds the following; if PHPUnit was installed after the bundle or a file has a
+different name, add the missing parts by hand:
 
-declare(strict_types=1);
+- `config/packages/temporal.yaml` — test mode for the `test` environment only (enabling it globally would switch your
+  production workers to the testing worker factory):
 
-use App\Kernel;
-use Symfony\Bundle\FrameworkBundle\Console\Application;
-use Symfony\Component\Console\Input\InputInterface as Input;
+  ```yaml
+  when@test:
+    temporal:
+      pool:
+        testing:
+          enabled: true
+  ```
 
-require __DIR__ . '/../vendor/autoload_runtime.php';
+- `.env.test` — localhost addresses (the recipe's `.env` uses the docker host names `temporal:7233` and
+  `rr_temporal:6001`, which do not resolve outside docker):
 
-return static function (Input $input, array $context): object {
-    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+  ```dotenv
+  ###> vanta/temporal-bundle (tests) ###
+  TEMPORAL_ADDRESS=127.0.0.1:7233
+  RR_RPC=tcp://127.0.0.1:6001
+  ###< vanta/temporal-bundle (tests) ###
+  ```
 
-    if (array_key_exists('RR_MODE', $context) && $context['RR_MODE'] == 'temporal') {
-        return $kernel;
-    }
+- `.rr.temporal.testing.yaml` in the project root — the RoadRunner test config. The `kv.test` storage is required by
+  the default activity mocker (`pool.testing.activityMocker: rr_kv`):
 
-    return new Application($kernel);
-};
-```
+  ```yaml
+  version: '3'
 
-**3. Add a RoadRunner test config** named `.rr.temporal.testing.yaml` (the extension
-runs `rr serve -c .rr.temporal.testing.yaml`):
+  server:
+    command: 'php public/index.php'
+    env:
+      - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
 
-```yaml
-version: '3'
+  rpc:
+    listen: tcp://127.0.0.1:6001
 
-server:
-  command: 'php public/index.php'
-  env:
-    - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
+  temporal:
+    address: '127.0.0.1:7233'
+    activities:
+      num_workers: 1
 
-rpc:
-  listen: tcp://0.0.0.0:6001
+  logs:
+    level: error
 
-temporal:
-  address: '0.0.0.0:7233'
-  activities:
-    num_workers: 1
+  kv:
+    test:
+      driver: memory
+      config:
+        interval: 10
+  ```
 
-logs:
-  level: error
-```
+- `phpunit.dist.xml` (or `phpunit.xml.dist`) — the extension, inside the `<extensions>` block that Symfony's PHPUnit
+  recipe creates. It reads `#[WithTemporalEnvironment]` and starts a fresh Temporal dev server and RoadRunner before
+  every marked test (before `setUp()`) and stops them after it (after `tearDown()`). The `logFile` parameter is
+  optional and records every start and stop:
 
-The environment behavior is controlled by the variables already listed above —
-`TEMPORAL_TESTING_RR_COMMAND`, `TEMPORAL_TESTING_NEED_DOWNLOAD_RR`, and
-`TEMPORAL_TESTING_SKIP_START_TEMPORAL_SERVER`.
+  ```xml
+  <extensions>
+      <bootstrap class="Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension">
+          <parameter name="logFile" value="var/log/test-environment.log"/>
+      </bootstrap>
+  </extensions>
+  ```
 
-### Using with PHPUnit
-
-Add the extension to your PHPUnit XML config:
-
-```xml
-<phpunit>
-    ...
-    <extensions>
-        <bootstrap class="Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\IntegrationTestingExtension" />
-    </extensions>
-</phpunit>
-```
-
-### Testing workflows with PHPUnit
-
-Extend the base test case
-`Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase` (it extends
-Symfony's `KernelTestCase`). Its `setUp()` pulls three services from the container:
-
-- `$this->workflowClient` — `Temporal\Client\WorkflowClientInterface`, used to start and query workflows
-- `$this->activityMocker` — `Temporal\Testing\ActivityMocker`, used to stub activity results
-- `$this->testService` — `Temporal\Testing\TestService`, used to control the test server clock
-
-Given a workflow with a `#[WorkflowMethod]` and a `#[QueryMethod]`:
+**3. Write a workflow and a test.** `src/Workflow/GreetingActivity.php`:
 
 ```php
 <?php
@@ -563,93 +535,304 @@ declare(strict_types=1);
 
 namespace App\Workflow;
 
-use Generator;
-use Temporal\Workflow\QueryMethod;
-use Temporal\Workflow\WorkflowInterface;
-use Temporal\Workflow\WorkflowMethod;
+use Temporal\Activity\ActivityInterface;
+use Temporal\Activity\ActivityMethod;
 
-#[WorkflowInterface]
-final class TestQueryWorkflow
+#[ActivityInterface(prefix: 'Greeting.')]
+final class GreetingActivity
 {
-    public function __construct(
-        private ?TestQuery $args = null,
-    ) {
-    }
-
-    #[WorkflowMethod]
-    public function start(TestQuery $args): Generator
+    #[ActivityMethod]
+    public function greet(string $name): string
     {
-        $this->args = $args;
-
-        yield null;
-    }
-
-    #[QueryMethod]
-    public function getArgs(): ?TestQuery
-    {
-        return $this->args;
+        return 'Hello, ' . $name;
     }
 }
 ```
 
-start it through the workflow client and assert on the query result:
+`src/Workflow/GreetingWorkflow.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Tests\E2e;
+namespace App\Workflow;
 
-use App\Workflow\TestQuery;
-use App\Workflow\TestQueryWorkflow;
-use DateTimeImmutable;
-use DateTimeZone;
-use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase;
+use Carbon\CarbonInterval;
+use Generator;
+use Temporal\Activity\ActivityOptions;
+use Temporal\Workflow;
+use Temporal\Workflow\WorkflowInterface;
+use Temporal\Workflow\WorkflowMethod;
 
-use function PHPUnit\Framework\assertEquals;
-
-final class WorkflowTest extends TemporalTestCase
+#[WorkflowInterface]
+final class GreetingWorkflow
 {
-    public function testStartWorkflow(): void
+    #[WorkflowMethod]
+    public function greet(string $name): Generator
     {
-        $workflow = $this->workflowClient->newWorkflowStub(TestQueryWorkflow::class);
-
-        $args = new TestQuery(
-            'Vlad Shashkov',
-            new DateTimeImmutable('2026-03-08 12:30:45', new DateTimeZone('UTC')),
+        $activity = Workflow::newActivityStub(
+            GreetingActivity::class,
+            ActivityOptions::new()->withStartToCloseTimeout(CarbonInterval::seconds(5)),
         );
 
-        $this->workflowClient->start($workflow, $args);
-
-        assertEquals($args, $workflow->getArgs());
+        return yield $activity->greet($name);
     }
 }
 ```
 
-For workflows that depend on activities, stub them via `$this->activityMocker`
-before starting the workflow. To assert on asynchronous state, poll with the
-provided helpers `Vanta\Integration\Symfony\Temporal\Testing\Tools\awaitWithTimeout()`
-or `waitWithTime()` (both accept a `callable(): bool` condition and a `CarbonInterval`
-timeout, default 5 seconds).
+`tests/GreetingWorkflowTest.php` — the attribute applies to **every** test of the class:
 
-### Using with Codeception
+```php
+<?php
 
-Add the extension to your Codeception config (`codeception.yml`):
+declare(strict_types=1);
+
+namespace App\Tests;
+
+use App\Workflow\GreetingWorkflow;
+use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
+use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase;
+
+#[WithTemporalEnvironment]
+final class GreetingWorkflowTest extends TemporalTestCase
+{
+    public function testGreet(): void
+    {
+        $workflow = $this->workflowClient->newWorkflowStub(GreetingWorkflow::class);
+
+        $run = $this->workflowClient->start($workflow, 'Vlad');
+
+        self::assertSame('Hello, Vlad', $run->getResult('string', 10));
+    }
+}
+```
+
+The attribute finds `temporal` and `rr` in `PATH` or in the project root (where `dload` put them) and uses
+`.rr.temporal.testing.yaml` from the project root — no paths in the test. The RoadRunner worker inherits
+`APP_ENV=test` and the `.env.test` values from the PHPUnit process, so it boots your kernel in the `test` environment.
+
+**4. Run it:**
+
+```bash
+vendor/bin/phpunit
+```
+
+### Mocking activities
+
+`$this->activityMocker` replaces an activity result for the running worker. The activity name is the
+`ActivityInterface` prefix plus the method name. Every test gets a new RoadRunner, so the expectations do not leak
+into the next test:
+
+```php
+public function testGreetWithMockedActivity(): void
+{
+    $this->activityMocker->expectCompletion('Greeting.greet', 'mocked');
+
+    $workflow = $this->workflowClient->newWorkflowStub(GreetingWorkflow::class);
+
+    self::assertSame('mocked', $this->workflowClient->start($workflow, 'Vlad')->getResult('string', 10));
+}
+```
+
+Use `expectFailure('Greeting.greet', new \RuntimeException(...))` to simulate a failing activity. To assert on
+asynchronous state, poll with `awaitWithTimeout()` or `waitWithTime()` (both take a `callable(): bool` condition and a
+`CarbonInterval` timeout, default 5 seconds).
+
+The following parameters configure test mode:
+
+- `pool.testing.enabled` — activate test mode
+- `pool.testing.activityMocker` — which ActivityMocker to use. Default value: `rr_kv`. Allowed values:
+  `rr_kv`, `in_memory`, or a service id if you want to use your own implementation of
+  `Temporal\Worker\ActivityInvocationCache\ActivityInvocationCacheInterface`
+- `pool.testing.testServices.<name>` — list of configured `Temporal\Testing\TestService`
+
+### Lifecycle per test
+
+`#[WithTemporalEnvironment]` can be put on a test class (applies to every test, also inherited by subclasses) or on a
+test method (overrides the class attribute). All arguments are optional:
+
+| Argument              | Default                       | Meaning                                                                                       |
+|-----------------------|-------------------------------|-----------------------------------------------------------------------------------------------|
+| `temporal`            | `TemporalServerType::Dev`     | `Dev` — `temporal server start-dev`; `TimeSkipping` — `temporal-test-server` (needed by `TestService`); `External` — start no Temporal process, use a running one |
+| `temporalAddress`     | `127.0.0.1:7233`              | Address the Temporal server listens on; also passed to RoadRunner as `-o temporal.address=…`  |
+| `temporalBinary`      | `null`                        | `temporal` / `temporal-test-server` looked up in `PATH`, then in the project root             |
+| `searchAttributes`    | `[]`                          | `array<name, ValueType>` registered on start (`Dev` only), e.g. `['CustomerId' => ValueType::Keyword]` |
+| `temporalNamespace`   | `default`                     | Namespace created on start and used by the RoadRunner worker (`Dev` only)                     |
+| `temporalDynamicConfig` | `[]`                        | `--dynamic-config-value KEY=<json>` entries (`Dev` only)                                      |
+| `temporalArguments`   | `[]`                          | Extra `temporal server start-dev` flags, appended last (`Dev` only)                           |
+| `roadRunnerConfig`    | `.rr.temporal.testing.yaml`   | Relative to the project root                                                                  |
+| `roadRunnerBinary`    | `null`                        | `rr` looked up in `PATH`, then in the project root                                            |
+| `roadRunnerOverrides` | `[]`                          | Extra `-o key=value` RoadRunner config overrides (e.g. `['rpc.listen' => 'tcp://127.0.0.1:6002']`) |
+| `startTimeout`        | `30.0`                        | Seconds to wait until a server is ready                                                       |
+| `stopTimeout`         | `10.0`                        | Seconds to wait for a graceful stop before killing                                            |
+
+Relative paths are resolved against the project root (the root Composer package). Your application's Temporal client
+address (`TEMPORAL_ADDRESS` in `.env.test`) must point to the same `temporalAddress`.
+
+The extension works with any PHPUnit test — `TemporalTestCase` or a plain `TestCase`, no trait or base class needed:
+
+```php
+use PHPUnit\Framework\TestCase;
+use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
+use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension;
+
+#[WithTemporalEnvironment]
+final class MyTest extends TestCase
+{
+    public function testEnvironmentIsUp(): void
+    {
+        self::assertTrue(TemporalEnvironmentExtension::current()?->isRunning() === true);
+    }
+}
+```
+
+`TemporalEnvironmentExtension::current()` returns the environment of the running test (`null` without the attribute).
+For Codeception see [Testing workflows with Codeception](#testing-workflows-with-codeception).
+
+To manage the servers yourself, leave the attribute out and start an environment in your own hooks:
+
+```php
+use Vanta\Integration\Symfony\Temporal\Testing\Server\RoadRunnerServer;
+use Vanta\Integration\Symfony\Temporal\Testing\Server\TemporalDevServer;
+use Vanta\Integration\Symfony\Temporal\Testing\Server\TemporalTestEnvironment;
+
+private TemporalTestEnvironment $environment;
+
+protected function setUp(): void
+{
+    $this->environment = new TemporalTestEnvironment(
+        new TemporalDevServer(address: '127.0.0.1:7233'),
+        new RoadRunnerServer(configFile: 'tests/rr.yaml'),
+    );
+    $this->environment->start();
+}
+
+protected function tearDown(): void
+{
+    $this->environment->stop();
+}
+```
+
+Things to know:
+
+- Starting takes about 0.5 s and stopping about 2 s per test (RoadRunner shuts its worker pools down one by one); the
+  servers are stopped in parallel.
+- The servers are up during `setUp()` and `tearDown()` too.
+- The ports must be free: if something already answers on `temporalAddress` (for example a Temporal container),
+  `start()` fails with `ServerStartFailed` instead of testing against it. PHPUnit reports exceptions of extensions as
+  warnings, so `TemporalTestCase::setUp()` rethrows the start failure and the test errors; in a plain `TestCase` call
+  `TemporalEnvironmentExtension::rethrowStartFailure()` in `setUp()` for the same behaviour.
+
+#### Search attributes
+
+Register custom search attributes on the dev server through the attribute, and let them through in test mode — by
+default the bundle strips search attributes from every workflow start in test mode
+(`pool.testing.disableSearchAttributes: true`):
+
+```yaml
+when@test:
+  temporal:
+    pool:
+      testing:
+        enabled: true
+        disableSearchAttributes: false
+```
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests;
+
+use App\Workflow\GreetingWorkflow;
+use Temporal\Client\WorkflowOptions;
+use Temporal\Common\SearchAttributes\SearchAttributeKey;
+use Temporal\Common\SearchAttributes\ValueType;
+use Temporal\Common\TypedSearchAttributes;
+use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
+use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase;
+
+#[WithTemporalEnvironment(searchAttributes: ['CustomerId' => ValueType::Keyword])]
+final class CustomerSearchTest extends TemporalTestCase
+{
+    public function testFindsWorkflowByCustomer(): void
+    {
+        $workflow = $this->workflowClient->newWorkflowStub(
+            GreetingWorkflow::class,
+            WorkflowOptions::new()->withTypedSearchAttributes(
+                TypedSearchAttributes::empty()->withValue(SearchAttributeKey::forKeyword('CustomerId'), 'c-1'),
+            ),
+        );
+
+        $this->workflowClient->start($workflow, 'Vlad')->getResult('string', 10);
+
+        // Visibility is eventually consistent: wait until the workflow can be found
+        $query = "CustomerId = 'c-1'";
+
+        for ($attempt = 0; $attempt < 50 && $this->workflowClient->countWorkflowExecutions($query)->count == 0; ++$attempt) {
+            usleep(100_000);
+        }
+
+        self::assertSame(1, $this->workflowClient->countWorkflowExecutions($query)->count);
+    }
+}
+```
+
+Search attributes can only be registered by the dev server (`TemporalServerType::Dev`).
+
+#### Temporal server options
+
+Override how `temporal server start-dev` is started — the namespace, dynamic config values, or any other CLI flag:
+
+```php
+use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
+use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase;
+
+#[WithTemporalEnvironment(
+    temporalNamespace: 'billing',
+    temporalDynamicConfig: ['frontend.enableUpdateWorkflowExecution' => true],
+    temporalArguments: ['--log-level', 'warn'],
+)]
+abstract class BillingTestCase extends TemporalTestCase
+{
+}
+```
+
+- `temporalNamespace` is created when the server starts and is passed to RoadRunner (`-o temporal.namespace=…`), so the
+  worker polls it. Point your application's client to the same namespace in the test environment — this is a global
+  setting, so put the attribute on a shared base test class:
+
+  ```yaml
+  when@test:
+    temporal:
+      clients:
+        default:
+          namespace: billing
+  ```
+
+- `temporalDynamicConfig` becomes `--dynamic-config-value KEY=<json value>` per entry.
+- `temporalArguments` accepts any `temporal server start-dev` flag (for example `['--db-filename', 'var/temporal.db']`);
+  they are appended after the built-in `--log-level error --headless`, so a repeated flag overrides the built-in value.
+
+These options apply to the dev server only (`TemporalServerType::Dev`).
+
+### Testing workflows with Codeception
+
+Steps 1–2 of the Quick start apply as well. Install Codeception
+(`composer require --dev codeception/codeception codeception/module-symfony codeception/module-asserts`) and enable the
+extension in `codeception.yml` — it starts and stops the environment for every Cest (or Codeception unit test) marked
+with `#[WithTemporalEnvironment]`:
 
 ```yaml
 extensions:
     enabled:
-        - Vanta\Integration\Symfony\Temporal\Testing\Codeception\IntegrationTestingExtension:
+        - Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalEnvironmentExtension:
+            logFile: var/log/test-environment.log   # optional
 ```
 
-### Testing workflows with Codeception
-
-The Codeception path exposes the same three services through the
-`Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalTestingTools` helper,
-which is built from the Codeception `Symfony` module. Enable that module in your
-suite config (`tests/Functional.suite.yml`) and add a small helper that hands the
-tools to your tests:
+The suite needs the `Symfony` and `Asserts` modules plus a small helper module (below):
 
 ```yaml
 actor: FunctionalTester
@@ -658,5 +841,100 @@ modules:
         - Symfony:
             app_path: 'src'
             environment: 'test'
+        - Asserts
         - \App\Tests\Support\Helper\Temporal
 ```
+
+Codeception does not load `.env.test` by itself: point it to the Symfony test bootstrap in `codeception.yml`
+(`bootstrap: bootstrap.php`, i.e. `tests/bootstrap.php`) and run the suite with `APP_ENV=test`, so that both your
+kernel and the RoadRunner worker see the test environment:
+
+```bash
+APP_ENV=test vendor/bin/codecept run Functional
+```
+
+`TemporalTestingTools` exposes the three services (`testService`, `activityMocker`, `workflowClient`) built from the
+Codeception `Symfony` module; `reset()` returns a fresh instance. Hand it to your tests through the helper module
+(run `vendor/bin/codecept build` after adding it):
+
+```php
+namespace App\Tests\Support\Helper;
+
+use Codeception\Module;
+use Codeception\Module\Symfony;
+use Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalTestingTools;
+
+final class Temporal extends Module
+{
+    public function temporalTools(): TemporalTestingTools
+    {
+        /** @var Symfony $symfony */
+        $symfony = $this->getModule('Symfony');
+
+        return new TemporalTestingTools($symfony);
+    }
+}
+```
+
+and mark the Cest (or a single method) with the attribute:
+
+```php
+use App\Tests\Support\FunctionalTester;
+use App\Workflow\GreetingWorkflow;
+use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
+
+#[WithTemporalEnvironment]
+final class GreetingWorkflowCest
+{
+    public function greet(FunctionalTester $I): void
+    {
+        $client   = $I->temporalTools()->workflowClient;
+        $workflow = $client->newWorkflowStub(GreetingWorkflow::class);
+
+        $I->assertSame('Hello, Vlad', $client->start($workflow, 'Vlad')->getResult('string', 10));
+    }
+}
+```
+
+### Reference: `Testing\Server`
+
+| Class                     | Starts                                     | Main arguments (defaults)                                                                                                        |
+|---------------------------|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `TemporalDevServer`       | `temporal server start-dev --headless`     | `binary` (`temporal`), `address` (`127.0.0.1:7233`), `namespace` (`default`), `searchAttributes` (`array<name, ValueType>`), `dynamicConfig`, `extraArguments` |
+| `TemporalTestServer`      | `temporal-test-server` with time skipping  | `binary` (`temporal-test-server`), `port` (`7233`), `timeSkipping` (`true`)                                                      |
+| `RoadRunnerServer`        | `rr serve -c <config> -w <dir>`            | `configFile`, `binary` (`rr`), `workingDirectory` (config dir), `env` (extra variables), `overrides` (`-o key=value`)            |
+| `TemporalTestEnvironment` | the given servers in order                 | `Server ...$servers`, `withLogger(LoggerInterface)`                                                                              |
+
+Every server also accepts `logFile`, `startTimeout`, `stopTimeout`, `binaryDirectories` (searched after `PATH` when
+`binary` is a bare name) and a PSR-3 `logger`.
+
+`TemporalDevServer` runs a full Temporal server. `TemporalTestServer` runs the Java test server that supports
+time skipping, which `Temporal\Testing\TestService` needs. Download it explicitly when required:
+
+```php
+$binary = TemporalTestServer::download(__DIR__ . '/../var/bin', githubToken: null);
+```
+
+Behaviour:
+
+- `start()` blocks until the server is ready (`temporal operator cluster health`, `rr workers`, or a TCP probe) and throws
+  `Vanta\Integration\Symfony\Temporal\Testing\Server\ServerStartFailed` with the command and the tail of the server log
+  when the binary or config is missing, the process exits, or `startTimeout` passes.
+- `start()` also throws when something already answers on the server's address before it was started (for example a
+  server left over from a killed run, or a Temporal container) instead of silently testing against it.
+- `start()` and `stop()` are idempotent; servers that are still running when the PHP process exits are stopped by a
+  shutdown hook, so an explicit `stop()` is optional.
+- `TemporalTestEnvironment` starts servers in order and stops them all at once. If one fails to start, the already
+  started servers are stopped and the original exception is rethrown.
+- Server output goes to `logFile`, never to a pipe, so a chatty server cannot block. Without `logFile` it goes to a
+  file in the system temp dir that is removed after a successful stop.
+- `configFile` may be relative; it is resolved with `realpath()`.
+
+Limitations:
+
+- Ctrl+C (SIGINT) skips PHP shutdown functions; the servers still receive SIGINT from the terminal.
+- Ports are fixed by your configuration, so `processIsolation` and paratest are not supported — each process would
+  start its own servers.
+- Linux and macOS only.
+
+See `tests/E2e/E2eTestCase.php` for a base test case that uses the attribute with a custom RoadRunner config.

@@ -12,10 +12,9 @@ use function PHPUnit\Framework\assertEquals;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use Vanta\Integration\Symfony\Temporal\Test\App\Workflow\TestQuery;
 use Vanta\Integration\Symfony\Temporal\Test\App\Workflow\TestQueryWorkflow;
-use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase;
 
 #[CoversNothing]
-final class WorkflowTest extends TemporalTestCase
+final class WorkflowTest extends E2eTestCase
 {
     public function testStartWorkflow(): void
     {

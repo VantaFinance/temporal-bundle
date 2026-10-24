@@ -13,6 +13,8 @@ namespace Vanta\Integration\Symfony\Temporal\Interceptor;
 
 use React\Promise\PromiseInterface as Promise;
 use ReflectionObject;
+use Temporal\Client\WorkflowOptions;
+use Temporal\Common\TypedSearchAttributes;
 use Temporal\Interceptor\Trait\WorkflowClientCallsInterceptorTrait;
 use Temporal\Interceptor\Trait\WorkflowOutboundRequestInterceptorTrait;
 use Temporal\Interceptor\WorkflowClient\SignalWithStartInput;
@@ -51,7 +53,7 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
 
     public function start(StartInput $input, callable $next): WorkflowExecution
     {
-        return $next($input->with(options: $input->options->withSearchAttributes(null)));
+        return $next($input->with(options: self::withoutSearchAttributes($input->options)));
     }
 
 
@@ -60,7 +62,7 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
         return $next(
             $input->with(
                 workflowStartInput: $input->workflowStartInput->with(
-                    options: $input->workflowStartInput->options->withSearchAttributes(null)
+                    options: self::withoutSearchAttributes($input->workflowStartInput->options)
                 )
             )
         );
@@ -71,9 +73,21 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
         return $next(
             $input->with(
                 workflowStartInput: $input->workflowStartInput->with(
-                    options: $input->workflowStartInput->options->withSearchAttributes(null)
+                    options: self::withoutSearchAttributes($input->workflowStartInput->options)
                 )
             )
         );
+    }
+
+    /**
+     * Typed and untyped search attributes are mutually exclusive: withSearchAttributes() throws when typed ones are set.
+     */
+    private static function withoutSearchAttributes(WorkflowOptions $options): WorkflowOptions
+    {
+        if ($options->typedSearchAttributes !== null) {
+            return $options->withTypedSearchAttributes(TypedSearchAttributes::empty());
+        }
+
+        return $options->withSearchAttributes(null);
     }
 }

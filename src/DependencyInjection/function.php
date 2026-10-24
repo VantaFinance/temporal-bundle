@@ -214,6 +214,25 @@ function doctrinePingFinalizerId(string $entityManager): string
 
 /**
  * @internal
+ */
+const WORKER_FACTORY_ID = 'temporal.worker_factory';
+
+
+/**
+ * @internal
+ *
+ * @param non-empty-string $workerName
+ *
+ * @return non-empty-string
+ */
+function workerId(string $workerName): string
+{
+    return sprintf('temporal.%s.worker', $workerName);
+}
+
+
+/**
+ * @internal
  *
  * @return non-empty-string
  */

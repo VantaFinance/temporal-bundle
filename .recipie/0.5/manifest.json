@@ -14,16 +14,32 @@
         },
         "add-lines": [
           {
-            "file": "phpunit.xml.dist",
-            "content": "<extension class=\"Vanta\\Integration\\Symfony\\Temporal\\Testing\\PHPUnit\\IntegrationTestingExtension\", />",
+            "file": "phpunit.dist.xml",
+            "content": "        <bootstrap class=\"Vanta\\Integration\\Symfony\\Temporal\\Testing\\PHPUnit\\TemporalEnvironmentExtension\"/>",
             "position": "after_target",
             "target": "<extensions>",
+            "requires": "phpunit/phpunit",
+            "warn_if_missing": true
+          },
+          {
+            "file": "phpunit.xml.dist",
+            "content": "        <bootstrap class=\"Vanta\\Integration\\Symfony\\Temporal\\Testing\\PHPUnit\\TemporalEnvironmentExtension\"/>",
+            "position": "after_target",
+            "target": "<extensions>",
+            "requires": "phpunit/phpunit",
+            "warn_if_missing": false
+          },
+          {
+            "file": ".env.test",
+            "content": "###> vanta/temporal-bundle (tests) ###\nTEMPORAL_ADDRESS=127.0.0.1:7233\nRR_RPC=tcp://127.0.0.1:6001\n###< vanta/temporal-bundle (tests) ###",
+            "position": "bottom",
             "warn_if_missing": false
           }
         ],
         "post-install-output": [
           "  * Configure the <fg=green>workers/clients</> in <fg=green>config/packages/temporal.yaml</>",
-          "  * Configure the <fg=green>docker</> in dir <fg=green>.docker/</>"
+          "  * Configure the <fg=green>docker</> in dir <fg=green>.docker/</>",
+          "  * Tests: <fg=green>TemporalEnvironmentExtension</> was added to <fg=green>phpunit.dist.xml</> (if present); mark tests with <fg=green>#[WithTemporalEnvironment]</>"
         ],
         "env": {
           "TEMPORAL_ADDRESS": "temporal:7233",

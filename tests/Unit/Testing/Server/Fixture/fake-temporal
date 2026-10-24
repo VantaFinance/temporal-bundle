@@ -1,0 +1,48 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// A marker only counts while the process that wrote it is alive, like a real server that stopped answering
+$isAlive = static function (string $marker): bool {
+    if (!is_file($marker)) {
+        return false;
+    }
+
+    $pid = (int) file_get_contents($marker);
+
+    return $pid > 0 && (!function_exists('posix_kill') || posix_kill($pid, 0));
+};
+
+// Fake Temporal CLI: `server start-dev ... --port <port>` and `operator cluster health --address <host:port>`.
+// Readiness is signalled through a marker file keyed by the port.
+
+$arguments = array_slice($argv, 1);
+
+$option = static function (string $name) use ($arguments): ?string {
+    $index = array_search($name, $arguments, true);
+
+    return $index === false ? null : ($arguments[$index + 1] ?? null);
+};
+
+$marker = static fn (string $port): string => sprintf('%s/fake-temporal-%s.ready', sys_get_temp_dir(), $port);
+
+if (array_slice($arguments, 0, 2) === ['server', 'start-dev']) {
+    file_put_contents($marker((string) $option('--port')), (string) getmypid());
+    file_put_contents(substr($marker((string) $option('--port')), 0, -strlen('.ready')) . '.args', json_encode($arguments));
+
+    while (true) {
+        usleep(50_000);
+    }
+}
+
+if (array_slice($arguments, 0, 3) === ['operator', 'cluster', 'health']) {
+    $address = (string) $option('--address');
+    $port    = substr($address, (int) strrpos($address, ':') + 1);
+
+    echo $isAlive($marker($port)) ? "SERVING\n" : "NOT_SERVING\n";
+
+    exit(0);
+}
+
+exit(2);

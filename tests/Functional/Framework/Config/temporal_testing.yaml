@@ -1,0 +1,23 @@
+temporal:
+  defaultClient: default
+  pool:
+    dataConverter: temporal.data_converter
+    roadrunnerRPC: '%env(RR_RPC)%'
+    testing:
+      enabled: true
+      activityMocker: in_memory
+
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor: temporal.exception_interceptor
+
+    foo:
+      taskQueue: foo
+      exceptionInterceptor: temporal.exception_interceptor
+
+  clients:
+    default:
+      namespace: default
+      address: '%env(TEMPORAL_ADDRESS)%'
+      dataConverter: temporal.data_converter
