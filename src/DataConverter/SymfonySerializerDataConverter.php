@@ -27,9 +27,13 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
     private const INPUT_TYPE = 'symfony.serializer.type';
 
 
+    /**
+     * @param array<string, mixed> $context Symfony Serializer context added to every (de)serialization
+     */
     public function __construct(
         private Serializer $serializer,
         private PayloadConverter $payloadConverter = new JsonConverter(),
+        private array $context = [],
     ) {
     }
 
@@ -45,7 +49,7 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
             EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType(),
         ];
 
-        $context = [ObjectNormalizer::PRESERVE_EMPTY_OBJECTS => true];
+        $context = [...$this->context, ObjectNormalizer::PRESERVE_EMPTY_OBJECTS => true];
 
         if (is_object($value)) {
             $metadata[self::INPUT_TYPE] = $value::class;
@@ -98,7 +102,7 @@ final readonly class SymfonySerializerDataConverter implements PayloadConverter
         }
 
         try {
-            return $this->serializer->deserialize($payload->getData(), $typeName, 'json');
+            return $this->serializer->deserialize($payload->getData(), $typeName, 'json', $this->context);
         } catch (Throwable $e) {
             throw new DataConverterException($e->getMessage(), $e->getCode(), $e);
         }

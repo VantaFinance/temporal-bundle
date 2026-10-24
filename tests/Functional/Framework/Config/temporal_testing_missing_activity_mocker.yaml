@@ -1,0 +1,9 @@
+temporal:
+  pool:
+    testing:
+      enabled: true
+      activityMocker: app.missing_activity_cache
+
+  workers:
+    default:
+      taskQueue: default

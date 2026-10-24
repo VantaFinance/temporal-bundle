@@ -22,7 +22,7 @@ final readonly class TemporalTestingTools
     public ActivityMocker $activityMocker;
     public WorkflowClient $workflowClient;
 
-    public function __construct(private Symfony $symfony) /** @phpstan-ignore property.onlyWritten */
+    public function __construct(private Symfony $symfony)
     {
         $this->testService    = $symfony->kernel->getContainer()->get(TestService::class);
         $this->activityMocker = $symfony->kernel->getContainer()->get(ActivityMocker::class);
@@ -32,5 +32,23 @@ final readonly class TemporalTestingTools
     public function reset(): self
     {
         return new self($this->symfony);
+    }
+
+
+    /**
+     * @return \Temporal\Testing\WorkflowMocker
+     */
+    public function getWorkflowMocker(): object // @phpstan-ignore class.notFound
+    {
+        return $this->symfony->kernel->getContainer()->get('temporal.testing.workflow_mocker'); // @phpstan-ignore return.type
+    }
+
+
+    /**
+     * @return \Temporal\Testing\SearchAttributeMocker
+     */
+    public function getSearchAttributeMocker(): object // @phpstan-ignore class.notFound
+    {
+        return $this->symfony->kernel->getContainer()->get('temporal.testing.search_attribute_mocker'); // @phpstan-ignore return.type
     }
 }

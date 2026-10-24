@@ -1,0 +1,5 @@
+temporal:
+  workers:
+    default:
+      taskQueue: default
+      workflowPanicPolicy: FailWorkflow

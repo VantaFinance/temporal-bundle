@@ -11,11 +11,6 @@ services:
       - temporal-network
     depends_on:
       - temporal
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "0.0.0.0:2114/health?plugin=temporal" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
 
   temporal-postgresql:
     container_name: temporal-postgresql

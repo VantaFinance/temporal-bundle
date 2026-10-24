@@ -363,27 +363,6 @@
         </div>
 
 
-        <div class="tab {{ collector.isEmptyCallScheduleClients ? 'disabled' }}">
-            <h3 class="tab-title">Schedule client calls</h3>
-            <div class="tab-content">
-                {% if collector.isEmptyCallScheduleClients %}
-                    <div class="empty">
-                        <p>Not found calls</p>
-                    </div>
-                {% else %}
-                    {% for dispatchCall in collector.collectorScheduleClientInterceptors %}
-                        {% for sendDescribe  in dispatchCall.sendTerminateWorkflow  %}
-                            {% set discr = random() %}
-
-                            {{ macros.operation(sendDescribe, discr, loop, 'sendDescribe', dispatchCall.clientName) }}
-                        {% endfor %}
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </div>
-
-
-
         <div class="tab {{ collector.clients is empty ? 'disabled' }}">
             <h3 class="tab-title">Clients</h3>
             <div class="tab-content">
@@ -399,6 +378,8 @@
                             <th scope="col">Name</th>
                             <th scope="col">DataConverter</th>
                             <th scope="col">Address</th>
+                            <th scope="col">Connection</th>
+                            <th scope="col">Plugins</th>
                             <th scope="col">Options</th>
                         </tr>
                         </thead>
@@ -409,6 +390,8 @@
                                 <th scope="row">{{ value.name }}</th>
                                 <th scope="row">{{ value.dataConverter }}</th>
                                 <th scope="row">{{ value.address }}</th>
+                                <td>{{ value.connection ?? '' }}</td>
+                                <td>{{ value.plugins ?? '' }}</td>
                                 <td><pre>{{ value.options | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
                             </tr>
                         {% endfor %}
@@ -433,6 +416,8 @@
                             <th scope="col">Name</th>
                             <th scope="col">DataConverter</th>
                             <th scope="col">Address</th>
+                            <th scope="col">Connection</th>
+                            <th scope="col">Plugins</th>
                             <th scope="col">Options</th>
                         </tr>
                         </thead>
@@ -443,6 +428,8 @@
                                 <th scope="row">{{ value.name }}</th>
                                 <th scope="row">{{ value.dataConverter }}</th>
                                 <th scope="row">{{ value.address }}</th>
+                                <td>{{ value.connection ?? '' }}</td>
+                                <td>{{ value.plugins ?? '' }}</td>
                                 <td><pre>{{ value.options | json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
                             </tr>
                         {% endfor %}

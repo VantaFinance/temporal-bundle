@@ -21,12 +21,11 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
 {
     /**
      * @param array<non-empty-string, array<non-empty-string, non-empty-string>>              $workers
-     * @param list<array<non-empty-string, non-empty-string>>                                 $clients
+     * @param list<array<non-empty-string, string>>                                           $clients
      * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $workflows
      * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $activities
-     * @param list<array<non-empty-string, non-empty-string>>                                 $scheduleClients
+     * @param list<array<non-empty-string, string>>                                           $scheduleClients
      * @param array<ProfilerWorkflowInterceptor>                                              $collectorWorkflowClientInterceptors
-     * @param array<ProfilerWorkflowInterceptor>                                              $collectorScheduleClientInterceptors
      */
     public function __construct(
         public array $workers,
@@ -35,7 +34,6 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
         public array $activities,
         public array $scheduleClients,
         public array $collectorWorkflowClientInterceptors = [],
-        public array $collectorScheduleClientInterceptors = [],
     ) {
     }
 
@@ -70,17 +68,6 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
             }
         }
 
-
-        return true;
-    }
-
-    public function isEmptyCallScheduleClients(): bool
-    {
-        foreach ($this->collectorScheduleClientInterceptors as $collectorScheduleClientInterceptor) {
-            if (!$collectorScheduleClientInterceptor->isEmpty()) {
-                return false;
-            }
-        }
 
         return true;
     }

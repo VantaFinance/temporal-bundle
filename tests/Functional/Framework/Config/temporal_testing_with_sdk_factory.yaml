@@ -1,0 +1,9 @@
+temporal:
+  pool:
+    workerFactory: 'Temporal\WorkerFactory'
+    testing:
+      enabled: true
+      activityMocker: in_memory
+  workers:
+    default:
+      taskQueue: default

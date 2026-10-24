@@ -39,7 +39,7 @@ abstract class E2eTestCase extends TemporalTestCase
             self::$cacheCleared = true;
         }
 
-        // RoadRunner writes its worker log_output there on its own, not through FileLogger
+        // RoadRunner writes its worker log (logs.output) there on its own, not through FileLogger
         if (!is_dir($root . '/var/log')) {
             mkdir($root . '/var/log', 0o777, true);
         }

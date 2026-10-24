@@ -31,4 +31,22 @@ abstract class TemporalTestCase extends KernelTestCase
         $this->activityMocker = static::getContainer()->get(ActivityMocker::class);
         $this->workflowClient = static::getContainer()->get(WorkflowClient::class);
     }
+
+
+    /**
+     * @return \Temporal\Testing\WorkflowMocker
+     */
+    protected function getWorkflowMocker(): object // @phpstan-ignore class.notFound
+    {
+        return static::getContainer()->get('temporal.testing.workflow_mocker'); // @phpstan-ignore return.type
+    }
+
+
+    /**
+     * @return \Temporal\Testing\SearchAttributeMocker
+     */
+    protected function getSearchAttributeMocker(): object // @phpstan-ignore class.notFound
+    {
+        return static::getContainer()->get('temporal.testing.search_attribute_mocker'); // @phpstan-ignore return.type
+    }
 }

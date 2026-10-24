@@ -36,7 +36,9 @@ temporal:
       sessionResourceId: resource.foo
       maxConcurrentSessionExecutionSize: 2000
       buildID: test
-      useBuildIDForVersioning: true
+      identity: foo-worker
+      maxConcurrentNexusTaskExecutionSize: 3
+      maxConcurrentNexusTaskPollers: 2
       disableRegistrationAliasing: true
       enableLoggingInReplay: true
       disableWorkflowWorker: true
@@ -59,6 +61,11 @@ temporal:
       enableSessionWorker: false
       sessionResourceId: resource.bar
       maxConcurrentSessionExecutionSize: 3000
+      deploymentOptions:
+        useVersioning: true
+        deploymentName: billing
+        buildId: '1.0.0'
+        defaultVersioningBehavior: Pinned
 
   clients:
     default:
@@ -89,8 +96,9 @@ temporal:
       dataConverter: temporal.data_converter
       identity: cloud_x
       queryRejectionCondition: 2
-      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
-      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+      tls:
+        clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+        clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
 
   scheduleClients:
     default:
@@ -121,5 +129,6 @@ temporal:
       dataConverter: temporal.data_converter
       identity: cloud_x
       queryRejectionCondition: 2
-      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
-      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+      tls:
+        clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+        clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'

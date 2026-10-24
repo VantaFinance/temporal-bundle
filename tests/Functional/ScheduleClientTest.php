@@ -17,6 +17,8 @@ use function PHPUnit\Framework\assertArrayHasKey;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertIsArray;
+use function PHPUnit\Framework\assertStringContainsString;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -26,8 +28,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Temporal\Client\ScheduleClientInterface as ScheduleClient;
+use Vanta\Integration\Symfony\Temporal\Client\GrpcServiceClientFactory;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
 
@@ -186,40 +190,49 @@ final class ScheduleClientTest extends KernelTestCase
 
     public function testRegisterServiceClient(): void
     {
-        $cloudDef   = null;
-        $defaultDef = null;
+        $cloudDef      = null;
+        $defaultDef    = null;
+        $cloudArgument = null;
 
         self::bootKernel([
-            'config' => static function (TestKernel $kernel) use (&$cloudDef, &$defaultDef): void {
+            'config' => static function (TestKernel $kernel) use (&$cloudDef, &$defaultDef, &$cloudArgument): void {
                 $kernel->addTestBundle(TemporalBundle::class);
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
-                $kernel->addTestCompilerPass(new class($cloudDef, $defaultDef) implements CompilerPass {
+                $kernel->addTestCompilerPass(new class($cloudDef, $defaultDef, $cloudArgument) implements CompilerPass {
                     public function __construct(
                         public ?Definition &$cloudDef,
                         public ?Definition &$defaultDef,
+                        public mixed &$cloudArgument,
                     ) {
                     }
 
                     public function process(ContainerBuilder $container): void
                     {
-                        $cloudArgument  = $container->getDefinition('temporal.cloud.schedule_client')->getArgument('$serviceClient');
-                        $this->cloudDef = $cloudArgument instanceof Definition ? $cloudArgument : null;
-
-                        $defaultArgument  = $container->getDefinition('temporal.default.schedule_client')->getArgument('$serviceClient');
-                        $this->defaultDef = $defaultArgument instanceof Definition ? $defaultArgument : null;
+                        $this->cloudArgument = $container->getDefinition('temporal.cloud.schedule_client')->getArgument('$serviceClient');
+                        // Arguments are copied: later passes resolve the named arguments of the same definitions
+                        $this->cloudDef   = clone $container->getDefinition('temporal.cloud.schedule_service_client');
+                        $this->defaultDef = clone $container->getDefinition('temporal.default.schedule_service_client');
                     }
                 });
             },
         ]);
 
+        assertEquals(new Reference('temporal.cloud.schedule_service_client'), $cloudArgument);
+
         assertInstanceOf(Definition::class, $cloudDef);
-        assertEquals(['Temporal\Client\GRPC\ServiceClient', 'createSSL'], $cloudDef->getFactory());
-        assertCount(5, $cloudDef->getArguments());
+        assertEquals([GrpcServiceClientFactory::class, 'create'], $cloudDef->getFactory());
+        $tls = $cloudDef->getArgument('$tls');
+
+        assertIsArray($tls);
+        assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $tls['clientKey']); // @phpstan-ignore cast.string
+        assertStringContainsString('TEMPORAL_CLIENT_CERT_PATH', (string) $tls['clientPem']); // @phpstan-ignore cast.string
 
         assertInstanceOf(Definition::class, $defaultDef);
-        assertEquals(['Temporal\Client\GRPC\ServiceClient', 'create'], $defaultDef->getFactory());
-        assertCount(1, $defaultDef->getArguments());
+        assertEquals([GrpcServiceClientFactory::class, 'create'], $defaultDef->getFactory());
+        assertStringContainsString('TEMPORAL_ADDRESS', (string) $defaultDef->getArgument('$address')); // @phpstan-ignore cast.string
+        assertEquals(['enabled' => null, 'rootCa' => null, 'clientKey' => null, 'clientPem' => null, 'serverName' => null], $defaultDef->getArgument('$tls'));
+        assertInstanceOf(Definition::class, $defaultDef->getArgument('$context'));
     }
 
 

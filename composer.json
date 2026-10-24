@@ -34,11 +34,13 @@
   },
   "require": {
     "php": "^8.2",
+    "composer-runtime-api": "^2",
     "symfony/config": "^6.4 || ^7.0 || ^8.0",
     "symfony/dependency-injection": "^6.4 || ^7.0 || ^8.0",
     "symfony/http-kernel": "^6.4 || ^7.0 || ^8.0",
     "symfony/runtime": "^6.4 || ^7.0 || ^8.0",
-    "temporal/sdk": "^2.16"
+    "temporal/sdk": "^2.16",
+    "spiral/roadrunner-worker": "^3.6.2"
   },
   "require-dev": {
     "symfony/framework-bundle": "^6.4 || ^7.0 || ^8.0",
@@ -59,11 +61,14 @@
     "codeception/module-symfony": "^3.9",
     "amphp/amp": "^3.1",
     "internal/dload": "^1.9",
-    "bamarni/composer-bin-plugin": "^1.9"
+    "bamarni/composer-bin-plugin": "^1.9",
+    "internal/toml": "^1.0"
   },
   "suggest": {
     "vanta/temporal-sentry": "Integration for sentry",
-    "vanta/temporal-doctrine": "Integration for doctrine"
+    "vanta/temporal-doctrine": "Integration for doctrine",
+    "internal/toml": "Parses TOML files of environment configuration profiles (clients.*.envConfig)",
+    "roadrunner/psr-logger": "PSR-3 logger writing to the RoadRunner log (RoadRunner 3)"
   },
   "scripts": {
     "tools-install": [

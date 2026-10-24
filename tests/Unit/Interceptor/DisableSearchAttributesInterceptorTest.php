@@ -17,6 +17,10 @@ use function PHPUnit\Framework\assertSame;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use React\Promise\PromiseInterface;
+
+use function React\Promise\resolve;
+
 use Temporal\Client\WorkflowOptions;
 use Temporal\Common\SearchAttributes\SearchAttributeKey;
 use Temporal\Common\TypedSearchAttributes;
@@ -24,6 +28,8 @@ use Temporal\DataConverter\EncodedValues;
 use Temporal\Interceptor\Header;
 use Temporal\Interceptor\WorkflowClient\SignalWithStartInput;
 use Temporal\Interceptor\WorkflowClient\StartInput;
+use Temporal\Internal\Transport\Request\ExecuteChildWorkflow;
+use Temporal\Worker\Transport\Command\RequestInterface;
 use Temporal\Workflow\WorkflowExecution;
 use Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor;
 
@@ -79,6 +85,37 @@ final class DisableSearchAttributesInterceptorTest extends TestCase
 
         assertNotNull($received);
         assertSame(0, $received->typedSearchAttributes?->count());
+    }
+
+    public function testStripsSearchAttributesOfChildWorkflow(): void
+    {
+        $request = new ExecuteChildWorkflow(
+            'ChildWorkflow',
+            EncodedValues::empty(),
+            ['TaskQueue' => 'queue', 'SearchAttributes' => ['CustomerId' => 'c-1']],
+            Header::empty(),
+        );
+
+        $received = null;
+
+        // The interceptor rewrites the internal Request::$options: fails loudly if temporal/sdk changes them
+        (new DisableSearchAttributesInterceptor())->handleOutboundRequest(
+            $request,
+            static function (RequestInterface $request) use (&$received): PromiseInterface {
+                $received = $request;
+
+                return resolve(null);
+            },
+        );
+
+        assertSame($request, $received);
+
+        $options = $request->getOptions();
+
+        assertSame('ChildWorkflow', $options['name'] ?? null);
+        self::assertIsArray($options['options'] ?? null);
+        assertSame('queue', $options['options']['TaskQueue'] ?? null);
+        assertNull($options['options']['SearchAttributes']);
     }
 
     private function start(WorkflowOptions $options): WorkflowOptions

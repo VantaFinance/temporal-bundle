@@ -28,7 +28,9 @@ final class ClientDebugCommand extends Command
      *     name: non-empty-string,
      *     options: ClientOptions,
      *     dataConverter: non-empty-string,
-     *     address: non-empty-string
+     *     address: non-empty-string,
+     *     connection?: string,
+     *     plugins?: string,
      * }> $clients
      */
     public function __construct(private readonly array $clients)
@@ -65,11 +67,13 @@ final class ClientDebugCommand extends Command
             $rows[] = [
                 $client['id'],
                 $client['address'],
+                $client['connection'] ?? '',
+                $client['plugins'] ?? '',
                 $client['dataConverter'],
                 json_encode($client['options'], JSON_PRETTY_PRINT),
             ];
 
-            $io->table(['Id', 'Address', 'DataConverterId','Options'], $rows);
+            $io->table(['Id', 'Address', 'Connection', 'Plugins', 'DataConverterId', 'Options'], $rows);
         }
 
 

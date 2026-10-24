@@ -17,10 +17,19 @@ use Reflector;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Symfony\Component\DependencyInjection\Reference;
 use Temporal\Activity\ActivityInterface as Activity;
+use Temporal\DataConverter\BinaryConverter;
+use Temporal\DataConverter\NullConverter;
+use Temporal\DataConverter\ProtoConverter;
+use Temporal\DataConverter\ProtoJsonConverter;
 use Temporal\Workflow\WorkflowInterface as Workflow;
+use Vanta\Integration\Symfony\Temporal\Attribute\AsPlugin;
+use Vanta\Integration\Symfony\Temporal\DataConverter\DataConverterFactory;
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\PluginCompilerPass;
 use Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor;
 
 final class TemporalExtension extends Extension
@@ -33,6 +42,8 @@ final class TemporalExtension extends Extension
         $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../../config'));
 
         $loader->load('service.php');
+
+        $container->setParameter(Configuration::RR_RPC_DEFAULT_PARAMETER, Configuration::RR_RPC_DEFAULT);
 
         $entityManagers = [];
         $connections    = [];
@@ -52,7 +63,7 @@ final class TemporalExtension extends Extension
         }
 
         $configuration    = new Configuration($connections, $entityManagers);
-        $rawConfiguration = $this->processConfiguration($configuration, $configs);
+        $rawConfiguration = $this->processConfiguration($configuration, Configuration::withImplicitDefaultClients($configs));
 
         if ($rawConfiguration['pool']['testing']['enabled'] && $rawConfiguration['pool']['testing']['disableSearchAttributes']) {
             $disableSearchAttributesInterceptorId = 'temporal.testing.disable_search_attributes.interceptor';
@@ -63,8 +74,49 @@ final class TemporalExtension extends Extension
 
 
         $container->setParameter('temporal.config', $rawConfiguration);
+
+        if (interface_exists(PluginCompilerPass::PLUGIN_INTERFACE)) {
+            $container->registerForAutoconfiguration(PluginCompilerPass::PLUGIN_INTERFACE)->addTag(PluginCompilerPass::TAG);
+        }
+
+        $container->registerAttributeForAutoconfiguration(AsPlugin::class, static function (ChildDefinition $definition, AsPlugin $attribute): void {
+            $definition->addTag(PluginCompilerPass::TAG, [
+                'clients'         => $attribute->clients,
+                'scheduleClients' => $attribute->scheduleClients,
+                'workers'         => $attribute->workers,
+            ]);
+        });
         $container->registerAttributeForAutoconfiguration(Workflow::class, workflowConfigurator(...));
         $container->registerAttributeForAutoconfiguration(Activity::class, activityConfigurator(...));
+
+        $useSdkDefaultConverters = $rawConfiguration['pool']['useSdkDefaultConverters'];
+        $payloadConverters       = $rawConfiguration['pool']['payloadConverters'];
+
+        if (!$useSdkDefaultConverters && $payloadConverters == []) {
+            return;
+        }
+
+        $dataConverter = $container->getDefinition('temporal.data_converter');
+        $converters    = array_values($dataConverter->getArguments());
+
+        if ($useSdkDefaultConverters) {
+            // DataConverter::createDefault() order, its JsonConverter replaced by the bundle one
+            $converters = [
+                new Definition(NullConverter::class),
+                new Definition(BinaryConverter::class),
+                new Definition(ProtoJsonConverter::class),
+                new Definition(ProtoConverter::class),
+                ...$converters,
+            ];
+        }
+
+        $dataConverter
+            ->setFactory([DataConverterFactory::class, 'create'])
+            ->setArguments([
+                array_map(static fn (string $id): Reference => new Reference($id), $payloadConverters),
+                $converters,
+            ])
+        ;
     }
 
 

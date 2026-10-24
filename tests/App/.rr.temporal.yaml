@@ -14,14 +14,14 @@ temporal:
   activities:
     num_workers: 1
 
+# RoadRunner 2025 and 3: "output" (relative to the -w working directory). RoadRunner 3 ignores
+# "file_logger_options" / "encoding", RoadRunner 2025 prefers "file_logger_options" over "output": never keep both
 logs:
+  mode: production
   level: info
-  encoding: json
-  file_logger_options:
-    log_output: "../../var/log/rr-worker.log"
+  output: "../../var/log/rr-worker.log"
 
 kv:
   test:
     driver: memory
-    config:
-      interval: 10
+    config: {}

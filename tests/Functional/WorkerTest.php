@@ -28,16 +28,23 @@ use function PHPUnit\Framework\assertTrue;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Psr\Log\NullLogger;
 use ReflectionProperty;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Bundle\MonologBundle\MonologBundle;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
+use Temporal\Common\Versioning\VersioningBehavior;
+use Temporal\Common\Versioning\WorkerDeploymentVersion;
 use Temporal\Testing\WorkerFactory;
+use Temporal\Worker\WorkerDeploymentOptions;
+use Temporal\Worker\WorkerInterface;
 use Temporal\Worker\WorkflowPanicPolicy;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Configuration;
@@ -129,6 +136,80 @@ final class WorkerTest extends KernelTestCase
         assertInstanceOf(\Temporal\WorkerFactory::class, $factory);
     }
 
+    public function testRegisterWorkerWithoutPool(): void
+    {
+        $kernel = self::bootKernel(['config' => static function (TestKernel $kernel): void {
+            $kernel->addTestBundle(TemporalBundle::class);
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_without_pool.yaml');
+        }]);
+
+        $worker = $kernel->getContainer()->get('temporal.default.worker');
+
+        assertInstanceOf(WorkerInterface::class, $worker);
+        assertSame(WorkflowPanicPolicy::FailWorkflow, $worker->getOptions()->workflowPanicPolicy);
+    }
+
+
+    /**
+     * @return iterable<string, array{bool, non-empty-string, array<non-empty-string, ?non-empty-string>}>
+     */
+    public static function workerLoggerDataProvider(): iterable
+    {
+        $custom = ['temporal.default.worker' => 'app.worker_logger', 'temporal.bar.worker' => 'app.global_logger'];
+
+        yield 'custom loggers without monolog' => [false, 'temporal_with_loggers.yaml', $custom];
+        yield 'custom loggers with monolog' => [true, 'temporal_with_loggers.yaml', $custom];
+        yield 'default logger without monolog' => [false, 'temporal_without_pool.yaml', ['temporal.default.worker' => null]];
+        yield 'default logger with monolog' => [true, 'temporal_without_pool.yaml', ['temporal.default.worker' => 'monolog.logger.temporal']];
+    }
+
+
+    /**
+     * @param non-empty-string                             $configFile
+     * @param array<non-empty-string, ?non-empty-string>   $expected
+     */
+    #[DataProvider('workerLoggerDataProvider')]
+    public function testRegisterWorkerLogger(bool $monolog, string $configFile, array $expected): void
+    {
+        $loggers = [];
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($monolog, $configFile, $expected, &$loggers): void {
+            if ($monolog) {
+                $kernel->addTestBundle(MonologBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/monolog.yaml');
+            }
+
+            $kernel->addTestBundle(TemporalBundle::class);
+            $kernel->addTestConfig(__DIR__ . '/Framework/Config/' . $configFile);
+
+            $kernel->addTestCompilerPass(new class(array_keys($expected), $loggers) implements CompilerPass {
+                /**
+                 * @param list<non-empty-string>  $ids
+                 * @param array<string, mixed>    $loggers
+                 */
+                public function __construct(
+                    private readonly array $ids,
+                    public array &$loggers,
+                ) {
+                }
+
+                public function process(ContainerBuilder $container): void
+                {
+                    $container->register('app.global_logger', NullLogger::class);
+                    $container->register('app.worker_logger', NullLogger::class);
+
+                    foreach ($this->ids as $id) {
+                        $logger             = $container->getDefinition($id)->getArgument(4);
+                        $this->loggers[$id] = $logger instanceof Reference ? (string) $logger : $logger;
+                    }
+                }
+            });
+        }]);
+
+        assertSame($expected, $loggers);
+    }
+
+
     public function testRegisterWorkerWithCustomFactory(): void
     {
         $kernel = self::bootKernel([
@@ -173,6 +254,20 @@ final class WorkerTest extends KernelTestCase
         assertCount(2, $runtime);
         assertSame($factory, (new ReflectionProperty(Runtime::class, 'factory'))->getValue($runtime));
     }
+
+    public function testRegisterWorkerWithMissingActivityMocker(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Service "app.missing_activity_cache" of "temporal.pool.testing.activityMocker" not found');
+
+        self::bootKernel([
+            'config' => static function (TestKernel $kernel): void {
+                $kernel->addTestBundle(TemporalBundle::class);
+                $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing_missing_activity_mocker.yaml');
+            },
+        ]);
+    }
+
 
     public function testRegisterWorkerWithInvalidCustomFactory(): void
     {
@@ -292,7 +387,9 @@ final class WorkerTest extends KernelTestCase
                 'withDeadlockDetectionTimeout'                => '30 seconds',
                 'withMaxHeartbeatThrottleInterval'            => '30 seconds',
                 'withBuildID'                                 => 'test',
-                'withUseBuildIDForVersioning'                 => true,
+                'withIdentity'                                => 'foo-worker',
+                'withMaxConcurrentNexusTaskExecutionSize'     => 3,
+                'withMaxConcurrentNexusTaskPollers'           => 2,
                 'withEnableLoggingInReplay'                   => true,
                 'withDisableWorkflowWorker'                   => true,
                 'withLocalActivityWorkerOnly'                 => true,
@@ -331,6 +428,15 @@ final class WorkerTest extends KernelTestCase
                 'withLocalActivityWorkerOnly'                 => false,
                 'withDisableEagerActivities'                  => false,
                 'withWorkflowPanicPolicy'                     => WorkflowPanicPolicy::BlockWorkflow,
+                'withDeploymentOptions'                       => (new Definition(WorkerDeploymentOptions::class))
+                    ->setFactory([WorkerDeploymentOptions::class, 'new'])
+                    ->addMethodCall('withUseVersioning', [true], true)
+                    ->addMethodCall('withDefaultVersioningBehavior', [VersioningBehavior::Pinned], true)
+                    ->addMethodCall('withVersion', [
+                        (new Definition(WorkerDeploymentVersion::class))
+                            ->setFactory([WorkerDeploymentVersion::class, 'new'])
+                            ->setArguments(['billing', '1.0.0']),
+                    ], true),
             ],
         ];
     }

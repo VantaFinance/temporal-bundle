@@ -1,0 +1,30 @@
+services:
+  app.grpc_interceptor:
+    class: Vanta\Integration\Symfony\Temporal\Test\Functional\Interceptor\HeaderGrpcInterceptor
+
+  app.grpc_interceptor_child:
+    parent: app.grpc_interceptor
+
+  app.workflow_interceptor:
+    class: Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor
+
+temporal:
+  pool:
+    globalInterceptors:
+      - app.grpc_interceptor
+      - app.workflow_interceptor
+  workers:
+    default:
+      taskQueue: default
+      interceptors:
+        - app.grpc_interceptor_child
+  clients:
+    default:
+      namespace: default
+      interceptors:
+        - app.grpc_interceptor_child
+  scheduleClients:
+    default:
+      namespace: default
+      interceptors:
+        - app.grpc_interceptor_child

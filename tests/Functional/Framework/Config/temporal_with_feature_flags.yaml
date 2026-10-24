@@ -1,0 +1,8 @@
+temporal:
+  pool:
+    featureFlags:
+      warnOnWorkflowUnfinishedHandlers: false
+      workflowDeferredHandlerStart: true
+  workers:
+    default:
+      taskQueue: default

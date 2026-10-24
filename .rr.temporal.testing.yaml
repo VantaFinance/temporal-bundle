@@ -16,10 +16,8 @@ temporal:
 logs:
   level: error
 
-
-
+# Storage of the activity / workflow mocks (temporal.pool.testing.activityCacheName)
 kv:
   test:
     driver: memory
-    config:
-      interval: 10
+    config: {}

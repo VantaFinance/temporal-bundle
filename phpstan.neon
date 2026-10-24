@@ -12,3 +12,17 @@ parameters:
 
 	scanFiles:
 	    - vendor/symfony/dependency-injection/Loader/Configurator/ContainerConfigurator.php
+
+	# Code built on a newer temporal/sdk than the lowest supported one (2.16).
+	# PHPStan cannot ignore an unknown parent class or interface: those files are excluded
+	excludePaths:
+		analyse:
+			- src/DataConverter/SerializationContextAwareSymfonyConverter.php
+			- tests/Functional/Plugin/*
+
+	ignoreErrors:
+		-
+			identifiers: [class.notFound, method.notFound, argument.type]
+			paths:
+				- src/Client/EnvConfigFactory.php
+				- tests/Unit/DataConverter/SerializationContextAwareSymfonyConverterTest.php

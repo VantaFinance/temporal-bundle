@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\Serializer;
 
 use Carbon\CarbonInterval;
+use DateInterval;
 use Exception;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\DateIntervalNormalizer;
@@ -31,17 +32,9 @@ final readonly class CarbonIntervalNormalizer implements Normalizer, Denormalize
      */
     public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): CarbonInterval
     {
-        $interval = $this->normalizer->denormalize($data, $type, $format, $context);
+        $interval = $this->normalizer->denormalize($data, DateInterval::class, $format, $context);
 
-        return new CarbonInterval(
-            years: $interval->y,
-            months: $interval->m,
-            days: $interval->d,
-            hours: $interval->h,
-            minutes: $interval->i,
-            seconds: $interval->s,
-            microseconds: $interval->f,
-        );
+        return CarbonInterval::instance($interval);
     }
 
     /**

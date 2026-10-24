@@ -1,4 +1,5 @@
-RR_VERSION ?= rr:^2025
+# rr:^3 for temporal/sdk >= 2.20, rr:^2025 for temporal/sdk 2.16 - 2.19
+RR_BINARY_VERSION ?= rr:^3
 RR_CMD := ./rr serve -c tests/App/.rr.temporal.yaml
 
 TEMPORAL_VERSION ?= temporal:^1.4-fairness@dev
@@ -14,7 +15,7 @@ analysis-code:
 	@php -d memory_limit=-1 vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=-1
 
 get-deps:
-	./vendor/bin/dload get --force --no-ansi --no-interaction ${RR_VERSION} ${TEMPORAL_VERSION}
+	./vendor/bin/dload get --force --no-ansi --no-interaction ${RR_BINARY_VERSION} ${TEMPORAL_VERSION}
 
 clear-vendor:
 	rm -rf composer.lock vendor vendor-bin/tools/vendor
