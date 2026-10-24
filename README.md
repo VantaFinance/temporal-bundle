@@ -12,10 +12,13 @@ profiler, so workflows and activities can be declared and run with idiomatic Sym
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Starting a workflow](#starting-a-workflow)
 - [Assign worker](#assign-worker)
 - [Doctrine integrations](#doctrine-integrations)
 - [Sentry integrations](#sentry-integrations)
+- [HTTP with roadrunner-symfony/http-bundle](#http-with-roadrunner-symfonyhttp-bundle)
 - [Debug commands](#debug-commands)
+- [Troubleshooting](#troubleshooting)
 - [Testing](#testing)
 
 ## Features
@@ -51,15 +54,84 @@ composer config --json extra.symfony.endpoint '["https://raw.githubusercontent.c
 composer req temporal serializer
 ```
 
-3. Configure `docker-compose-temporal.yml` / `Dockerfile`.
+3. Check that the bundle is enabled. `config/bundles.php` must contain
 
-4. Add a Workflow / Activity. See the [official examples](https://github.com/temporalio/samples-php) to get started.
+```php
+Vanta\Integration\Symfony\Temporal\TemporalBundle::class => ['all' => true],
+```
+
+and `config/packages/temporal.yaml` must exist. Without the recipe endpoint from step 1, Flex does not create
+`temporal.yaml`: copy [`temporal.yaml`](temporal.yaml) from this repository.
+
+4. Configure `.docker/docker-compose-temporal.yml` and `.docker/Dockerfile` (the recipe copies both).
+
+5. Add a workflow and an activity. Step 3 of the [Testing quick start](#quick-start) has a minimal
+`GreetingWorkflow` with a `GreetingActivity`; the [official samples](https://github.com/temporalio/samples-php) show
+more.
+
+## Starting a workflow
+
+The default client (`defaultClient`) is autowired as `Temporal\Client\WorkflowClientInterface`. Another client is
+injected by argument name, `$<name>WorkflowClient` (for example `$barWorkflowClient` for the client `bar`).
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Service;
+
+use App\Workflow\GreetingWorkflow;
+use Temporal\Client\WorkflowClientInterface;
+use Temporal\Client\WorkflowOptions;
+
+final class Greeter
+{
+    public function __construct(
+        private readonly WorkflowClientInterface $workflowClient,
+    ) {
+    }
+
+    public function greet(string $name): string
+    {
+        $workflow = $this->workflowClient->newWorkflowStub(
+            GreetingWorkflow::class,
+            WorkflowOptions::new()->withTaskQueue('default'),
+        );
+
+        $run = $this->workflowClient->start($workflow, $name);
+
+        return $run->getResult('string', 10);
+    }
+}
+```
+
+The task queue must match the `taskQueue` of the worker that runs the workflow. `start()` returns once Temporal
+accepts the workflow; `getResult()` waits for it to finish, so skip it when the caller does not need the result.
 
 ## Assign worker
 
-Run workflows and activities on a specific task queue by adding the
-[`#[AssignWorker]`](src/Attribute/AssignWorker.php) attribute to your Workflow or Activity with the
-name of the worker. This Workflow or Activity will then be processed by the specified worker.
+Every workflow and activity runs on one or more workers:
+
+- With [`#[AssignWorker('name')]`](src/Attribute/AssignWorker.php) it runs on the named worker only. The attribute is
+  repeatable: add it once per worker.
+- Without the attribute it runs on the default worker: `default`, or the worker set in `defaultWorker`.
+- A name that is not configured under `temporal.workers` stops the container build with an error that names the class
+  and the configured workers.
+
+```yaml
+temporal:
+  defaultWorker: default
+  workers:
+    default:
+      taskQueue: default
+    worker1:
+      taskQueue: worker1
+```
+
+> **Breaking change in 0.5.** Before 0.5 a workflow or activity without `#[AssignWorker]` ran on every worker; now it
+> runs on the default worker only. To keep a class on several workers, repeat `#[AssignWorker]` for each of them. If
+> some classes have no attribute and no worker matches `defaultWorker`, the container build fails.
 
 **Workflow example:**
 
@@ -261,6 +333,42 @@ temporal:
       dataConverter: temporal.data_converter
 ```
 
+## HTTP with roadrunner-symfony/http-bundle
+
+[roadrunner-symfony/http-bundle](https://github.com/roadrunner-symfony/http-bundle) serves HTTP requests from the same
+application. HTTP and Temporal run in two RoadRunner processes, each with its own config and runtime:
+
+| Config              | `server.env.APP_RUNTIME`                                     |
+|---------------------|--------------------------------------------------------------|
+| `.rr.http.yaml`     | `Roadrunner\Integration\Symfony\Http\Runtime\HttpRuntime`        |
+| `.rr.temporal.yaml` | `Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime`     |
+
+Both processes start `php public/index.php`. With `HttpRuntime` the kernel serves HTTP requests, with
+`TemporalRuntime` it polls Temporal. Install both bundles through Flex with both recipe endpoints:
+
+```bash
+composer config --json extra.symfony.endpoint '["https://raw.githubusercontent.com/roadrunner-symfony/recipes/main/index.json", "https://raw.githubusercontent.com/VantaFinance/temporal-bundle/main/.recipie/index.json", "flex://defaults"]'
+composer req http temporal serializer
+```
+
+and run each process with its config:
+
+```bash
+rr serve -c .rr.http.yaml
+rr serve -c .rr.temporal.yaml
+```
+
+Both configs listen for RPC on port 6001 (`rpc.listen`). That works when the processes run in separate containers; on
+one host, move one of them to another port. `RR_RPC` must point to the Temporal process, because the worker factory
+and the `rr_kv` activity mocker connect to it.
+
+Sentry and Doctrine integrations are configured in each bundle: `road_runner_http` covers HTTP requests (see the
+[http-bundle README](https://github.com/roadrunner-symfony/http-bundle#sentry-integrations)), `temporal` covers
+workflows and activities ([Doctrine](#doctrine-integrations), [Sentry](#sentry-integrations)).
+
+Another HTTP runtime, for example Baldinof RoadRunnerBundle, works the same way: it gets its own RoadRunner config and
+`APP_RUNTIME`, and Temporal stays in `.rr.temporal.yaml`.
+
 ## Debug commands
 
 The bundle registers a set of `debug:temporal:*` console commands that introspect the Temporal
@@ -428,6 +536,26 @@ Client: default
  ---------------------------------- -------------- ------------------------- ----------------------------------
 ```
 
+## Troubleshooting
+
+**A workflow or activity is not registered** (`ActivityNotRegisteredError`, unknown workflow type). Run
+`bin/console debug:temporal:workflows` and `bin/console debug:temporal:activities` to see which worker has which class.
+The class needs `#[WorkflowInterface]` or `#[ActivityInterface]` and must be an autoconfigured service. The worker
+comes from `#[AssignWorker]` or, without it, from `defaultWorker` (see [Assign worker](#assign-worker)). Start the workflow with that worker's
+`taskQueue`.
+
+**The configuration is not what you expect.** `bin/console debug:config temporal` prints the resolved configuration;
+`bin/console debug:temporal:workers` and `bin/console debug:temporal:clients` show worker options and client
+addresses.
+
+**The worker does not start.** `rr workers -c .rr.temporal.yaml` lists the PHP workers RoadRunner started. A PHP error
+during kernel boot appears in the RoadRunner output. Check `RR_RPC` and `TEMPORAL_ADDRESS` in the environment of the
+worker process.
+
+**Tests cannot start Temporal or RoadRunner.** The test error (`ServerStartFailed`) contains the server command, its
+log file and the tail of that log. Set the `logFile` parameter of `TemporalEnvironmentExtension` (see the
+[Quick start](#quick-start)) to record every start and stop of a test run.
+
 ## Testing
 
 Tests run against real Temporal and RoadRunner processes that are started and stopped for every test marked with
@@ -475,7 +603,7 @@ different name, add the missing parts by hand:
   ```
 
 - `.env.test` — localhost addresses (the recipe's `.env` uses the docker host names `temporal:7233` and
-  `rr_temporal:6001`, which do not resolve outside docker):
+  `temporal-php-worker:6001`, which do not resolve outside docker):
 
   ```dotenv
   ###> vanta/temporal-bundle (tests) ###
