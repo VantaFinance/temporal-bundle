@@ -1,0 +1,11 @@
+services:
+  app.plugin:
+    class: stdClass
+
+temporal:
+  pool:
+    plugins:
+      - app.plugin
+  workers:
+    default:
+      taskQueue: default

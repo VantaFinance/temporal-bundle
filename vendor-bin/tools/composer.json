@@ -1,0 +1,14 @@
+{
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan-symfony": "^2.0",
+        "bnf/phpstan-psr-container": "^1.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
+    }
+}

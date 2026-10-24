@@ -31,9 +31,20 @@ temporal:
       maxConcurrentActivityTaskPollers: 1
       maxConcurrentWorkflowTaskExecutionSize: 1
       maxConcurrentWorkflowTaskPollers: 1
+      maxConcurrentEagerActivityExecutionSize: 1
       enableSessionWorker: true
       sessionResourceId: resource.foo
       maxConcurrentSessionExecutionSize: 2000
+      buildID: test
+      identity: foo-worker
+      maxConcurrentNexusTaskExecutionSize: 3
+      maxConcurrentNexusTaskPollers: 2
+      disableRegistrationAliasing: true
+      enableLoggingInReplay: true
+      disableWorkflowWorker: true
+      localActivityWorkerOnly: true
+      disableEagerActivities: true
+      workflowPanicPolicy: !php/enum \Temporal\Worker\WorkflowPanicPolicy::FailWorkflow
 
     bar:
       taskQueue: bar
@@ -46,9 +57,15 @@ temporal:
       maxConcurrentActivityTaskPollers: 2
       maxConcurrentWorkflowTaskExecutionSize: 2
       maxConcurrentWorkflowTaskPollers: 2
+      maxConcurrentEagerActivityExecutionSize: 2
       enableSessionWorker: false
       sessionResourceId: resource.bar
       maxConcurrentSessionExecutionSize: 3000
+      deploymentOptions:
+        useVersioning: true
+        deploymentName: billing
+        buildId: '1.0.0'
+        defaultVersioningBehavior: Pinned
 
   clients:
     default:
@@ -79,8 +96,9 @@ temporal:
       dataConverter: temporal.data_converter
       identity: cloud_x
       queryRejectionCondition: 2
-      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
-      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+      tls:
+        clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+        clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
 
   scheduleClients:
     default:
@@ -111,5 +129,6 @@ temporal:
       dataConverter: temporal.data_converter
       identity: cloud_x
       queryRejectionCondition: 2
-      clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
-      clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+      tls:
+        clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
+        clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'

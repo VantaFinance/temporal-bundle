@@ -1,0 +1,12 @@
+services:
+  app.activity_cache:
+    class: Temporal\Interceptor\SimplePipelineProvider
+
+temporal:
+  pool:
+    testing:
+      enabled: true
+      activityMocker: app.activity_cache
+  workers:
+    default:
+      taskQueue: default

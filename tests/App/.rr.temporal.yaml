@@ -1,0 +1,27 @@
+version: '3'
+
+server:
+    command: 'php app.php'
+    env:
+        - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
+        - APP_ENV: prod
+
+rpc:
+  listen: tcp://0.0.0.0:6001
+
+temporal:
+  address: "0.0.0.0:7233"
+  activities:
+    num_workers: 1
+
+# RoadRunner 2025 and 3: "output" (relative to the -w working directory). RoadRunner 3 ignores
+# "file_logger_options" / "encoding", RoadRunner 2025 prefers "file_logger_options" over "output": never keep both
+logs:
+  mode: production
+  level: info
+  output: "../../var/log/rr-worker.log"
+
+kv:
+  test:
+    driver: memory
+    config: {}

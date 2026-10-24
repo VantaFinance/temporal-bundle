@@ -1,0 +1,13 @@
+services:
+  app.workflow_interceptor:
+    class: Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor
+
+temporal:
+  workers:
+    default:
+      taskQueue: default
+  scheduleClients:
+    default:
+      namespace: default
+      interceptors:
+        - app.workflow_interceptor

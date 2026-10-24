@@ -15,15 +15,17 @@ use Symfony\Bundle\FrameworkBundle\DataCollector\TemplateAwareDataCollectorInter
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
+use Vanta\Integration\Symfony\Temporal\Interceptor\ProfilerWorkflowInterceptor;
 
 final readonly class TemporalCollector implements TemplateAwareDataCollector
 {
     /**
      * @param array<non-empty-string, array<non-empty-string, non-empty-string>>              $workers
-     * @param list<array<non-empty-string, non-empty-string>>                                 $clients
+     * @param list<array<non-empty-string, string>>                                           $clients
      * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $workflows
      * @param list<array<non-empty-string, array{0: array{workers: list<non-empty-string>}}>> $activities
-     * @param list<array<non-empty-string, non-empty-string>>                                 $scheduleClients
+     * @param list<array<non-empty-string, string>>                                           $scheduleClients
+     * @param array<ProfilerWorkflowInterceptor>                                              $collectorWorkflowClientInterceptors
      */
     public function __construct(
         public array $workers,
@@ -31,6 +33,7 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
         public array $workflows,
         public array $activities,
         public array $scheduleClients,
+        public array $collectorWorkflowClientInterceptors = [],
     ) {
     }
 
@@ -54,5 +57,18 @@ final readonly class TemporalCollector implements TemplateAwareDataCollector
     public static function getTemplate(): string
     {
         return '@Temporal/data_collector/layout.html.twig';
+    }
+
+
+    public function isEmptyCallWorkflowClients(): bool
+    {
+        foreach ($this->collectorWorkflowClientInterceptors as $collectorWorkflowClientInterceptor) {
+            if (!$collectorWorkflowClientInterceptor->isEmpty()) {
+                return false;
+            }
+        }
+
+
+        return true;
     }
 }

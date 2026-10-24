@@ -17,6 +17,7 @@ use function PHPUnit\Framework\assertArrayHasKey;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertStringContainsString;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -26,7 +27,9 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface as CompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
+use Temporal\Client\GRPC\ServiceClient;
 use Temporal\Client\ScheduleClientInterface as ScheduleClient;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClientCompilerPass;
 use Vanta\Integration\Symfony\Temporal\TemporalBundle;
@@ -67,41 +70,75 @@ final class ScheduleClientTest extends KernelTestCase
 
     public function testRegisterClientCount(): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel): void {
+        $hasDefault = false;
+        $hasFoo     = false;
+        $hasBar     = false;
+        $hasCloud   = false;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasDefault, &$hasFoo, &$hasBar, &$hasCloud): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
+            $kernel->addTestCompilerPass(new class($hasDefault, $hasFoo, $hasBar, $hasCloud) implements CompilerPass {
+                public function __construct(
+                    public bool &$hasDefault,
+                    public bool &$hasFoo,
+                    public bool &$hasBar,
+                    public bool &$hasCloud,
+                ) {
+                }
 
-            $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->has('temporal.default.schedule_client'));
-                    assertTrue($container->has('temporal.foo.schedule_client'));
-                    assertTrue($container->has('temporal.bar.schedule_client'));
-                    assertTrue($container->has('temporal.cloud.schedule_client'));
+                    $this->hasDefault = $container->has('temporal.default.schedule_client');
+                    $this->hasFoo     = $container->has('temporal.foo.schedule_client');
+                    $this->hasBar     = $container->has('temporal.bar.schedule_client');
+                    $this->hasCloud   = $container->has('temporal.cloud.schedule_client');
                 }
             });
         }]);
+
+        assertTrue($hasDefault);
+        assertTrue($hasFoo);
+        assertTrue($hasBar);
+        assertTrue($hasCloud);
     }
 
 
     public function testRegisterClientAliasForArgument(): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel): void {
+        $hasDefault = false;
+        $hasFoo     = false;
+        $hasBar     = false;
+        $hasCloud   = false;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasDefault, &$hasFoo, &$hasBar, &$hasCloud): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
+            $kernel->addTestCompilerPass(new class($hasDefault, $hasFoo, $hasBar, $hasCloud) implements CompilerPass {
+                public function __construct(
+                    public bool &$hasDefault,
+                    public bool &$hasFoo,
+                    public bool &$hasBar,
+                    public bool &$hasCloud,
+                ) {
+                }
 
-            $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $defaultScheduleClient'));
-                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $fooScheduleClient'));
-                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $barScheduleClient'));
-                    assertTrue($container->hasAlias('Temporal\Client\ScheduleClientInterface $cloudScheduleClient'));
+                    $this->hasDefault = $container->hasAlias('Temporal\Client\ScheduleClientInterface $defaultScheduleClient');
+                    $this->hasFoo     = $container->hasAlias('Temporal\Client\ScheduleClientInterface $fooScheduleClient');
+                    $this->hasBar     = $container->hasAlias('Temporal\Client\ScheduleClientInterface $barScheduleClient');
+                    $this->hasCloud   = $container->hasAlias('Temporal\Client\ScheduleClientInterface $cloudScheduleClient');
                 }
             });
         }]);
+
+        assertTrue($hasDefault);
+        assertTrue($hasFoo);
+        assertTrue($hasBar);
+        assertTrue($hasCloud);
     }
 
 
@@ -112,82 +149,85 @@ final class ScheduleClientTest extends KernelTestCase
     #[DataProvider('registerClientOptionsDataProvider')]
     public function testRegisterClientOptions(string $id, array $options): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, $options): void {
+        $hasDefinition = false;
+        $def           = null;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$def): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
-
-            $kernel->addTestCompilerPass(new class($id, $options) implements CompilerPass {
+            $kernel->addTestCompilerPass(new class($id, $hasDefinition, $def) implements CompilerPass {
                 /**
                  * @param non-empty-string $id
-                 * @param array{
-                 *     withNamespace: non-empty-string,
-                 *     withIdentity: non-empty-string,
-                 *     withQueryRejectionCondition: int
-                 * } $options
                  */
                 public function __construct(
                     private readonly string $id,
-                    private readonly array $options,
+                    public bool            &$hasDefinition,
+                    public ?Definition     &$def,
                 ) {
                 }
 
-
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasDefinition($this->id));
-
-
-                    /** @var Definition $def */
-                    $def = $container->getDefinition($this->id)
-                        ->getArgument('$options')
-                    ;
-
-                    assertInstanceOf(Definition::class, $def);
-
-                    foreach ($def->getMethodCalls() as [$method, $arguments, $returnClone]) {
-                        assertArrayHasKey($method, $this->options);
-                        assertCount(1, $arguments);
-                        assertEquals([$this->options[$method]], $arguments);
-                        assertTrue($returnClone);
-                    }
+                    $this->hasDefinition = $container->hasDefinition($this->id);
+                    $argument            = $container->getDefinition($this->id)->getArgument('$options');
+                    $this->def           = $argument instanceof Definition ? $argument : null;
                 }
             });
         }]);
+
+        assertTrue($hasDefinition);
+        assertInstanceOf(Definition::class, $def);
+
+        foreach ($def->getMethodCalls() as [$method, $arguments, $returnClone]) {
+            assertArrayHasKey($method, $options);
+            assertCount(1, $arguments);
+            assertEquals([$options[$method]], $arguments);
+            assertTrue($returnClone);
+        }
     }
 
     public function testRegisterServiceClient(): void
     {
+        $cloudDef      = null;
+        $defaultDef    = null;
+        $cloudArgument = null;
+
         self::bootKernel([
-            'config' => static function (TestKernel $kernel): void {
+            'config' => static function (TestKernel $kernel) use (&$cloudDef, &$defaultDef, &$cloudArgument): void {
                 $kernel->addTestBundle(TemporalBundle::class);
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
+                $kernel->addTestCompilerPass(new class($cloudDef, $defaultDef, $cloudArgument) implements CompilerPass {
+                    public function __construct(
+                        public ?Definition &$cloudDef,
+                        public ?Definition &$defaultDef,
+                        public mixed &$cloudArgument,
+                    ) {
+                    }
 
-                $kernel->addTestCompilerPass(new class () implements CompilerPass {
                     public function process(ContainerBuilder $container): void
                     {
-                        /** @var Definition $def */
-                        $def = $container->getDefinition('temporal.cloud.schedule_client')
-                            ->getArgument('$serviceClient')
-                        ;
-
-                        assertInstanceOf(Definition::class, $def);
-                        assertEquals(['Temporal\Client\GRPC\ServiceClient', 'createSSL'], $def->getFactory());
-                        assertCount(5, $def->getArguments());
-
-                        /** @var Definition $def */
-                        $def = $container->getDefinition('temporal.default.schedule_client')
-                            ->getArgument('$serviceClient')
-                        ;
-
-                        assertInstanceOf(Definition::class, $def);
-                        assertEquals(['Temporal\Client\GRPC\ServiceClient', 'create'], $def->getFactory());
-                        assertCount(1, $def->getArguments());
+                        $this->cloudArgument = $container->getDefinition('temporal.cloud.schedule_client')->getArgument('$serviceClient');
+                        // Arguments are copied: later passes resolve the named arguments of the same definitions
+                        $this->cloudDef   = clone $container->getDefinition('temporal.cloud.schedule_service_client');
+                        $this->defaultDef = clone $container->getDefinition('temporal.default.schedule_service_client');
                     }
                 });
             },
         ]);
+
+        assertEquals(new Reference('temporal.cloud.schedule_service_client'), $cloudArgument);
+
+        assertInstanceOf(Definition::class, $cloudDef);
+        assertEquals([ServiceClient::class, 'createSSL'], $cloudDef->getFactory());
+        assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $cloudDef->getArgument(2)); // @phpstan-ignore cast.string
+        assertStringContainsString('TEMPORAL_CLIENT_CERT_PATH', (string) $cloudDef->getArgument(3)); // @phpstan-ignore cast.string
+
+        assertInstanceOf(Definition::class, $defaultDef);
+        assertEquals([ServiceClient::class, 'create'], $defaultDef->getFactory());
+        assertStringContainsString('TEMPORAL_ADDRESS', (string) $defaultDef->getArgument(0)); // @phpstan-ignore cast.string
+        assertEquals(['withContext'], array_column($defaultDef->getMethodCalls(), 0));
     }
 
 
@@ -204,18 +244,29 @@ final class ScheduleClientTest extends KernelTestCase
 
     public function testRegisterDefaultClient(): void
     {
-        self::bootKernel(['config' => static function (TestKernel $kernel): void {
+        $hasAlias = false;
+        $aliasId  = null;
+
+        self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasAlias, &$aliasId): void {
             $kernel->addTestBundle(TemporalBundle::class);
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
+            $kernel->addTestCompilerPass(new class($hasAlias, $aliasId) implements CompilerPass {
+                public function __construct(
+                    public bool    &$hasAlias,
+                    public ?string &$aliasId,
+                ) {
+                }
 
-            $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    assertTrue($container->hasAlias(ScheduleClient::class));
-                    assertEquals('temporal.bar.schedule_client', $container->getAlias(ScheduleClient::class)->__toString());
+                    $this->hasAlias = $container->hasAlias(ScheduleClient::class);
+                    $this->aliasId  = $container->getAlias(ScheduleClient::class)->__toString();
                 }
             });
         }]);
+
+        assertTrue($hasAlias);
+        assertEquals('temporal.bar.schedule_client', $aliasId);
     }
 }

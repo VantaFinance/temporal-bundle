@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\UI\Cli;
 
+use Composer\InstalledVersions;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -25,9 +26,14 @@ final class WorkerDebugCommand extends Command
 {
     /**
      * @param array<non-empty-string, Worker> $workers
+     * @param array<non-empty-string, bool>   $featureFlags configured temporal/sdk feature flags
+     * @param list<string>                    $plugins      plugins of the worker factory
      */
-    public function __construct(private readonly array $workers)
-    {
+    public function __construct(
+        private readonly array $workers,
+        private readonly array $featureFlags = [],
+        private readonly array $plugins = [],
+    ) {
         parent::__construct();
     }
 
@@ -57,6 +63,16 @@ final class WorkerDebugCommand extends Command
         }
 
         $io->title('Temporal Workers');
+
+        $details = [
+            'temporal/sdk' => InstalledVersions::isInstalled('temporal/sdk') ? (string) InstalledVersions::getPrettyVersion('temporal/sdk') : 'unknown',
+            // roadrunner/* replaces spiral/*: only the RoadRunner 3 line installs roadrunner/worker
+            'RoadRunner packages' => InstalledVersions::isInstalled('roadrunner/worker') ? 'roadrunner/* (RoadRunner 3)' : 'spiral/* (RoadRunner 2025)',
+            'Feature flags'       => $this->featureFlags == [] ? 'temporal/sdk defaults' : implode(', ', array_map(static fn (string $flag, bool $value): string => sprintf('%s: %s', $flag, $value ? 'true' : 'false'), array_keys($this->featureFlags), $this->featureFlags)),
+            'Plugins'             => $this->plugins == [] ? 'none' : implode(', ', $this->plugins),
+        ];
+
+        $io->definitionList(...array_map(static fn (string $term, string $value): array => [$term => $value], array_keys($details), $details));
 
         foreach ($workers as $name => $worker) {
             $rows[] = [$name, json_encode($worker->getOptions(), JSON_PRETTY_PRINT)];

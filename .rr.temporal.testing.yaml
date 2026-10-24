@@ -1,0 +1,23 @@
+version: "3"
+
+server:
+  command: "php public/index.php"
+  env:
+    - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
+
+rpc:
+  listen: tcp://127.0.0.1:6001
+
+temporal:
+  address: "127.0.0.1:7233"
+  activities:
+    num_workers: 1
+
+logs:
+  level: error
+
+# Storage of the activity / workflow mocks (temporal.pool.testing.activityCacheName)
+kv:
+  test:
+    driver: memory
+    config: {}

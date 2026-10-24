@@ -1,0 +1,27 @@
+services:
+  _defaults:
+    autoconfigure: true
+
+  Vanta\Integration\Symfony\Temporal\Test\Functional\Plugin\GlobalPlugin: ~
+  Vanta\Integration\Symfony\Temporal\Test\Functional\Plugin\ScopedPlugin: ~
+
+  app.client_plugin:
+    class: Vanta\Integration\Symfony\Temporal\Test\Functional\Plugin\ClientPlugin
+    autoconfigure: false
+
+temporal:
+  pool:
+    client: default
+  workers:
+    default:
+      taskQueue: default
+  clients:
+    default:
+      namespace: default
+      plugins:
+        - app.client_plugin
+    foo:
+      namespace: foo
+  scheduleClients:
+    default:
+      namespace: default

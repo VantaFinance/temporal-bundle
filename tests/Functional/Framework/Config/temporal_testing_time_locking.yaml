@@ -1,0 +1,9 @@
+temporal:
+  pool:
+    testing:
+      enabled: true
+      activityMocker: in_memory
+      timeLocking: true
+  workers:
+    default:
+      taskQueue: default

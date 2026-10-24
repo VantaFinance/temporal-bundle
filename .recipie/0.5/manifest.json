@@ -1,0 +1,52 @@
+{
+  "manifests": {
+    "vanta/temporal-bundle": {
+      "manifest": {
+        "bundles": {
+          "Vanta\\Integration\\Symfony\\Temporal\\TemporalBundle": ["all"]
+        },
+        "copy-from-package": {
+          ".rr.temporal.yaml": ".rr.temporal.yaml",
+          ".rr.temporal.testing.yaml": ".rr.temporal.testing.yaml",
+          ".docker/docker-compose-temporal.yml": ".docker/docker-compose-temporal.yml",
+          ".docker/Dockerfile": ".docker/Dockerfile",
+          "temporal.yaml": "%CONFIG_DIR%/packages/temporal.yaml"
+        },
+        "add-lines": [
+          {
+            "file": "phpunit.dist.xml",
+            "content": "        <bootstrap class=\"Vanta\\Integration\\Symfony\\Temporal\\Testing\\PHPUnit\\TemporalEnvironmentExtension\"/>",
+            "position": "after_target",
+            "target": "<extensions>",
+            "requires": "phpunit/phpunit",
+            "warn_if_missing": true
+          },
+          {
+            "file": "phpunit.xml.dist",
+            "content": "        <bootstrap class=\"Vanta\\Integration\\Symfony\\Temporal\\Testing\\PHPUnit\\TemporalEnvironmentExtension\"/>",
+            "position": "after_target",
+            "target": "<extensions>",
+            "requires": "phpunit/phpunit",
+            "warn_if_missing": false
+          },
+          {
+            "file": ".env.test",
+            "content": "###> vanta/temporal-bundle (tests) ###\nTEMPORAL_ADDRESS=127.0.0.1:7233\nRR_RPC=tcp://127.0.0.1:6001\n###< vanta/temporal-bundle (tests) ###",
+            "position": "bottom",
+            "warn_if_missing": false
+          }
+        ],
+        "post-install-output": [
+          "  * Configure the <fg=green>workers/clients</> in <fg=green>config/packages/temporal.yaml</>",
+          "  * Configure the <fg=green>docker</> in dir <fg=green>.docker/</>",
+          "  * Tests: <fg=green>TemporalEnvironmentExtension</> was added to <fg=green>phpunit.dist.xml</> (if present); mark tests with <fg=green>#[WithTemporalEnvironment]</>"
+        ],
+        "env": {
+          "TEMPORAL_ADDRESS": "temporal:7233",
+          "RR_RPC": "tcp://temporal-php-worker:6001"
+        }
+      },
+      "ref": "092895bad43c1eddcf41b281d59ec294579ddeee"
+    }
+  }
+}

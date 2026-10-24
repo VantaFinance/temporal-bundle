@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\Runtime;
 
+use LogicException;
 use Symfony\Component\HttpKernel\KernelInterface as Kernel;
 use Symfony\Component\Runtime\RunnerInterface as Runner;
 use Symfony\Component\Runtime\SymfonyRuntime;
@@ -24,9 +25,11 @@ final class TemporalRuntime extends SymfonyRuntime
 
             $runtime = $application->getContainer()->get('temporal.runtime');
 
-            return $runtime instanceof Runtime ? new TemporalRunner($runtime) : parent::getRunner($application);
+            if ($runtime instanceof Runtime) {
+                return new TemporalRunner($runtime);
+            }
         }
 
-        return parent::getRunner($application);
+        throw new LogicException('Is not a temporal runtime');
     }
 }

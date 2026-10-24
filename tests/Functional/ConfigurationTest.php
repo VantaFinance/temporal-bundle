@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Functional;
+namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 
 use Nyholm\BundleTest\TestKernel;
 

@@ -1,0 +1,82 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// A marker only counts while the process that wrote it is alive, like a real server that stopped answering
+$isAlive = static function (string $marker): bool {
+    if (!is_file($marker)) {
+        return false;
+    }
+
+    $pid = (int) file_get_contents($marker);
+
+    return $pid > 0 && (!function_exists('posix_kill') || posix_kill($pid, 0));
+};
+
+// Fake RoadRunner binary: `serve` / `workers` with `-c <abs config>` and `-w <dir>`.
+// The config file name selects the scenario: fail-exit.yaml, never-ready.yaml, anything else is healthy.
+
+$arguments = array_slice($argv, 1);
+$command   = $arguments[0] ?? '';
+$config    = null;
+
+foreach ($arguments as $index => $argument) {
+    if ($argument === '-c') {
+        $config = $arguments[$index + 1] ?? null;
+    }
+}
+
+if ($config === null || !str_starts_with($config, '/') || !is_file($config)) {
+    fwrite(STDERR, sprintf("open %s: no such file or directory\n", $config ?? '.rr.yaml'));
+
+    exit(1);
+}
+
+$marker = $config . '.ready';
+
+if ($command === 'workers') {
+    if (!$isAlive($marker)) {
+        fwrite(STDERR, "dial tcp 127.0.0.1:6001: connect: connection refused\n");
+
+        exit(1);
+    }
+
+    echo "Workers of [temporal]:\n";
+
+    exit(0);
+}
+
+if ($command !== 'serve') {
+    exit(2);
+}
+
+$scenario = basename($config);
+
+if ($scenario === 'fail-exit.yaml') {
+    fwrite(STDERR, "fake-rr: boom on startup\n");
+
+    exit(1);
+}
+
+echo "fake-rr: serving\n";
+
+if ($scenario === 'slow-stop.yaml' && function_exists('pcntl_async_signals')) {
+    // Like real RoadRunner: needs about a second to shut down after SIGTERM
+    pcntl_async_signals(true);
+    pcntl_signal(SIGTERM, static function (): void {
+        usleep(1_000_000);
+
+        exit(0);
+    });
+}
+
+file_put_contents($config . '.pid', (string) getmypid());
+
+if ($scenario !== 'never-ready.yaml') {
+    file_put_contents($marker, (string) getmypid());
+}
+
+while (true) {
+    usleep(50_000);
+}

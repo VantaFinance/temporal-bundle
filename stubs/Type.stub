@@ -1,0 +1,13 @@
+<?php
+
+namespace Temporal\DataConverter;
+
+/**
+ * Generic since temporal/sdk 2.20. Covariant here: Type is an immutable final class, and with an invariant
+ * template the isClass() assertions (self<true> / self<false>) cannot narrow a Type<bool>.
+ *
+ * @template-covariant TIsClass of bool
+ */
+final class Type
+{
+}

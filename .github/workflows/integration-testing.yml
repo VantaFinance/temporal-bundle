@@ -4,12 +4,25 @@ on: [ push, pull_request ]
 jobs:
   build:
     runs-on: ${{ matrix.operating-system }}
-    name: PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }}
+    name: PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} (${{ matrix.dependencies }} dependencies)
     strategy:
+      # one failing combination must not cancel the others
+      fail-fast: false
       matrix:
         operating-system: [ ubuntu-latest ]
-        php: [ 8.2, 8.3, 8.4]
-        symfony: ['6.0.*', '6.1.*', '6.2.*', '6.3.*', '6.4.*', '7.0.*', '7.1.*']
+        php: [ 8.2, 8.3, 8.4, 8.5]
+        symfony: [ '6.4.*', '7.0.*', '7.1.*', '7.2.*', '7.3.*', '7.4.*', '8.0.*']
+        dependencies: [ highest ]
+        include:
+          - operating-system: ubuntu-latest
+            php: 8.2
+            symfony: '6.4.*'
+            dependencies: lowest
+        exclude:
+          - php: 8.3
+            symfony: '8.0.*'
+          - php: 8.2
+            symfony: '8.0.*'
 
     steps:
       - uses: actions/checkout@master
@@ -19,12 +32,16 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: flex
-          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc-1.64.1
+          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc, xdebug
 
       - name: Download dependencies
         env:
           SYMFONY_REQUIRE: ${{ matrix.symfony }}
-        uses: ramsey/composer-install@v1
+          SKIP_TOOLS_INSTALL: 1
+        uses: ramsey/composer-install@v4
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+          custom-cache-key: symfony-${{ matrix.symfony }}-php-${{ matrix.php }}-${{ matrix.dependencies }}
 
       - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }}
-        run: ./vendor/bin/phpunit
+        run: ./vendor/bin/phpunit --exclude-testsuite='Temporal E2E'

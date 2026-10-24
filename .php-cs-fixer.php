@@ -12,10 +12,10 @@ $finder = (new PhpCsFixer\Finder())
 
 return (new PhpCsFixer\Config())
     ->setRules([
-        '@PER-CS1.0'                 => true,
-        '@PER-CS1.0:risky'           => true,
-        '@PHP80Migration:risky'      => true,
-        '@PHP82Migration'            => true,
+        '@PER-CS1x0'                 => true,
+        '@PER-CS1x0:risky'           => true,
+        '@PHP8x0Migration:risky'     => true,
+        '@PHP8x2Migration'           => true,
         'no_superfluous_phpdoc_tags' => true,
         'single_line_throw'          => false,
         'concat_space'               => ['spacing' => 'one'],

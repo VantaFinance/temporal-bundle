@@ -29,7 +29,8 @@ final class ActivityDebugCommand extends Command
      */
     public function __construct(
         private readonly array $workers,
-        private readonly array $activitiesWithoutWorkers
+        private readonly array $activitiesWithoutWorkers,
+        private readonly string $defaultWorker = 'default',
     ) {
         parent::__construct();
     }
@@ -93,7 +94,7 @@ final class ActivityDebugCommand extends Command
         }
 
 
-        $io->title('Registered activity at all workers');
+        $io->title(sprintf('Registered activity without #[AssignWorker] (default worker: %s)', $this->defaultWorker));
 
         $printedActivities = [];
 
