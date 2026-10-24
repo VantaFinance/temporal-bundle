@@ -21,6 +21,7 @@ use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\ScheduleClie
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\SentryCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\TestServiceCompilerPass;
 use Vanta\Integration\Symfony\Temporal\DependencyInjection\Compiler\WorkflowCompilerPass;
+use Vanta\Integration\Symfony\Temporal\DependencyInjection\TemporalExtension;
 
 final class TemporalBundle extends Bundle
 {
@@ -32,6 +33,11 @@ final class TemporalBundle extends Bundle
         $container->addCompilerPass(new DoctrineCompilerPass());
         $container->addCompilerPass(new SentryCompilerPass());
         $container->addCompilerPass(new ScheduleClientCompilerPass());
+    }
+
+    protected function getContainerExtensionClass(): string
+    {
+        return TemporalExtension::class;
     }
 
     public function getPath(): string
