@@ -56,7 +56,7 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
         $builder->assertApplied();
 
         assertTrue($rpc->isEnsured($name));
-        assertSame($created->serializeToString(), $this->describe($name)->serializeToString());
+        assertSame($this->namespaceState($created), $this->namespaceState($this->describe($name)));
     }
 
     public function testRetentionDriftPreservesUnmanagedMetadata(): void
@@ -109,11 +109,11 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
             ->ensure()
         ;
 
-        $before = $this->describe($name)->serializeToString();
+        $before = $this->namespaceState($this->describe($name));
 
         (new NamespaceBuilder($this->rpc(), $name))->ensure();
 
-        assertSame($before, $this->describe($name)->serializeToString());
+        assertSame($before, $this->namespaceState($this->describe($name)));
     }
 
     public function testMetadataDriftPreservesUnmanagedFieldsAndReplayIsNoop(): void
@@ -150,7 +150,7 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
 
         $builder->ensure();
 
-        assertSame($updated->serializeToString(), $this->describe($name)->serializeToString());
+        assertSame($this->namespaceState($updated), $this->namespaceState($this->describe($name)));
     }
 
     public function testDeprecatedNamespaceFailsInsteadOfReactivating(): void
@@ -225,6 +225,25 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
         $this->expectExceptionCode(StatusCode::NOT_FOUND);
 
         $this->describe($name);
+    }
+
+    private function namespaceState(DescribeNamespaceResponse $response): string
+    {
+        $info = $response->getNamespaceInfo();
+
+        assertNotNull($info);
+
+        $data = iterator_to_array($info->getData());
+
+        ksort($data);
+
+        // Protobuf map iteration order can change between otherwise identical RPC responses.
+        $info = clone $info;
+        $info->setData($data);
+        $response = clone $response;
+        $response->setNamespaceInfo($info);
+
+        return $response->serializeToString();
     }
 
     private function describe(string $namespace): DescribeNamespaceResponse
