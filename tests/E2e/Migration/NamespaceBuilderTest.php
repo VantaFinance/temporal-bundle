@@ -36,11 +36,11 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
     {
         $name    = $this->namespaceName();
         $rpc     = $this->rpc();
-        $builder = (new NamespaceBuilder($rpc, $name))
-            ->description('Billing workflows')
+        $builder = (new NamespaceBuilder($rpc, $name))->description('Billing workflows')
             ->ownerEmail('platform@example.com')
             ->data(['team' => 'billing'])
-            ->retention(new DateInterval('P7D'));
+            ->retention(new DateInterval('P7D'))
+        ;
 
         $builder->ensure();
 
@@ -63,18 +63,18 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
     {
         $name = $this->namespaceName();
 
-        (new NamespaceBuilder($this->rpc(), $name))
-            ->description('Preserved description')
+        (new NamespaceBuilder($this->rpc(), $name))->description('Preserved description')
             ->ownerEmail('owner@example.com')
             ->data(['unmanaged' => 'keep'])
             ->retention(new DateInterval('P1D'))
-            ->ensure();
+            ->ensure()
+        ;
 
         $before = $this->describe($name);
 
-        (new NamespaceBuilder($this->rpc(), $name))
-            ->retention(new DateInterval('P3D'))
-            ->ensure();
+        (new NamespaceBuilder($this->rpc(), $name))->retention(new DateInterval('P3D'))
+            ->ensure()
+        ;
 
         $updated = $this->describe($name);
 
@@ -105,9 +105,9 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
     {
         $name = $this->namespaceName();
 
-        (new NamespaceBuilder($this->rpc(), $name))
-            ->retention(new DateInterval('P1D'))
-            ->ensure();
+        (new NamespaceBuilder($this->rpc(), $name))->retention(new DateInterval('P1D'))
+            ->ensure()
+        ;
 
         $before = $this->describe($name)->serializeToString();
 
@@ -120,17 +120,17 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
     {
         $name = $this->namespaceName();
 
-        (new NamespaceBuilder($this->rpc(), $name))
-            ->description('Old description')
+        (new NamespaceBuilder($this->rpc(), $name))->description('Old description')
             ->ownerEmail('unmanaged@example.com')
             ->data(['unmanaged' => 'keep', 'team' => 'old'])
             ->retention(new DateInterval('P1D'))
-            ->ensure();
+            ->ensure()
+        ;
 
-        $builder = (new NamespaceBuilder($this->rpc(), $name))
-            ->description('New description')
+        $builder = (new NamespaceBuilder($this->rpc(), $name))->description('New description')
             ->data(['team' => 'billing'])
-            ->data(['empty' => '']);
+            ->data(['empty' => ''])
+        ;
 
         $builder->ensure();
 
@@ -157,14 +157,13 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
     {
         $name = $this->namespaceName();
 
-        (new NamespaceBuilder($this->rpc(), $name))
-            ->retention(new DateInterval('P1D'))
-            ->ensure();
+        (new NamespaceBuilder($this->rpc(), $name))->retention(new DateInterval('P1D'))
+            ->ensure()
+        ;
 
         $this->rpc()->observe(static function () use ($name): bool {
             try {
-                self::$service->UpdateNamespace((new UpdateNamespaceRequest())
-                    ->setNamespace($name)
+                self::$service->UpdateNamespace((new UpdateNamespaceRequest())->setNamespace($name)
                     ->setUpdateInfo(
                         (new UpdateNamespaceInfo())->setState(NamespaceState::NAMESPACE_STATE_DEPRECATED),
                     ));
@@ -180,9 +179,9 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
         }, 'namespace cache readiness', 30, 1.0);
 
         try {
-            (new NamespaceBuilder($this->rpc(), $name))
-                ->retention(new DateInterval('P2D'))
-                ->ensure();
+            (new NamespaceBuilder($this->rpc(), $name))->retention(new DateInterval('P2D'))
+                ->ensure()
+            ;
 
             self::fail('Deprecated namespaces must not be reactivated.');
         } catch (MigrationException $exception) {
@@ -197,9 +196,9 @@ final class NamespaceBuilderTest extends MigrationServerTestCase
     {
         $name = $this->namespaceName();
 
-        (new NamespaceBuilder($this->rpc(), $name))
-            ->retention(new DateInterval('P1D'))
-            ->ensure();
+        (new NamespaceBuilder($this->rpc(), $name))->retention(new DateInterval('P1D'))
+            ->ensure()
+        ;
 
         $rpc     = $this->rpc();
         $builder = new NamespaceBuilder($rpc, $name);

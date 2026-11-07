@@ -66,8 +66,7 @@ final class ConfigurationTest extends KernelTestCase
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    $container
-                        ->getDefinition('console.command.config_dump_reference')
+                    $container->getDefinition('console.command.config_dump_reference')
                         ->setPublic(true)
                     ;
                 }

@@ -1428,6 +1428,7 @@ final class Configuration implements BundleConfiguration
                     ->end()
                 ->end()
             ->end()
-        ->end();
+        ->end()
+        ;
     }
 }

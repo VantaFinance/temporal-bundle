@@ -80,7 +80,8 @@ final class ScheduleClientCompilerPass implements CompilerPass
                     '$serviceClient' => new Reference($serviceClientId),
                     '$options'       => $options,
                     '$converter'     => new Reference($client['dataConverter']),
-                ]);
+                ])
+            ;
 
             clientLogger($container, $container->getDefinition($id), GrpcScheduleClient::class, $client['logger'], $config['pool']['globalLogger'], $path);
 

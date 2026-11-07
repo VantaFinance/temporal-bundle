@@ -48,7 +48,9 @@ final class PluginCompilerPass implements CompilerPass
         $config = $container->getParameter('temporal.config');
 
         // The last bundle pass: keep API keys and certificates out of the compiled container
-        $container->getParameterBag()->remove('temporal.config');
+        $container->getParameterBag()
+            ->remove('temporal.config')
+        ;
 
         $clientNames         = array_map(strval(...), array_keys($config['clients']));
         $scheduleClientNames = array_map(strval(...), array_keys($config['scheduleClients']));
@@ -125,13 +127,17 @@ final class PluginCompilerPass implements CompilerPass
 
         foreach ($clients as $name => $plugins) {
             if ($plugins != []) {
-                $container->getDefinition(sprintf('temporal.%s.client', $name))->setArgument('$pluginRegistry', $this->registry($plugins));
+                $container->getDefinition(sprintf('temporal.%s.client', $name))
+                    ->setArgument('$pluginRegistry', $this->registry($plugins))
+                ;
             }
         }
 
         foreach ($scheduleClients as $name => $plugins) {
             if ($plugins != []) {
-                $container->getDefinition(sprintf('temporal.%s.schedule_client', $name))->setArgument('$pluginRegistry', $this->registry($plugins));
+                $container->getDefinition(sprintf('temporal.%s.schedule_client', $name))
+                    ->setArgument('$pluginRegistry', $this->registry($plugins))
+                ;
             }
         }
 
@@ -170,7 +176,9 @@ final class PluginCompilerPass implements CompilerPass
         $this->describe($container, 'temporal.collector', '$scheduleClients', $scheduleClients);
 
         if ($container->hasDefinition('temporal.worker_debug.command')) {
-            $container->getDefinition('temporal.worker_debug.command')->setArgument('$plugins', $workerPlugins);
+            $container->getDefinition('temporal.worker_debug.command')
+                ->setArgument('$plugins', $workerPlugins)
+            ;
         }
     }
 

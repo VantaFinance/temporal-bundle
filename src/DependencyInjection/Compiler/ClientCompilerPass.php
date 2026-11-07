@@ -126,12 +126,15 @@ final class ClientCompilerPass implements CompilerPass
                                 ...$testingInterceptors,
                             ],
                         ]),
-                ]);
+                ])
+            ;
 
             clientLogger($container, $container->getDefinition($id), GrpcWorkflowClient::class, $client['logger'], $config['pool']['globalLogger'], $path);
 
             if ($default) {
-                $container->setAlias(WorkflowClient::class, $id)->setPublic($public);
+                $container->setAlias(WorkflowClient::class, $id)
+                    ->setPublic($public)
+                ;
             }
 
             $container->registerAliasForArgument($id, WorkflowClient::class, sprintf('%sWorkflowClient', $name));
@@ -145,7 +148,9 @@ final class ClientCompilerPass implements CompilerPass
 
             // An application service of the same interface wins
             if ($default && !$container->has(ActivityCompletionClient::class)) {
-                $container->setAlias(ActivityCompletionClient::class, $completionClientId)->setPublic($public);
+                $container->setAlias(ActivityCompletionClient::class, $completionClientId)
+                    ->setPublic($public)
+                ;
             }
 
             $container->registerAliasForArgument($completionClientId, ActivityCompletionClient::class, sprintf('%sActivityCompletionClient', $name));
@@ -162,7 +167,9 @@ final class ClientCompilerPass implements CompilerPass
                 ;
 
                 if ($default && !$container->has(self::OPERATOR_CLIENT_INTERFACE)) {
-                    $container->setAlias(self::OPERATOR_CLIENT_INTERFACE, $operatorClientId)->setPublic($public);
+                    $container->setAlias(self::OPERATOR_CLIENT_INTERFACE, $operatorClientId)
+                        ->setPublic($public)
+                    ;
                 }
 
                 $container->registerAliasForArgument($operatorClientId, self::OPERATOR_CLIENT_INTERFACE, sprintf('%sOperatorClient', $name));
@@ -199,7 +206,9 @@ final class ClientCompilerPass implements CompilerPass
             }
 
             if (!$container->has(self::CLOUD_CLIENT_INTERFACE)) {
-                $container->setAlias(self::CLOUD_CLIENT_INTERFACE, 'temporal.cloud_client')->setPublic($public);
+                $container->setAlias(self::CLOUD_CLIENT_INTERFACE, 'temporal.cloud_client')
+                    ->setPublic($public)
+                ;
             }
         }
 

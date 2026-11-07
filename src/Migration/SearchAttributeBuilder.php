@@ -149,10 +149,14 @@ final class SearchAttributeBuilder
 
         try {
             if ($type === null) {
-                $request = (new RemoveSearchAttributesRequest())->setNamespace($this->namespace)->setSearchAttributes([$name]);
+                $request = (new RemoveSearchAttributesRequest())->setNamespace($this->namespace)
+                    ->setSearchAttributes([$name])
+                ;
                 $this->rpc->operatorClient()->RemoveSearchAttributes($request);
             } else {
-                $request = (new AddSearchAttributesRequest())->setNamespace($this->namespace)->setSearchAttributes([$name => $type]);
+                $request = (new AddSearchAttributesRequest())->setNamespace($this->namespace)
+                    ->setSearchAttributes([$name => $type])
+                ;
                 $this->rpc->operatorClient()->AddSearchAttributes($request);
             }
         } catch (ServiceClientException $exception) {

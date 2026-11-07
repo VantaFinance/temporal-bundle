@@ -123,11 +123,9 @@ final class WorkflowCompilerPass implements CompilerPass
         $factoryArguments = [
             '$credentials' => null,
             '$converter'   => new Reference($config['pool']['dataConverter']),
-            '$rpc'         => $config['pool']['rpc'] !== null ? new Reference($config['pool']['rpc']) : definition(Goridge::class)
-                ->setFactory([Goridge::class, 'create'])
+            '$rpc'         => $config['pool']['rpc'] !== null ? new Reference($config['pool']['rpc']) : definition(Goridge::class)->setFactory([Goridge::class, 'create'])
                 ->setArguments([
-                    definition(RoadRunnerEnvironment::class)
-                        ->setFactory([Environment::class, 'create'])
+                    definition(RoadRunnerEnvironment::class)->setFactory([Environment::class, 'create'])
                         ->setArguments([
                             ['RR_RPC' => $config['pool']['roadrunnerRPC']],
                         ]),
@@ -217,13 +215,17 @@ final class WorkflowCompilerPass implements CompilerPass
                     ->setArguments([$childWorkflowCache])
                     ->setPublic(true)
                 ;
-                $container->setAlias(self::WORKFLOW_MOCKER, 'temporal.testing.workflow_mocker')->setPublic(true);
+                $container->setAlias(self::WORKFLOW_MOCKER, 'temporal.testing.workflow_mocker')
+                    ->setPublic(true)
+                ;
 
                 $container->register('temporal.testing.search_attribute_mocker', self::SEARCH_ATTRIBUTE_MOCKER)
                     ->setArguments([$searchAttributeCache])
                     ->setPublic(true)
                 ;
-                $container->setAlias(self::SEARCH_ATTRIBUTE_MOCKER, 'temporal.testing.search_attribute_mocker')->setPublic(true);
+                $container->setAlias(self::SEARCH_ATTRIBUTE_MOCKER, 'temporal.testing.search_attribute_mocker')
+                    ->setPublic(true)
+                ;
 
                 $container->register('temporal.testing.mock_child_workflow.interceptor', 'Temporal\Testing\MockChildWorkflowInterceptor')
                     ->setArguments([$childWorkflowCache, $converter])
@@ -246,8 +248,7 @@ final class WorkflowCompilerPass implements CompilerPass
         }
 
         if ($config['pool']['workerApiKey'] != null) {
-            $factoryArguments['$credentials'] = definition(ServiceCredentials::class)
-                ->setFactory([ServiceCredentials::class, 'create'])
+            $factoryArguments['$credentials'] = definition(ServiceCredentials::class)->setFactory([ServiceCredentials::class, 'create'])
                 ->addMethodCall('withApiKey', [$config['pool']['workerApiKey']], true)
             ;
         }
@@ -310,7 +311,8 @@ final class WorkflowCompilerPass implements CompilerPass
         // Flags are global: set them when the worker factory is created, before any worker runs
         if ($featureFlags != []) {
             $workerFactory->setConfigurator([
-                $container->register('temporal.feature_flags.configurator', FeatureFlagsConfigurator::class)->setArguments([$featureFlags]),
+                $container->register('temporal.feature_flags.configurator', FeatureFlagsConfigurator::class)
+                    ->setArguments([$featureFlags]),
                 '__invoke',
             ]);
         }
@@ -435,16 +437,14 @@ final class WorkflowCompilerPass implements CompilerPass
             $deployment = $worker['deploymentOptions'];
 
             if ($deployment['useVersioning'] || $deployment['buildId'] !== null) {
-                $deploymentOptions = definition(WorkerDeploymentOptions::class)
-                    ->setFactory([WorkerDeploymentOptions::class, 'new'])
+                $deploymentOptions = definition(WorkerDeploymentOptions::class)->setFactory([WorkerDeploymentOptions::class, 'new'])
                     ->addMethodCall('withUseVersioning', [$deployment['useVersioning']], true)
                     ->addMethodCall('withDefaultVersioningBehavior', [constant(sprintf('%s::%s', VersioningBehavior::class, $deployment['defaultVersioningBehavior']))], true)
                 ;
 
                 if ($deployment['deploymentName'] !== null && $deployment['buildId'] !== null) {
                     $deploymentOptions->addMethodCall('withVersion', [
-                        definition(WorkerDeploymentVersion::class)
-                            ->setFactory([WorkerDeploymentVersion::class, 'new'])
+                        definition(WorkerDeploymentVersion::class)->setFactory([WorkerDeploymentVersion::class, 'new'])
                             ->setArguments([$deployment['deploymentName'], $deployment['buildId']]),
                     ], true);
                 }

@@ -21,18 +21,15 @@ final class TestActivityBundle extends Bundle
 {
     public function build(ContainerBuilder $container): void
     {
-        $container
-            ->register(ActivityAHandler::class)
+        $container->register(ActivityAHandler::class)
             ->setAutoconfigured(true)
         ;
 
-        $container
-            ->register(ActivityBHandler::class)
+        $container->register(ActivityBHandler::class)
             ->setAutoconfigured(true)
         ;
 
-        $container
-            ->register(ActivityCHandler::class)
+        $container->register(ActivityCHandler::class)
             ->setAutoconfigured(true)
         ;
     }

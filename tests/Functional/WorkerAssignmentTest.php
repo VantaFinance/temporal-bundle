@@ -178,9 +178,9 @@ final class WorkerAssignmentTest extends KernelTestCase
                 $container->loadFromExtension('temporal', $config);
 
                 foreach ($services as $id => $class) {
-                    $container
-                        ->register(is_int($id) ? $class : $id, $class)
-                        ->setAutoconfigured(true);
+                    $container->register(is_int($id) ? $class : $id, $class)
+                        ->setAutoconfigured(true)
+                    ;
                 }
             });
 

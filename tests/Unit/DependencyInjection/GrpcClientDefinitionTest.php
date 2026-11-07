@@ -145,15 +145,15 @@ final class GrpcClientDefinitionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        $container
-            ->setDefinition('context', grpcContext([ // @phpstan-ignore argument.type
+        $container->setDefinition('context', grpcContext([ // @phpstan-ignore argument.type
             'timeout'  => ['value' => 5, 'format' => 'seconds'],
             'options'  => [],
             'metadata' => [],
             ...$grpcContext,
             'retryOptions' => [...self::RETRY_OPTIONS, ...($grpcContext['retryOptions'] ?? [])],
         ]))
-            ->setPublic(true);
+            ->setPublic(true)
+        ;
 
         $container->compile();
 

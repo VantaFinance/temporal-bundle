@@ -37,8 +37,7 @@ final class WorkflowReplayCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->addArgument('workflow-type', InputArgument::REQUIRED, 'Workflow type, e.g. "OrderWorkflow"')
+        $this->addArgument('workflow-type', InputArgument::REQUIRED, 'Workflow type, e.g. "OrderWorkflow"')
             ->addOption('history-file', null, InputOption::VALUE_REQUIRED, 'JSON history file (Temporal UI / CLI "workflow show --output json")')
             ->addOption('workflow-id', null, InputOption::VALUE_REQUIRED, 'Workflow id: the history is fetched from the Temporal server')
             ->addOption('run-id', null, InputOption::VALUE_REQUIRED, 'Run id of --workflow-id; the latest run by default')

@@ -446,13 +446,11 @@ final class WorkerTest extends KernelTestCase
                 'withLocalActivityWorkerOnly'                 => false,
                 'withDisableEagerActivities'                  => false,
                 'withWorkflowPanicPolicy'                     => WorkflowPanicPolicy::BlockWorkflow,
-                'withDeploymentOptions'                       => (new Definition(WorkerDeploymentOptions::class))
-                    ->setFactory([WorkerDeploymentOptions::class, 'new'])
+                'withDeploymentOptions'                       => (new Definition(WorkerDeploymentOptions::class))->setFactory([WorkerDeploymentOptions::class, 'new'])
                     ->addMethodCall('withUseVersioning', [true], true)
                     ->addMethodCall('withDefaultVersioningBehavior', [VersioningBehavior::Pinned], true)
                     ->addMethodCall('withVersion', [
-                        (new Definition(WorkerDeploymentVersion::class))
-                            ->setFactory([WorkerDeploymentVersion::class, 'new'])
+                        (new Definition(WorkerDeploymentVersion::class))->setFactory([WorkerDeploymentVersion::class, 'new'])
                             ->setArguments(['billing', '1.0.0']),
                     ], true),
             ],

@@ -210,9 +210,9 @@ final class NamespaceBuilder
             throw MigrationException::retentionRequired($this->namespace);
         }
 
-        $request = (new RegisterNamespaceRequest())
-                ->setNamespace($this->namespace)
-                ->setWorkflowExecutionRetentionPeriod($this->duration());
+        $request = (new RegisterNamespaceRequest())->setNamespace($this->namespace)
+            ->setWorkflowExecutionRetentionPeriod($this->duration())
+        ;
 
         if ($this->description !== null) {
             $request->setDescription($this->description);

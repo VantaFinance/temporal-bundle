@@ -83,18 +83,36 @@ final class MigrationTest extends TestCase
                     ->ownerEmail('platform@example.com')
                     ->data(['team' => 'managed', 'empty' => ''])
                     ->retention(new DateInterval('P1D'))
-                    ->ensure();
-                $scheme->namespace(%s)->retention(new DateInterval('P1D'))->ensure();
+                    ->ensure()
+                ;
+                $scheme->namespace(%s)
+                    ->retention(new DateInterval('P1D'))
+                    ->ensure()
+                ;
                 PHP, var_export($namespace . '-other', true)));
 
             $this->writeMigration($directory, $phpNamespace, '20260101000002', sprintf(<<<'PHP'
-                $scheme->searchAttributes()->keyword('CustomerId')->integer('OrderNumber')->apply();
-                $scheme->searchAttributes(%s)->keyword('OtherId')->apply();
+                $scheme->searchAttributes()
+                    ->keyword('CustomerId')
+                    ->integer('OrderNumber')
+                    ->apply()
+                ;
+                $scheme->searchAttributes(%s)
+                    ->keyword('OtherId')
+                    ->apply()
+                ;
                 $scheme->operatorClient();
                 $scheme->serviceClient();
                 PHP, var_export($namespace . '-other', true)), sprintf(<<<'PHP'
-                $scheme->searchAttributes()->remove('CustomerId')->remove('OrderNumber')->apply();
-                $scheme->searchAttributes(%s)->remove('OtherId')->apply();
+                $scheme->searchAttributes()
+                    ->remove('CustomerId')
+                    ->remove('OrderNumber')
+                    ->apply()
+                ;
+                $scheme->searchAttributes(%s)
+                    ->remove('OtherId')
+                    ->apply()
+                ;
                 PHP, var_export($namespace . '-other', true)));
 
             $application = new Application($kernel);
@@ -121,22 +139,18 @@ final class MigrationTest extends TestCase
 
             assertSame($rawNamespace, $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($rawNamespace))->getNamespaceInfo()?->getName());
 
-            $service->UpdateNamespace((new UpdateNamespaceRequest())
-                ->setNamespace($namespace)
+            $service->UpdateNamespace((new UpdateNamespaceRequest())->setNamespace($namespace)
                 ->setUpdateInfo(
-                    (new UpdateNamespaceInfo())
-                    ->setDescription('preserved description')
-                    ->setOwnerEmail('owner@example.com')
-                    ->setData(['team' => 'old', 'unmanaged' => 'preserved']),
+                    (new UpdateNamespaceInfo())->setDescription('preserved description')
+                        ->setOwnerEmail('owner@example.com')
+                        ->setData(['team' => 'old', 'unmanaged' => 'preserved']),
                 ));
 
-            $service->UpdateNamespace((new UpdateNamespaceRequest())
-                ->setNamespace($namespace)
+            $service->UpdateNamespace((new UpdateNamespaceRequest())->setNamespace($namespace)
                 ->setUpdateInfo(
-                    (new UpdateNamespaceInfo())
-                    ->setDescription('')
-                    ->setOwnerEmail('')
-                    ->setData(['team' => 'billing', 'added' => 'new']),
+                    (new UpdateNamespaceInfo())->setDescription('')
+                        ->setOwnerEmail('')
+                        ->setData(['team' => 'billing', 'added' => 'new']),
                 ));
 
             $metadata = $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($namespace))->getNamespaceInfo();
@@ -152,13 +166,19 @@ final class MigrationTest extends TestCase
             $failureMarker = $directory . '/allow-replay';
 
             $this->writeMigration($directory, $phpNamespace, '20260101000003', sprintf(<<<'PHP'
-                $scheme->namespace()->retention(new DateInterval('P2D'))->ensure();
-                $scheme->searchAttributes()->keyword('PartialId')->apply();
+                $scheme->namespace()
+                    ->retention(new DateInterval('P2D'))
+                    ->ensure()
+                ;
+                $scheme->searchAttributes()
+                    ->keyword('PartialId')
+                    ->apply()
+                ;
 
                 if (!is_file(%s)) {
                     throw new RuntimeException('injected partial failure');
                 }
-                PHP, var_export($failureMarker, true)), "\$scheme->searchAttributes()->remove('PartialId')->apply();");
+                PHP, var_export($failureMarker, true)), "\$scheme->searchAttributes()\n    ->remove('PartialId')\n    ->apply()\n;");
 
             assertSame(1, $command->execute([], ['interactive' => false]));
             assertStringContainsString('Partial effects may remain', $command->getDisplay());
@@ -180,8 +200,12 @@ final class MigrationTest extends TestCase
 
             // Explicit deletion is exercised only in its own final fixture.
             $this->writeMigration($directory, $phpNamespace, '20260101000004', sprintf(<<<'PHP'
-                $scheme->namespace(%1$s)->delete();
-                $scheme->namespace(%1$s)->delete();
+                $scheme->namespace(%1$s)
+                    ->delete()
+                ;
+                $scheme->namespace(%1$s)
+                    ->delete()
+                ;
                 PHP, var_export($namespace . '-other', true)));
 
             assertSame(0, $command->execute([], ['interactive' => false]), $command->getDisplay());

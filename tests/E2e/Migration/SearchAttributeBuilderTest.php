@@ -35,9 +35,9 @@ final class SearchAttributeBuilderTest extends MigrationServerTestCase
         $namespace = $this->namespaceName();
         $rpc       = $this->rpc();
 
-        (new NamespaceBuilder($rpc, $namespace))
-            ->retention(new DateInterval('P1D'))
-            ->ensure();
+        (new NamespaceBuilder($rpc, $namespace))->retention(new DateInterval('P1D'))
+            ->ensure()
+        ;
 
         $expected = [
             'CustomerId'  => IndexedValueType::INDEXED_VALUE_TYPE_KEYWORD,
@@ -52,15 +52,15 @@ final class SearchAttributeBuilderTest extends MigrationServerTestCase
         ksort($expected);
 
         for ($run = 0; $run < 2; ++$run) {
-            (new SearchAttributeBuilder($rpc, $namespace))
-                ->keyword('CustomerId')
+            (new SearchAttributeBuilder($rpc, $namespace))->keyword('CustomerId')
                 ->text('Description')
                 ->keywordList('Tags')
                 ->integer('Number')
                 ->double('Amount')
                 ->boolean('Priority')
                 ->datetime('Delivery')
-                ->apply();
+                ->apply()
+            ;
 
             assertSame($expected, $this->attributes($namespace));
         }
@@ -83,19 +83,19 @@ final class SearchAttributeBuilderTest extends MigrationServerTestCase
         $namespace = $this->namespaceName();
         $rpc       = $this->rpc();
 
-        (new NamespaceBuilder($rpc, $namespace))
-            ->retention(new DateInterval('P1D'))
-            ->ensure();
+        (new NamespaceBuilder($rpc, $namespace))->retention(new DateInterval('P1D'))
+            ->ensure()
+        ;
 
-        (new SearchAttributeBuilder($rpc, $namespace))
-            ->integer('Conflict')
-            ->apply();
+        (new SearchAttributeBuilder($rpc, $namespace))->integer('Conflict')
+            ->apply()
+        ;
 
         try {
-            (new SearchAttributeBuilder($rpc, $namespace))
-                ->keyword('New')
+            (new SearchAttributeBuilder($rpc, $namespace))->keyword('New')
                 ->keyword('Conflict')
-                ->apply();
+                ->apply()
+            ;
 
             self::fail('A type conflict must prevent every mutation in the batch.');
         } catch (MigrationException $exception) {
@@ -111,22 +111,22 @@ final class SearchAttributeBuilderTest extends MigrationServerTestCase
         $second = $this->namespaceName();
         $scheme = new Scheme($this->rpc(), $first);
 
-        $scheme
-            ->namespace()
+        $scheme->namespace()
             ->retention(new DateInterval('P1D'))
-            ->ensure();
+            ->ensure()
+        ;
 
-        $scheme
-            ->namespace($second)
+        $scheme->namespace($second)
             ->retention(new DateInterval('P1D'))
-            ->ensure();
+            ->ensure()
+        ;
 
-        $firstBuilder = $scheme
-            ->searchAttributes()
-            ->keyword('CustomerId');
-        $secondBuilder = $scheme
-            ->searchAttributes($second)
-            ->integer('CustomerId');
+        $firstBuilder = $scheme->searchAttributes()
+            ->keyword('CustomerId')
+        ;
+        $secondBuilder = $scheme->searchAttributes($second)
+            ->integer('CustomerId')
+        ;
 
         $firstBuilder->apply();
 
@@ -135,10 +135,10 @@ final class SearchAttributeBuilderTest extends MigrationServerTestCase
         assertSame(['CustomerId' => IndexedValueType::INDEXED_VALUE_TYPE_KEYWORD], $this->attributes($first));
         assertSame(['CustomerId' => IndexedValueType::INDEXED_VALUE_TYPE_INT], $this->attributes($second));
 
-        $scheme
-            ->searchAttributes($second)
+        $scheme->searchAttributes($second)
             ->remove('CustomerId')
-            ->apply();
+            ->apply()
+        ;
 
         assertSame([], $this->attributes($second));
         assertSame(['CustomerId' => IndexedValueType::INDEXED_VALUE_TYPE_KEYWORD], $this->attributes($first));

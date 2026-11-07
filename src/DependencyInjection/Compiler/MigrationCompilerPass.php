@@ -85,15 +85,19 @@ final class MigrationCompilerPass implements CompilerPass
         $logger = new Reference($loggerId);
 
         $container->register(MigrationPaths::class, MigrationPaths::class)
-            ->setArguments([$paths->paths, '']);
+            ->setArguments([$paths->paths, ''])
+        ;
 
         $container->register(MigrationDiscovery::class, MigrationDiscovery::class)
-            ->setArguments([new Reference(MigrationPaths::class), $logger]);
+            ->setArguments([new Reference(MigrationPaths::class), $logger])
+        ;
 
         $container->register(MigrationGenerator::class, MigrationGenerator::class)
-            ->setArguments([new Reference(MigrationPaths::class), $logger]);
+            ->setArguments([new Reference(MigrationPaths::class), $logger])
+        ;
 
-        $container->register(MigrationRunner::class, MigrationRunner::class)->setArguments([
+        $container->register(MigrationRunner::class, MigrationRunner::class)
+            ->setArguments([
             new Reference(MigrationDiscovery::class),
             new Reference(sprintf('temporal.%s.service_client', $name)),
             new Reference(sprintf('temporal.%s.operator_client', $name)),
@@ -101,11 +105,13 @@ final class MigrationCompilerPass implements CompilerPass
             $options['timeout'],
             $logger,
             $name,
-        ]);
+        ])
+        ;
 
         $container->register(MigrationGenerateCommand::class, MigrationGenerateCommand::class)
             ->setArguments([new Reference(MigrationGenerator::class)])
-            ->addTag('console.command');
+            ->addTag('console.command')
+        ;
 
         $container->register(MigrationMigrateCommand::class, MigrationMigrateCommand::class)
             ->setArguments([
@@ -114,6 +120,7 @@ final class MigrationCompilerPass implements CompilerPass
                 $name,
                 $namespace,
             ])
-            ->addTag('console.command');
+            ->addTag('console.command')
+        ;
     }
 }

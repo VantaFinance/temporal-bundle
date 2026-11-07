@@ -32,7 +32,8 @@ final class MigrationGenerateCommand extends Command
     protected function configure(): void
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'Migration description')
-            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Configured PHP namespace (not a Temporal namespace)');
+            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Configured PHP namespace (not a Temporal namespace)')
+        ;
     }
 
     protected function execute(Input $input, Output $output): int

@@ -37,9 +37,9 @@ final class MigrationRpcContextTest extends TestCase
 
     public function testMetadataAndPerRpcDeadlineArePreservedOnBothClients(): void
     {
-        $context = Context::default()
-            ->withMetadata(['fixture' => ['value']])
-            ->withTimeout(2);
+        $context = Context::default()->withMetadata(['fixture' => ['value']])
+            ->withTimeout(2)
+        ;
         $operator = OperatorClient::create('127.0.0.1:1')->withContext($context);
         $service  = ServiceClient::create('127.0.0.1:1')->withContext($context);
         $rpc      = new MigrationRpcContext($service, $operator, 30);

@@ -56,20 +56,20 @@ final class SchemeTest extends TestCase
         $service  = ServiceClient::create('127.0.0.1:1');
         $scheme   = new Scheme(new MigrationRpcContext($service, $operator), 'default');
 
-        $scheme
-            ->searchAttributes('first')
-            ->remove('Absent');
+        $scheme->searchAttributes('first')
+            ->remove('Absent')
+        ;
 
-        $scheme
-            ->searchAttributes('second')
-            ->remove('Absent');
+        $scheme->searchAttributes('second')
+            ->remove('Absent')
+        ;
 
         assertInstanceOf(OperatorClient::class, $scheme->operatorClient());
         assertInstanceOf(ServiceClient::class, $scheme->serviceClient());
 
-        $scheme
-            ->namespace()
-            ->retention(new DateInterval('P1D'));
+        $scheme->namespace()
+            ->retention(new DateInterval('P1D'))
+        ;
 
         $this->expectException(MigrationException::class);
 

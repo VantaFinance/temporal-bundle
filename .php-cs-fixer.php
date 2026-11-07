@@ -12,15 +12,16 @@ $finder = (new PhpCsFixer\Finder())
 
 return (new PhpCsFixer\Config())
     ->setRules([
-        '@PER-CS1x0'                 => true,
-        '@PER-CS1x0:risky'           => true,
-        '@PHP8x0Migration:risky'     => true,
-        '@PHP8x2Migration'           => true,
-        'no_superfluous_phpdoc_tags' => true,
-        'single_line_throw'          => false,
-        'concat_space'               => ['spacing' => 'one'],
-        'ordered_imports'            => true,
-        'global_namespace_import'    => [
+        '@PER-CS1x0'                             => true,
+        '@PER-CS1x0:risky'                       => true,
+        '@PHP8x0Migration:risky'                 => true,
+        '@PHP8x2Migration'                       => true,
+        'no_superfluous_phpdoc_tags'             => true,
+        'single_line_throw'                      => false,
+        'concat_space'                           => ['spacing' => 'one'],
+        'ordered_imports'                        => true,
+        'multiline_whitespace_before_semicolons' => ['strategy' => 'new_line_for_chained_calls'],
+        'global_namespace_import'                => [
             'import_classes'   => true,
             'import_constants' => true,
             'import_functions' => true,

@@ -65,9 +65,9 @@ final class NamespaceBuilderTest extends TestCase
         $this->expectException(MigrationException::class);
         $this->expectExceptionMessage('call ensure()');
 
-        (new NamespaceBuilder($this->rpc, 'billing'))
-            ->data(['team' => 'billing'])
-            ->assertApplied();
+        (new NamespaceBuilder($this->rpc, 'billing'))->data(['team' => 'billing'])
+            ->assertApplied()
+        ;
     }
 
     public function testDeleteRejectsPendingSettingsBeforeRpc(): void
@@ -75,8 +75,8 @@ final class NamespaceBuilderTest extends TestCase
         $this->expectException(MigrationException::class);
         $this->expectExceptionMessage('pending');
 
-        (new NamespaceBuilder($this->rpc, 'billing'))
-            ->retention(new DateInterval('P1D'))
-            ->delete();
+        (new NamespaceBuilder($this->rpc, 'billing'))->retention(new DateInterval('P1D'))
+            ->delete()
+        ;
     }
 }

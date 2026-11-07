@@ -112,9 +112,9 @@ final class DataConverterTest extends KernelTestCase
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    $container
-                        ->getDefinition('temporal.data_converter')
-                        ->setPublic(true);
+                    $container->getDefinition('temporal.data_converter')
+                        ->setPublic(true)
+                    ;
                 }
             });
         }]);
