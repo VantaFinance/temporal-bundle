@@ -1,0 +1,9 @@
+temporal:
+  pool:
+    globalLogger: app.global_logger
+  workers:
+    default:
+      taskQueue: default
+      logger: app.worker_logger
+    bar:
+      taskQueue: bar

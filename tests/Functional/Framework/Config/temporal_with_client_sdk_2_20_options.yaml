@@ -1,0 +1,19 @@
+services:
+  app.logger:
+    class: Psr\Log\NullLogger
+
+temporal:
+  workers:
+    default:
+      taskQueue: default
+  clients:
+    default:
+      namespace: default
+      logger: app.logger
+      payloadLimits:
+        payloadSizeWarning: 1024
+  scheduleClients:
+    default:
+      namespace: default
+      payloadLimits:
+        enabled: false

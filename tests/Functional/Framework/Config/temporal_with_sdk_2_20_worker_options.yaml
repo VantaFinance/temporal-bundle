@@ -1,0 +1,6 @@
+temporal:
+  workers:
+    default:
+      taskQueue: default
+      disablePayloadErrorLimit: true
+      maxEagerActivityReservationsPerWorkflowTask: 2

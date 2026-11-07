@@ -1,0 +1,9 @@
+temporal:
+  pool:
+    testing:
+      enabled: true
+      activityMocker: in_memory
+      transcript: '%kernel.project_dir%/var/log/transcript.log'
+  workers:
+    default:
+      taskQueue: default

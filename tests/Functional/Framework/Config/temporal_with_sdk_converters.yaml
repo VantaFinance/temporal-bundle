@@ -1,0 +1,6 @@
+temporal:
+  pool:
+    useSdkDefaultConverters: true
+  workers:
+    default:
+      taskQueue: default

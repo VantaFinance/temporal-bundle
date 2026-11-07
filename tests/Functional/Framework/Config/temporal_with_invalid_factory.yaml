@@ -1,9 +1,9 @@
 temporal:
   defaultClient: bar
-  workerFactory: 'Temporal\Testing\WorkerMock'
   pool:
     dataConverter: temporal.data_converter
     roadrunnerRPC: '%env(RR_RPC)%'
+    workerFactory: 'Temporal\Testing\WorkerMock'
 
   workers:
     default:

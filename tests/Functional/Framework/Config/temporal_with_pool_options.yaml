@@ -1,0 +1,22 @@
+services:
+  app.pipeline_provider:
+    class: Temporal\Interceptor\SimplePipelineProvider
+
+  app.rpc:
+    class: Temporal\Worker\Transport\Goridge
+    factory: ['Temporal\Worker\Transport\Goridge', 'create']
+
+temporal:
+  pool:
+    pipelineProvider: app.pipeline_provider
+    rpc: app.rpc
+    testing:
+      enabled: true
+      disableSearchAttributes: false
+      activityCacheName: custom_kv
+  workers:
+    default:
+      taskQueue: default
+      exceptionInterceptor:
+        retryableErrors:
+          - DomainException

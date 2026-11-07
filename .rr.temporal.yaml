@@ -12,6 +12,9 @@ temporal:
   address: "temporal:7233"
   activities:
     num_workers: 1
+  # RoadRunner 3 only:
+  # worker_heartbeat_interval: 30s
+  # disable_activity_workers: true
 
 logs:
   level: debug

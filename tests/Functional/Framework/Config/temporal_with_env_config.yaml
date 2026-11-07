@@ -1,0 +1,15 @@
+temporal:
+  workers:
+    default:
+      taskQueue: default
+  clients:
+    default:
+      envConfig:
+        enabled: true
+        profile: prod
+        configFile: '%kernel.project_dir%/temporal.toml'
+  scheduleClients:
+    default:
+      namespace: schedules
+      envConfig:
+        enabled: true

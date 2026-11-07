@@ -1,0 +1,15 @@
+services:
+  app.pipeline_provider:
+    class: Temporal\Interceptor\SimplePipelineProvider
+
+  app.workflow_interceptor:
+    class: Vanta\Integration\Symfony\Temporal\Interceptor\DisableSearchAttributesInterceptor
+
+temporal:
+  pool:
+    pipelineProvider: app.pipeline_provider
+  workers:
+    default:
+      taskQueue: default
+      interceptors:
+        - app.workflow_interceptor

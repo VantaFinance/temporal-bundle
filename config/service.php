@@ -10,7 +10,7 @@
 declare(strict_types=1);
 
 use Doctrine\ORM\EntityManagerInterface as EntityManager;
-use Monolog\Logger;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\inline_service;
@@ -21,11 +21,18 @@ use Temporal\DataConverter\DataConverter;
 use Temporal\DataConverter\JsonConverter;
 use Temporal\Exception\ExceptionInterceptor;
 use Vanta\Integration\Symfony\Temporal\DataCollector\TemporalCollector;
+use Vanta\Integration\Symfony\Temporal\DataConverter\SerializationContextAwareSymfonyConverter;
 use Vanta\Integration\Symfony\Temporal\DataConverter\SymfonySerializerDataConverter;
-use Vanta\Integration\Symfony\Temporal\Finalizer\DoctrineClearEntityManagerFinalizer;
-use Vanta\Integration\Symfony\Temporal\InstalledVersions;
 
-return static function (ContainerConfigurator $configurator): void {
+use function Vanta\Integration\Symfony\Temporal\DependencyInjection\isMonologEnabled;
+
+use Vanta\Integration\Symfony\Temporal\Finalizer\FrameworkFinalizer;
+use Vanta\Integration\Symfony\Temporal\InstalledVersions;
+use Vanta\Integration\Symfony\Temporal\Serializer\CarbonIntervalNormalizer;
+use Vanta\Integration\Symfony\Temporal\Serializer\UuidNormalizer;
+use Vanta\Integration\Temporal\Doctrine\Finalizer\DoctrineClearEntityManagerFinalizer;
+
+return static function (ContainerConfigurator $configurator, ContainerBuilder $container): void {
     $services = $configurator->services();
 
     $services->set('temporal.data_converter', DataConverter::class)
@@ -38,17 +45,32 @@ return static function (ContainerConfigurator $configurator): void {
 
         ->set('temporal.collector', TemporalCollector::class)
             ->tag('data_collector', ['id' => 'Temporal'])
+
+
+        ->set('temporal.framework.finalizer', FrameworkFinalizer::class)
+            ->tag('temporal.finalizer')
+            ->args([
+                service('services_resetter'),
+            ])
     ;
 
 
     if (InstalledVersions::willBeAvailable('symfony/serializer', Serializer::class)) {
+        // temporal/sdk >= 2.20 passes the serialization context to aware payload converters
+        $converterClass = interface_exists('Temporal\DataConverter\SerializationContextAwareInterface')
+            ? SerializationContextAwareSymfonyConverter::class
+            : SymfonySerializerDataConverter::class;
+
         $services->set('temporal.data_converter', DataConverter::class)
             ->args([
-                inline_service(SymfonySerializerDataConverter::class)
+                inline_service($converterClass)
                     ->args([
                         service('serializer'),
                     ]),
             ])
+
+            ->set('temporal.carbon_interval.normalizer', CarbonIntervalNormalizer::class)
+            ->set('temporal.uuid.normalizer', UuidNormalizer::class)
         ;
     }
 
@@ -59,7 +81,7 @@ return static function (ContainerConfigurator $configurator): void {
         ;
     }
 
-    if (InstalledVersions::willBeAvailable('symfony/monolog-bundle', Logger::class)) {
+    if (isMonologEnabled($container)) {
         $services->set('monolog.logger.temporal')
             ->parent('monolog.logger')
             ->call('withName', ['temporal'], true)

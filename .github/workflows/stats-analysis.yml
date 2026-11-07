@@ -4,9 +4,16 @@ on: [ push, pull_request ]
 jobs:
   stats-analysis:
     runs-on: ubuntu-latest
+    name: PHP ${{ matrix.php }} (${{ matrix.dependencies }} dependencies)
     strategy:
+      # one failing combination must not cancel the others
+      fail-fast: false
       matrix:
-        php: [ 8.2, 8.3 , 8.4]
+        php: [ 8.2, 8.3 , 8.4, 8.5]
+        dependencies: [ highest ]
+        include:
+          - php: 8.2
+            dependencies: lowest
     steps:
       - uses: actions/checkout@v3.3.0
 
@@ -21,5 +28,12 @@ jobs:
       - name: Start stats-analysis
         uses: ramsey/composer-install@v2
         with:
+          dependency-versions: ${{ matrix.dependencies }}
           composer-options: --optimize-autoloader
+
+      # bamarni forwards --prefer-lowest to vendor-bin too: analyse the lowest dependencies with current tools
+      - name: Update tools
+        if: matrix.dependencies == 'lowest'
+        run: composer bin tools update --no-interaction
+
       - run: vendor/bin/phpstan --error-format=github

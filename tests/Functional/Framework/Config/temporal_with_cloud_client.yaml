@@ -1,0 +1,8 @@
+temporal:
+  cloudClient:
+    enabled: true
+    apiKey: '%env(TEMPORAL_CLOUD_API_KEY)%'
+    apiVersion: '2024-10-01-00'
+  workers:
+    default:
+      taskQueue: default

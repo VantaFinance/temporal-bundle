@@ -1,0 +1,11 @@
+services:
+  app.custom_json_converter:
+    class: Vanta\Integration\Symfony\Temporal\Test\Functional\DataConverter\CustomJsonConverter
+
+temporal:
+  pool:
+    payloadConverters:
+      - app.custom_json_converter
+  workers:
+    default:
+      taskQueue: default

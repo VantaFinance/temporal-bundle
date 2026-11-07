@@ -29,7 +29,8 @@ final class WorkflowDebugCommand extends Command
      */
     public function __construct(
         private readonly array $workers,
-        private readonly array $workflowsWithoutWorkers
+        private readonly array $workflowsWithoutWorkers,
+        private readonly string $defaultWorker = 'default',
     ) {
         parent::__construct();
     }
@@ -93,7 +94,7 @@ final class WorkflowDebugCommand extends Command
         }
 
 
-        $io->title('Registered workflow at all workers');
+        $io->title(sprintf('Registered workflow without #[AssignWorker] (default worker: %s)', $this->defaultWorker));
 
         $printedWorkflows = [];
 

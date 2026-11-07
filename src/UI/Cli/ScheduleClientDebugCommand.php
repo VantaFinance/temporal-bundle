@@ -13,7 +13,6 @@ namespace Vanta\Integration\Symfony\Temporal\UI\Cli;
 
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface as Input;
 use Symfony\Component\Console\Output\OutputInterface as Output;
@@ -29,7 +28,9 @@ final class ScheduleClientDebugCommand extends Command
      *     name: non-empty-string,
      *     options: ClientOptions,
      *     dataConverter: non-empty-string,
-     *     address: non-empty-string
+     *     address: non-empty-string,
+     *     connection?: string,
+     *     plugins?: string,
      * }> $clients
      */
     public function __construct(private readonly array $clients)
@@ -66,19 +67,13 @@ final class ScheduleClientDebugCommand extends Command
             $rows[] = [
                 $client['id'],
                 $client['address'],
+                $client['connection'] ?? '',
+                $client['plugins'] ?? '',
                 $client['dataConverter'],
                 json_encode($client['options'], JSON_PRETTY_PRINT),
             ];
 
-            $rows[] = new TableSeparator();
-
-
-            /**@phpstan-ignore-next-line **/
-            if (!is_array(end($rows))) {
-                array_pop($rows);
-            }
-
-            $io->table(['Id', 'Address', 'DataConverterId','Options'], $rows);
+            $io->table(['Id', 'Address', 'Connection', 'Plugins', 'DataConverterId', 'Options'], $rows);
         }
 
 

@@ -1,0 +1,76 @@
+name: E2E-Testing CI
+on: [ push, pull_request ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }} (temporal/sdk ${{ matrix.sdk }})
+    strategy:
+      # one failing combination must not cancel the others
+      fail-fast: false
+      matrix:
+        php: [ 8.2, 8.3, 8.4]
+        symfony: [ '6.4.*', '7.0.*', '7.1.*', '7.2.*', '7.3.*', '7.4.*', '8.0.*' ]
+        # RoadRunner 2025 runs temporal/sdk 2.19 (spiral/* packages), RoadRunner 3 the latest one (roadrunner/* packages)
+        rr: [ '2025', '3' ]
+        sdk: [ 'default' ]
+
+        include:
+          # temporal/sdk <= 2.19 on RoadRunner 3: works with a version-checker warning
+          - php: 8.4
+            symfony: '7.4.*'
+            rr: '3'
+            sdk: '2.19'
+
+        exclude:
+          # Symfony 8.0 не поддерживается на PHP 8.2 и 8.3
+          - php: 8.2
+            symfony: '8.0.*'
+
+          - php: 8.3
+            symfony: '8.0.*'
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: flex
+          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc, xdebug
+
+      - name: Download PHP dependencies
+        env:
+          SYMFONY_REQUIRE: ${{ matrix.symfony }}
+          SKIP_TOOLS_INSTALL: 1
+        uses: ramsey/composer-install@v4
+        with:
+          custom-cache-key: ${{ matrix.symfony }}-${{ matrix.php }}-${{ matrix.rr }}-${{ matrix.sdk }}
+
+      - name: Install temporal/sdk 2.19
+        if: matrix.rr == '2025' || matrix.sdk == '2.19'
+        env:
+          SYMFONY_REQUIRE: ${{ matrix.symfony }}
+          SKIP_TOOLS_INSTALL: 1
+        run: |
+          composer require temporal/sdk:~2.19.0 --no-update --no-interaction
+          composer update --no-interaction --no-progress
+
+      - name: Download RoadRunner ${{ matrix.rr }} and Temporal
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RR_BINARY_VERSION: rr:^${{ matrix.rr }}
+        run: make get-deps
+
+      - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }} and RoadRunner ${{ matrix.rr }}
+        run: make testing-e2e
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          # unique per job: upload-artifact v4 rejects duplicate names
+          name: var-${{ strategy.job-index }}
+          path: var/
+          retention-days: 2
