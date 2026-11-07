@@ -1,3 +1,6 @@
+![Temporal Bundle](./assets/temporal-symfony.svg)
+
+
 # Temporal Bundle
 
 [Temporal](https://temporal.io/) is the simple, scalable open source way to write and run reliable cloud applications.
