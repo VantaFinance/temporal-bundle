@@ -3,12 +3,9 @@
 
 # Temporal Bundle
 
-[Temporal](https://temporal.io/) is the simple, scalable open source way to write and run reliable cloud applications.
-
-`vanta/temporal-bundle` integrates Temporal — the durable-execution platform for reliable, scalable
-workflows — into Symfony applications. It wires the official [Temporal PHP SDK](https://github.com/temporalio/sdk-php)
-and [RoadRunner](https://roadrunner.dev/) into the Symfony container, configuration, console, and web
-profiler, so workflows and activities can be declared and run with idiomatic Symfony tooling.
+`vanta/temporal-bundle` connects [Temporal](https://temporal.io/) to Symfony through the
+[PHP SDK](https://github.com/temporalio/sdk-php) and [RoadRunner](https://roadrunner.dev/).
+Declare workflows and activities as Symfony services, configure workers, and inspect client calls in the web profiler.
 
 ## Table of Contents
 
@@ -31,26 +28,17 @@ profiler, so workflows and activities can be declared and run with idiomatic Sym
 - [Additional clients](#additional-clients)
 - [Replaying workflows](#replaying-workflows)
 - [Debug commands](#debug-commands)
+- [Buggregator](#buggregator)
 - [Troubleshooting](#troubleshooting)
 - [Testing](#testing)
 
 ## Features
 
-- **Doctrine integration** — clears opened entity managers and checks the connection is still usable
-  after each request; optional interceptors report unclosed transactions to Monolog/Sentry
-  (if [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is used).
-- **Sentry integration** — forwards workflow/activity throwables to Sentry
-  (if [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is used).
-- **RoadRunner runtime** — runs workers under the bundled RoadRunner server.
-- **Debug console commands** — introspect workers, clients, workflows, activities, and schedule
-  clients (`debug:temporal:*`). See [Debug commands](#debug-commands).
-- **Web profiler** — a data collector surfaces Temporal activity in the Symfony profiler.
-- **temporal/sdk 2.16 – 2.20** — TLS and API keys, Temporal Cloud, environment configuration profiles, Worker
-  Deployment Versioning, feature flags, plugins, gRPC interceptors, payload limits, operator and activity completion
-  clients, workflow replay.
-- **RoadRunner 2025 and RoadRunner 3** — see [RoadRunner 3](#roadrunner-3).
-- **Test helpers** — PHPUnit base test case, Codeception helper, and explicit, code-driven control of Temporal and
-  RoadRunner test servers.
+- Register workflows, activities, clients, and workers through Symfony services and attributes.
+- Convert payloads with Symfony Serializer; extend clients and workers with SDK plugins and interceptors.
+- Reset services after activities; integrate Doctrine cleanup, transaction reporting, and Sentry.
+- Inspect registrations and client calls with console commands and the Symfony profiler; replay workflow histories.
+- Test with PHPUnit or Codeception, activity mocks, and explicit Temporal/RoadRunner lifecycle control.
 
 ## Requirements
 
@@ -160,206 +148,73 @@ temporal:
 > runs on the default worker only. To keep a class on several workers, repeat `#[AssignWorker]` for each of them. If
 > some classes have no attribute and no worker matches `defaultWorker`, the container build fails.
 
-**Workflow example:**
+Apply the attribute to a workflow or activity class. Repeat it to register that class on both workers:
 
 ```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Workflow;
-
 use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
-use Temporal\Workflow\WorkflowInterface;
 
-#[AssignWorker(name: 'worker1')]
-#[WorkflowInterface]
-final class MoneyTransferWorkflow
-{
-    #[WorkflowMethod]
-    public function transfer(...): \Generator;
-
-    #[SignalMethod]
-    public function withdraw(): void;
-
-    #[SignalMethod]
-    public function deposit(): void;
-}
-```
-
-**Activity example:**
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Workflow;
-
-use Vanta\Integration\Symfony\Temporal\Attribute\AssignWorker;
-use Temporal\Activity\ActivityInterface;
-use Temporal\Activity\ActivityMethod;
-
-#[AssignWorker(name: 'worker1')]
-#[ActivityInterface(...)]
-final class MoneyTransferActivity
-{
-    #[ActivityMethod]
-    public function transfer(...): int;
-
-    #[ActivityMethod]
-    public function cancel(...): bool;
-}
+#[AssignWorker('default')]
+#[AssignWorker('worker1')]
+// Your existing workflow or activity class follows.
 ```
 
 ## Doctrine integrations
-
-Install the packages:
 
 ```bash
 composer require orm temporal-doctrine
 ```
 
-If [`DoctrineBundle`](https://github.com/doctrine/DoctrineBundle) is used, the following parameters
-are available to you:
+With [DoctrineBundle](https://github.com/doctrine/DoctrineBundle), configure cleanup and transaction reporting
+globally under `pool` or for an individual worker:
 
-- `pool.useGlobalDoctrineIntegration` — connect the integration to all workers
-- `pool.useGlobalLoggingDoctrineOpenTransaction` — connect an interceptor to all workers that reports unclosed transactions to Monolog
-- `pool.useGlobalTrackingSentryDoctrineOpenTransaction` — connect an interceptor to all workers that reports unclosed transactions to Sentry
-- `workers.useDoctrineIntegration` — connect the integration to a specific worker
-- `workers.useLoggingDoctrineOpenTransaction` — connect an interceptor to a specific worker that reports unclosed transactions to Monolog
-- `workers.useTrackingSentryDoctrineOpenTransaction` — connect the integration to a specific worker that reports unclosed transactions to Sentry
+| All workers (`pool`) | One worker (`workers.<name>`) | Value |
+| --- | --- | --- |
+| `useGlobalDoctrineIntegration` | `useDoctrineIntegration` | Entity-manager names to clear and check |
+| `useGlobalLoggingDoctrineOpenTransaction` | `useLoggingDoctrineOpenTransaction` | Connection names for Monolog transaction reports |
+| `useGlobalTrackingSentryDoctrineOpenTransaction` | `useTrackingSentryDoctrineOpenTransaction` | Connection names for Sentry transaction reports |
 
-These parameters accept a list of entity managers.
-
-Example config:
-
-**Specific worker**
+For all workers:
 
 ```yaml
 temporal:
-  defaultClient: default
   pool:
-    dataConverter: temporal.data_converter
-    roadrunnerRPC: '%env(RR_RPC)%'
-
-  workers:
-    default:
-      taskQueue: default
-      exceptionInterceptor: temporal.exception_interceptor
-      useDoctrineIntegration:
-        - default
-
-  clients:
-    default:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
-    cloud:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
-      tls:
-        clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
-        clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+    useGlobalDoctrineIntegration: [default]
+    useGlobalLoggingDoctrineOpenTransaction: [default]
 ```
 
-**Connect the integration to all workers**
+Or for one worker:
 
 ```yaml
 temporal:
-  defaultClient: default
-  pool:
-    dataConverter: temporal.data_converter
-    roadrunnerRPC: '%env(RR_RPC)%'
-    useGlobalDoctrineIntegration:
-      - default
-
   workers:
     default:
       taskQueue: default
-      exceptionInterceptor: temporal.exception_interceptor
-
-    test:
-      taskQueue: test
-      exceptionInterceptor: temporal.exception_interceptor
-
-  clients:
-    default:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
-    cloud:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
-      tls:
-        clientKey: '%env(TEMPORAL_CLIENT_KEY_PATH)%'
-        clientPem: '%env(TEMPORAL_CLIENT_CERT_PATH)%'
+      useDoctrineIntegration: [default]
+      useLoggingDoctrineOpenTransaction: [default]
 ```
 
 ## Sentry integrations
-
-Install the packages:
 
 ```bash
 composer require sentry temporal-sentry
 ```
 
-If [`SentryBundle`](https://github.com/getsentry/sentry-symfony) is used, the following parameters
-are available to you:
-
-- `pool.useGlobalSentryIntegration` — connect the integration to all workers
-- `workers.useSentryIntegration` — connect the integration to a specific worker
-
-Example config:
-
-**Specific worker**
+With [SentryBundle](https://github.com/getsentry/sentry-symfony), enable exception reporting for all workers:
 
 ```yaml
 temporal:
-  defaultClient: default
   pool:
-    dataConverter: temporal.data_converter
-    roadrunnerRPC: '%env(RR_RPC)%'
-
-  workers:
-    default:
-      taskQueue: default
-      exceptionInterceptor: temporal.exception_interceptor
-      useSentryIntegration: true
-
-  clients:
-    default:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
+    useGlobalSentryIntegration: true
 ```
 
-**Connect the integration to all workers**
+Or enable it for an individual worker:
 
 ```yaml
 temporal:
-  defaultClient: default
-  pool:
-    dataConverter: temporal.data_converter
-    roadrunnerRPC: '%env(RR_RPC)%'
-    useGlobalSentryIntegration: true
-
   workers:
     default:
       taskQueue: default
-      exceptionInterceptor: temporal.exception_interceptor
-
-    test:
-      taskQueue: test
-      exceptionInterceptor: temporal.exception_interceptor
-
-  clients:
-    default:
-      namespace: default
-      address: '%env(TEMPORAL_ADDRESS)%'
-      dataConverter: temporal.data_converter
+      useSentryIntegration: true
 ```
 
 ## HTTP with roadrunner-symfony/http-bundle
@@ -455,9 +310,8 @@ temporal:
         serverName: ~                                 # overrides the TLS server name
 ```
 
-With `tls.enabled: ~` (the default) the client uses TLS when `apiKey`, a certificate or `serverName` is configured, so
-an API key is never sent without TLS. The decision is made when the container is built: an `apiKey` that points to an
-empty env variable still turns TLS on. For a local server without TLS, set `tls.enabled: false`.
+With `tls.enabled: ~` (the default), configuring `apiKey`, a certificate, or `serverName` enables TLS.
+The decision is made when the container is built: an `apiKey` pointing to an empty env variable still turns TLS on. For a local server without TLS, set `tls.enabled: false`.
 
 `clientKey` and `clientPem` at the client level still work but are deprecated. Move them to `tls.clientKey` and
 `tls.clientPem`.
@@ -506,7 +360,7 @@ only when Symfony Dotenv runs with `usePutenv`. Reading a TOML file needs `compo
 
 ## Worker options
 
-Workers accept these options in addition to the earlier ones:
+Configure worker behavior under `workers.<name>`:
 
 ```yaml
 temporal:
@@ -580,7 +434,9 @@ SDK >= 2.18. The bundle registers every service that implements `Temporal\Plugin
 extending `Temporal\Plugin\AbstractPlugin`) in every workflow client, schedule client and the worker factory. Each of
 them gets a separate plugin registry, so the SDK never sees the same plugin name twice.
 
-To limit a plugin to some clients or to the workers, add `#[AsPlugin]`:
+Use `#[AsPlugin]` to select clients and the worker factory. `workers: true` applies to the shared factory, not a named
+worker; `scheduleClients` accepts schedule-client names. An empty attribute keeps global registration.
+This example selects the `billing` client and the worker factory:
 
 ```php
 use Temporal\Plugin\AbstractPlugin;
@@ -676,184 +532,69 @@ history is not deterministic. The replay runs inside RoadRunner, so start RoadRu
 command connects to `RR_RPC` or `pool.roadrunnerRPC`.
 
 ```bash
-bin/console temporal:workflow:replay OrderWorkflow --workflow-id=order-42 [--run-id=...]
-bin/console temporal:workflow:replay OrderWorkflow --history-file=var/history.json [--last-event-id=12]
+bin/console temporal:workflow:replay OrderWorkflow --workflow-id=order-42 --run-id=YOUR_RUN_ID
+bin/console temporal:workflow:replay OrderWorkflow --history-file=var/history.json --last-event-id=12
 ```
+
+Choose exactly one history source. For server replay on SDK 2.20, supply the execution's `--run-id` explicitly.
+`--last-event-id` is optional for file replay. The history file must also be readable by RoadRunner at the same path.
 
 ## Debug commands
 
-The bundle registers a set of `debug:temporal:*` console commands that introspect the Temporal
-components registered in your application — workers, workflows, activities, clients, and schedule
-clients. They are useful for verifying that your configuration and `#[AssignWorker]` attributes wire
-everything up as expected.
+Use these commands to check service registration and worker assignment:
 
-| Command | Description | Filter argument | Printed columns |
-| --- | --- | --- | --- |
-| `debug:temporal:workers` | List registered workers | `workers` (worker names) | temporal/sdk and RoadRunner line, feature flags, plugins; Name, Options |
-| `debug:temporal:workflows` | List registered workflows | `workers` (worker names) | Id, Class, Schedule Plan, Retry Policy |
-| `debug:temporal:activities` | List registered activities | `workers` (worker names) | Id, Class, IsLocalActivity, Retry Policy |
-| `debug:temporal:clients` | List registered clients | `clients` (client names) | Id, Address, Connection, Plugins, DataConverterId, Options |
-| `debug:temporal:schedule-clients` | List registered schedule clients | `clients` (client names) | Id, Address, Connection, Plugins, DataConverterId, Options |
+| Command | Description |
+| --- | --- |
+| `debug:temporal:workers` | Workers, SDK/RoadRunner versions, feature flags, and plugins |
+| `debug:temporal:workflows` | Workflows grouped by worker |
+| `debug:temporal:activities` | Activities grouped by worker |
+| `debug:temporal:clients` | Workflow clients and connection configuration |
+| `debug:temporal:schedule-clients` | Schedule clients and connection configuration |
 
-Each command takes an optional variadic filter argument. Pass one or more names (space-separated) to
-limit the output; with no argument all registered components are shown:
+Each command accepts names to filter its output; omit them to show all registrations:
 
 ```bash
-# All workers
 bin/console debug:temporal:workers
-
-# Only the "default" and "test" workers
 bin/console debug:temporal:workers default test
-```
-
-> The `debug:temporal:workflows` and `debug:temporal:activities` commands additionally print a
-> "Registered … at all workers" table for components that are registered without a specific worker,
-> but only when no worker filter is passed.
-
-### `debug:temporal:workers`
-
-Prints the installed temporal/sdk version, the RoadRunner packages, the feature flags you set and the worker plugins,
-then every registered worker with its Temporal `WorkerOptions`.
-
-```bash
-bin/console debug:temporal:workers
-```
-
-```
-Temporal Workers
-================
-
- --------------------- -----------------------------
-  temporal/sdk          v2.20
-  RoadRunner packages   roadrunner/* (RoadRunner 3)
-  Feature flags         readOnlyWorkflowCallbacks: false
-  Plugins               none
- --------------------- -----------------------------
-
- --------- --------------------------------------------------
-  Name      Options
- --------- --------------------------------------------------
-  default   {
-                "maxConcurrentActivityExecutionSize": 0,
-                "workerActivitiesPerSecond": 0,
-                "identity": "",
-                // ... full Temporal WorkerOptions payload ...
-                "buildID": ""
-            }
- --------- --------------------------------------------------
-```
-
-### `debug:temporal:workflows`
-
-Lists workflows grouped by worker. Columns: `Id`, `Class`, `Schedule Plan` (cron interval or `None`),
-`Retry Policy` (JSON or `None`).
-
-```bash
-bin/console debug:temporal:workflows
-
-# Filter by worker
-bin/console debug:temporal:workflows default
-```
-
-```
-Temporal Workflows
-==================
-
-Worker: default
-===============
-
- ! [NOTE] Not found workflows
-
-Registered workflow at all workers
-==================================
-
- ------------------- --------------------------------------------------------- --------------- --------------
-  Id                  Class                                                     Schedule Plan   Retry Policy
- ------------------- --------------------------------------------------------- --------------- --------------
-  TestQueryWorkflow   Vanta\...\Test\App\Workflow\TestQueryWorkflow             None            None
- ------------------- --------------------------------------------------------- --------------- --------------
-```
-
-### `debug:temporal:activities`
-
-Lists activities grouped by worker. Columns: `Id`, `Class`, `IsLocalActivity` (`Yes`/`No`),
-`Retry Policy` (JSON or `None`).
-
-```bash
-bin/console debug:temporal:activities
-
-# Filter by worker
-bin/console debug:temporal:activities default
-```
-
-```
-Temporal Activities
-===================
-
-Worker: default
-===============
-
- ! [NOTE] Not found activities
-```
-
-### `debug:temporal:clients`
-
-Lists registered Temporal clients. Columns: `Id`, `Address`, `Connection`, `Plugins`, `DataConverterId`, `Options`.
-`Connection` shows the TLS mode, which certificates are set, whether an API key is set, or the `envConfig` profile. It
-never prints a key or certificate.
-
-```bash
-bin/console debug:temporal:clients
-
-# Filter by client name
 bin/console debug:temporal:clients default
 ```
 
-```
-Temporal Clients
-================
+Connection diagnostics show TLS/API-key configuration without printing keys or certificates.
 
-Client: default
-===============
+### Buggregator
 
- ------------------------- -------------- ------------------------- ----------------------------------
-  Id                        Address        DataConverterId           Options
- ------------------------- -------------- ------------------------- ----------------------------------
-  temporal.default.client   0.0.0.0:7233   temporal.data_converter   {
-                                                                         "namespace": "default",
-                                                                         "identity": "default_x",
-                                                                         "queryRejectionCondition": 0
-                                                                     }
- ------------------------- -------------- ------------------------- ----------------------------------
-```
-
-### `debug:temporal:schedule-clients`
-
-Lists registered schedule clients. Columns: `Id`, `Address`, `Connection`, `Plugins`, `DataConverterId`, `Options`.
+The development Compose stack includes [Buggregator](https://buggregator.dev/) 2.6.0 for dumps, logs, and captured mail.
+Start it independently:
 
 ```bash
-bin/console debug:temporal:schedule-clients
-
-# Filter by client name
-bin/console debug:temporal:schedule-clients default
+docker compose -f .docker/docker-compose-temporal.yml up -d --no-deps buggregator
 ```
 
+Open http://localhost:8000. Temporal UI stays on port 8080. The PHP worker has
+`VAR_DUMPER_FORMAT=server` and `VAR_DUMPER_SERVER=buggregator:9912`, so Symfony's default dump handler sends
+`dump()` output to Buggregator. If your application installs its own handler, configure its destination separately.
+Run dumps in activities or application code; workflow execution must stay deterministic.
+
+For a PHP process running on the host:
+
+```bash
+VAR_DUMPER_FORMAT=server VAR_DUMPER_SERVER=127.0.0.1:9912 \
+  php -r 'require "vendor/autoload.php"; dump(["message" => "Hello from Symfony"]);'
 ```
-Temporal Schedule Clients
-=========================
 
-Client: default
-===============
+| Endpoint | Inside Compose | From the host | Host-port override |
+| --- | --- | --- | --- |
+| Web UI / HTTP | `http://buggregator:8000` | `http://localhost:8000` | `BUGGREGATOR_HTTP_PORT` |
+| VarDumper | `buggregator:9912` | `127.0.0.1:9912` | `BUGGREGATOR_VAR_DUMPER_PORT` |
+| Monolog TCP | `buggregator:9913` | `127.0.0.1:9913` | `BUGGREGATOR_MONOLOG_PORT` |
+| SMTP | `buggregator:1025` | `127.0.0.1:1025` | `BUGGREGATOR_SMTP_PORT` |
 
- ---------------------------------- -------------- ------------------------- ----------------------------------
-  Id                                 Address        DataConverterId           Options
- ---------------------------------- -------------- ------------------------- ----------------------------------
-  temporal.default.schedule_client   0.0.0.0:7233   temporal.data_converter   {
-                                                                                  "namespace": "default",
-                                                                                  "identity": "default_x",
-                                                                                  "queryRejectionCondition": 0
-                                                                              }
- ---------------------------------- -------------- ------------------------- ----------------------------------
+Set the port variables in the shell or Compose `.env` file if a port is busy. Internal ports stay unchanged.
+Monolog and mail delivery need their own application configuration; adding the service does not reroute them.
+Captured data is temporary and is lost when Buggregator restarts. Check startup errors with:
+
+```bash
+docker compose -f .docker/docker-compose-temporal.yml logs buggregator
 ```
 
 ## Troubleshooting
@@ -878,29 +619,18 @@ log file and the tail of that log. Set the `logFile` parameter of `TemporalEnvir
 
 ## Testing
 
-Tests run against real Temporal and RoadRunner processes that are started and stopped for every test marked with
-`#[WithTemporalEnvironment]`, or explicitly from your test code. The bundle provides:
+Enable bundle test services with `pool.testing.enabled`; start processes explicitly with
+`#[WithTemporalEnvironment]` or the [server classes](#reference-testingserver). Enabling test services alone does not
+start Temporal or RoadRunner.
 
-- `Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment` — marks a test class or method that
-  needs Temporal and RoadRunner.
-- `Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension` /
-  `Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalEnvironmentExtension` — start and stop the servers
-  around every marked test.
-- `Vanta\Integration\Symfony\Temporal\Testing\Server\*` — classes that start and stop Temporal and RoadRunner.
-- `Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase` — a [`PHPUnit`](https://github.com/sebastianbergmann/phpunit)
-  base test case with `$workflowClient`, `$activityMocker` and `$testService` from the container, plus
-  `getWorkflowMocker()` / `getSearchAttributeMocker()` (SDK >= 2.18).
-- `Vanta\Integration\Symfony\Temporal\Testing\Codeception\TemporalTestingTools` — the same services for
-  [`Codeception`](https://github.com/Codeception/Codeception).
-- `Vanta\Integration\Symfony\Temporal\Testing\Tools\awaitWithTimeout()` / `waitWithTime()` — polling helpers.
+`TemporalTestCase` provides `$workflowClient`, `$activityMocker`, and `$testService`. Codeception's
+`TemporalTestingTools` provides the same services. Both expose `getWorkflowMocker()` and `getSearchAttributeMocker()`
+on SDK >= 2.18. The PHPUnit and Codeception `TemporalEnvironmentExtension` integrations manage marked tests.
 
 ### Quick start
 
-The steps below take a Symfony application to a green workflow test.
-
-**1. Install PHPUnit and download the binaries** — ideally **before** installing the bundle, so that its recipe can
-wire the test setup (step 2). [`dload`](https://github.com/php-internal/dload) puts `rr` and `temporal` into the
-project root:
+1. Install PHPUnit before the bundle so its recipe can configure testing.
+[`dload`](https://github.com/php-internal/dload) downloads binaries to the project root:
 
 ```bash
 composer require --dev symfony/test-pack internal/dload
@@ -909,8 +639,7 @@ vendor/bin/dload get rr temporal
 
 Then install the bundle as described in [Installation](#installation).
 
-**2. Check what the recipe did.** It adds the following; if PHPUnit was installed after the bundle or a file has a
-different name, add the missing parts by hand:
+2. Check these recipe settings; add missing parts manually if PHPUnit was installed later or your files use other names:
 
 - `config/packages/temporal.yaml` — test mode for the `test` environment only (enabling it globally would switch your
   production workers to the testing worker factory):
@@ -933,38 +662,11 @@ different name, add the missing parts by hand:
   ###< vanta/temporal-bundle (tests) ###
   ```
 
-- `.rr.temporal.testing.yaml` in the project root — the RoadRunner test config. The `kv.test` storage is required by
-  the default activity mocker (`pool.testing.activityMocker: rr_kv`):
-
-  ```yaml
-  version: '3'
-
-  server:
-    command: 'php public/index.php'
-    env:
-      - APP_RUNTIME: Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime
-
-  rpc:
-    listen: tcp://127.0.0.1:6001
-
-  temporal:
-    address: '127.0.0.1:7233'
-    activities:
-      num_workers: 1
-
-  logs:
-    level: error
-
-  kv:
-    test:
-      driver: memory
-      config: {}
-  ```
+- Copy [`.rr.temporal.testing.yaml`](.rr.temporal.testing.yaml) to the project root. Its `kv.test` memory storage
+  is required by the default `rr_kv` activity mocker. The RoadRunner RPC listener must match `RR_RPC`.
 
 - `phpunit.dist.xml` (or `phpunit.xml.dist`) — the extension, inside the `<extensions>` block that Symfony's PHPUnit
-  recipe creates. It reads `#[WithTemporalEnvironment]` and starts a fresh Temporal dev server and RoadRunner before
-  every marked test (before `setUp()`) and stops them after it (after `tearDown()`). The `logFile` parameter is
-  optional and records every start and stop:
+  recipe creates. The optional `logFile` records environment starts and stops:
 
   ```xml
   <extensions>
@@ -974,7 +676,7 @@ different name, add the missing parts by hand:
   </extensions>
   ```
 
-**3. Write a workflow and a test.** `src/Workflow/GreetingActivity.php`:
+3. Write a workflow and a test. `src/Workflow/GreetingActivity.php`:
 
 ```php
 <?php
@@ -1029,7 +731,7 @@ final class GreetingWorkflow
 }
 ```
 
-`tests/GreetingWorkflowTest.php` — the attribute applies to **every** test of the class:
+`tests/GreetingWorkflowTest.php` (the attribute applies to every test in the class):
 
 ```php
 <?php
@@ -1056,11 +758,11 @@ final class GreetingWorkflowTest extends TemporalTestCase
 }
 ```
 
-The attribute finds `temporal` and `rr` in `PATH` or in the project root (where `dload` put them) and uses
-`.rr.temporal.testing.yaml` from the project root — no paths in the test. The RoadRunner worker inherits
+The attribute finds `temporal` and `rr` in `PATH` or the project root and uses `.rr.temporal.testing.yaml` from that root.
+The RoadRunner worker inherits
 `APP_ENV=test` and the `.env.test` values from the PHPUnit process, so it boots your kernel in the `test` environment.
 
-**4. Run it:**
+4. Run it:
 
 ```bash
 vendor/bin/phpunit
@@ -1118,7 +820,7 @@ The following parameters configure test mode:
   match a `kv.<name>` section of the RoadRunner config
 - `pool.testing.testServices.<name>` — list of configured `Temporal\Testing\TestService`
 - `pool.testing.timeLocking` — SDK >= 2.18. While a workflow client waits for a result, the time-skipping test server
-  (`TemporalServerType::TestServer`) does not skip time
+  (`TemporalServerType::TimeSkipping`) does not skip time
 - `pool.testing.transcript` — SDK >= 2.18. Path of a file where the workers write every workflow and activity call
 
 ### Lifecycle per test
@@ -1144,25 +846,21 @@ test method (overrides the class attribute). All arguments are optional:
 Relative paths are resolved against the project root (the root Composer package). Your application's Temporal client
 address (`TEMPORAL_ADDRESS` in `.env.test`) must point to the same `temporalAddress`.
 
-The extension works with any PHPUnit test — `TemporalTestCase` or a plain `TestCase`, no trait or base class needed:
+The extension starts servers before `setUp()` and stops them after `tearDown()`. It works with `TemporalTestCase`
+or a plain PHPUnit `TestCase`. In a plain test, rethrow startup failures from `setUp()`:
 
 ```php
-use PHPUnit\Framework\TestCase;
-use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
-use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension;
-
-#[WithTemporalEnvironment]
-final class MyTest extends TestCase
+protected function setUp(): void
 {
-    public function testEnvironmentIsUp(): void
-    {
-        self::assertTrue(TemporalEnvironmentExtension::current()?->isRunning() === true);
-    }
+    parent::setUp();
+    TemporalEnvironmentExtension::rethrowStartFailure();
 }
 ```
 
-`TemporalEnvironmentExtension::current()` returns the environment of the running test (`null` without the attribute).
-For Codeception see [Testing workflows with Codeception](#testing-workflows-with-codeception).
+Import `Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalEnvironmentExtension`.
+Its `current()` method returns the running environment, or `null` without the attribute.
+PHPUnit reports extension startup exceptions as warnings; rethrowing them makes the test fail.
+`TemporalTestCase` already rethrows startup failures. See [Codeception setup](#testing-workflows-with-codeception).
 
 To manage the servers yourself, leave the attribute out and start an environment in your own hooks:
 
@@ -1188,21 +886,13 @@ protected function tearDown(): void
 }
 ```
 
-Things to know:
-
-- Starting takes about 0.5 s and stopping about 2 s per test (RoadRunner shuts its worker pools down one by one); the
-  servers are stopped in parallel.
-- The servers are up during `setUp()` and `tearDown()` too.
-- The ports must be free: if something already answers on `temporalAddress` (for example a Temporal container),
-  `start()` fails with `ServerStartFailed` instead of testing against it. PHPUnit reports exceptions of extensions as
-  warnings, so `TemporalTestCase::setUp()` rethrows the start failure and the test errors; in a plain `TestCase` call
-  `TemporalEnvironmentExtension::rethrowStartFailure()` in `setUp()` for the same behaviour.
+Ports must be free: a server already answering at the configured address causes `ServerStartFailed`.
+Each marked test starts fresh processes; budget for startup and shutdown overhead.
 
 #### Search attributes
 
-Register custom search attributes on the dev server through the attribute, and let them through in test mode — by
-default the bundle strips search attributes from every workflow start in test mode
-(`pool.testing.disableSearchAttributes: true`):
+The bundle strips search attributes from workflow starts in test mode by default
+(`pool.testing.disableSearchAttributes: true`). Disable that behavior to test them:
 
 ```yaml
 when@test:
@@ -1213,48 +903,22 @@ when@test:
         disableSearchAttributes: false
 ```
 
+Register `CustomerId` on the dev server with
+`#[WithTemporalEnvironment(searchAttributes: ['CustomerId' => ValueType::Keyword])]`, importing
+`Temporal\Common\SearchAttributes\ValueType`. Set it when creating the workflow stub:
+
 ```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Tests;
-
-use App\Workflow\GreetingWorkflow;
 use Temporal\Client\WorkflowOptions;
 use Temporal\Common\SearchAttributes\SearchAttributeKey;
-use Temporal\Common\SearchAttributes\ValueType;
 use Temporal\Common\TypedSearchAttributes;
-use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
-use Vanta\Integration\Symfony\Temporal\Testing\PHPUnit\TemporalTestCase;
 
-#[WithTemporalEnvironment(searchAttributes: ['CustomerId' => ValueType::Keyword])]
-final class CustomerSearchTest extends TemporalTestCase
-{
-    public function testFindsWorkflowByCustomer(): void
-    {
-        $workflow = $this->workflowClient->newWorkflowStub(
-            GreetingWorkflow::class,
-            WorkflowOptions::new()->withTypedSearchAttributes(
-                TypedSearchAttributes::empty()->withValue(SearchAttributeKey::forKeyword('CustomerId'), 'c-1'),
-            ),
-        );
-
-        $this->workflowClient->start($workflow, 'Vlad')->getResult('string', 10);
-
-        // Visibility is eventually consistent: wait until the workflow can be found
-        $query = "CustomerId = 'c-1'";
-
-        for ($attempt = 0; $attempt < 50 && $this->workflowClient->countWorkflowExecutions($query)->count == 0; ++$attempt) {
-            usleep(100_000);
-        }
-
-        self::assertSame(1, $this->workflowClient->countWorkflowExecutions($query)->count);
-    }
-}
+$options = WorkflowOptions::new()->withTypedSearchAttributes(
+    TypedSearchAttributes::empty()->withValue(SearchAttributeKey::forKeyword('CustomerId'), 'c-1'),
+);
 ```
 
-Search attributes can only be registered by the dev server (`TemporalServerType::Dev`).
+Search-attribute registration is available only in `Dev` mode. Visibility queries are eventually consistent;
+poll when asserting on them.
 
 #### Temporal server options
 
@@ -1327,9 +991,8 @@ kernel and the RoadRunner worker see the test environment:
 APP_ENV=test vendor/bin/codecept run Functional
 ```
 
-`TemporalTestingTools` exposes the three services (`testService`, `activityMocker`, `workflowClient`) built from the
-Codeception `Symfony` module; `reset()` returns a fresh instance. Hand it to your tests through the helper module
-(run `vendor/bin/codecept build` after adding it):
+`TemporalTestingTools` uses the Codeception `Symfony` module; `reset()` returns a fresh instance.
+Expose it through a helper, then run `vendor/bin/codecept build`:
 
 ```php
 namespace App\Tests\Support\Helper;
@@ -1350,7 +1013,7 @@ final class Temporal extends Module
 }
 ```
 
-and mark the Cest (or a single method) with the attribute:
+Mark the Cest or a method with the attribute:
 
 ```php
 use App\Tests\Support\FunctionalTester;
@@ -1410,5 +1073,3 @@ Limitations:
 - Ports are fixed by your configuration, so `processIsolation` and paratest are not supported — each process would
   start its own servers.
 - Linux and macOS only.
-
-See `tests/E2e/E2eTestCase.php` for a base test case that uses the attribute with a custom RoadRunner config.

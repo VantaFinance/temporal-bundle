@@ -5,12 +5,25 @@ services:
       context: ../
       dockerfile: ./.docker/Dockerfile
       target: temporal_php
+    environment:
+      VAR_DUMPER_FORMAT: server
+      VAR_DUMPER_SERVER: buggregator:9912
     volumes:
       - ../:/app
     networks:
       - temporal-network
     depends_on:
       - temporal
+
+  buggregator:
+    image: ghcr.io/buggregator/server:2.6.0
+    networks:
+      - temporal-network
+    ports:
+      - "${BUGGREGATOR_HTTP_PORT:-8000}:8000"
+      - "${BUGGREGATOR_SMTP_PORT:-1025}:1025"
+      - "${BUGGREGATOR_VAR_DUMPER_PORT:-9912}:9912"
+      - "${BUGGREGATOR_MONOLOG_PORT:-9913}:9913"
 
   temporal-postgresql:
     container_name: temporal-postgresql
