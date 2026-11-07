@@ -32,7 +32,8 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: flex
-          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc, xdebug
+          extensions: opcache,zip,intl,pcntl,sockets,protobuf,grpc
+          coverage: none
 
       - name: Download dependencies
         env:
@@ -44,4 +45,15 @@ jobs:
           custom-cache-key: symfony-${{ matrix.symfony }}-php-${{ matrix.php }}-${{ matrix.dependencies }}
 
       - name: Run test suite on PHP ${{ matrix.php }} and Symfony ${{ matrix.symfony }}
+        id: tests
         run: ./vendor/bin/phpunit --exclude-testsuite='Temporal E2E'
+
+      - name: Diagnose PHP 8.5 process crash
+        if: failure() && steps.tests.outcome == 'failure' && matrix.php == '8.5'
+        run: |
+          php --version
+          php --ri grpc
+          php --ri protobuf
+          sudo apt-get update
+          sudo apt-get install -y gdb
+          gdb --batch -ex 'set pagination off' -ex run -ex 'thread apply all bt' --args php ./vendor/bin/phpunit --exclude-testsuite='Temporal E2E' --debug
