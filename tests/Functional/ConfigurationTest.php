@@ -46,7 +46,9 @@ final class ConfigurationTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -57,6 +59,7 @@ final class ConfigurationTest extends KernelTestCase
     {
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
 
@@ -75,7 +78,9 @@ final class ConfigurationTest extends KernelTestCase
         assertInstanceOf(ConfigDumpReferenceCommand::class, $command);
 
         $input = new ArrayInput(['name' => 'temporal']);
+
         $command->setApplication((new Application($kernel)));
+
         $memory = fopen('php://memory', 'rw+');
 
         assertIsResource($memory);

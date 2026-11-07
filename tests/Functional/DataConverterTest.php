@@ -48,7 +48,9 @@ final class DataConverterTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -104,11 +106,15 @@ final class DataConverterTest extends KernelTestCase
     {
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel) use ($configFile): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/' . $configFile);
+
             $kernel->addTestCompilerPass(new class() implements CompilerPass {
                 public function process(ContainerBuilder $container): void
                 {
-                    $container->getDefinition('temporal.data_converter')->setPublic(true);
+                    $container->getDefinition('temporal.data_converter')
+                        ->setPublic(true)
+                    ;
                 }
             });
         }]);

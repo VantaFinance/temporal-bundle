@@ -104,6 +104,7 @@ final class AttributeLifecycleTest extends TestCase
 
         try {
             $lifecycle->start(LifecycleAttributedFixture::class, 'broken');
+
             self::fail('ServerStartFailed expected');
         } catch (ServerStartFailed) {
         }

@@ -40,7 +40,8 @@
     "symfony/http-kernel": "^6.4 || ^7.0 || ^8.0",
     "symfony/runtime": "^6.4 || ^7.0 || ^8.0",
     "temporal/sdk": "^2.16",
-    "spiral/roadrunner-worker": "^3.6.2"
+    "spiral/roadrunner-worker": "^3.6.2",
+    "psr/log": "^2|^3"
   },
   "require-dev": {
     "symfony/framework-bundle": "^6.4 || ^7.0 || ^8.0",
@@ -48,7 +49,6 @@
     "symfony/yaml": "^6.4 || ^7.0 || ^8.0",
     "doctrine/doctrine-bundle": "^2.11|^3",
     "doctrine/orm": "^2|^3",
-    "psr/log": "^2|^3",
     "sentry/sentry-symfony": "^4.14|^5",
     "jean85/pretty-package-versions": "^2.0",
     "nyholm/symfony-bundle-test": "^3.0",
@@ -72,7 +72,7 @@
   },
   "scripts": {
     "tools-install": [
-      "@php -r \"if ((getenv('SKIP_TOOLS_INSTALL') ?: '0') === '1') exit(0); passthru('composer bin tools install', $c); exit($c);\""
+      "@php -r \"if ((getenv('SKIP_TOOLS_INSTALL') ?: '0') === '1') exit(0); putenv('SYMFONY_REQUIRE'); passthru('composer bin tools install', $c); exit($c);\""
     ],
     "post-install-cmd": [
       "@tools-install"
@@ -97,7 +97,7 @@
     "bamarni-bin": {
       "bin-links": true,
       "target-directory": "vendor-bin",
-      "forward-command": true
+      "forward-command": false
     }
   }
 }

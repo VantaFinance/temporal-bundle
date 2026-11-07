@@ -75,7 +75,9 @@ final class TemporalExtension extends Extension
         $container->setParameter('temporal.config', $rawConfiguration);
 
         if (interface_exists(PluginCompilerPass::PLUGIN_INTERFACE)) {
-            $container->registerForAutoconfiguration(PluginCompilerPass::PLUGIN_INTERFACE)->addTag(PluginCompilerPass::TAG);
+            $container->registerForAutoconfiguration(PluginCompilerPass::PLUGIN_INTERFACE)
+                ->addTag(PluginCompilerPass::TAG)
+            ;
         }
 
         $container->registerAttributeForAutoconfiguration(AsPlugin::class, static function (ChildDefinition $definition, AsPlugin $attribute): void {

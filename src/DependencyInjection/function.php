@@ -49,8 +49,7 @@ function definition(?string $class = null, array $arguments = []): Definition
  */
 function dateIntervalDefinition(string $interval): Definition
 {
-    return definition(DateInterval::class)
-        ->setFactory([DateInterval::class, 'createFromDateString'])
+    return definition(DateInterval::class)->setFactory([DateInterval::class, 'createFromDateString'])
         ->setArguments([$interval])
     ;
 }
@@ -125,8 +124,7 @@ function grpcClient(array $client, string $path): Definition
     if ($client['envConfig']['enabled']) {
         assertEnvConfigSupported($client['envConfig'], $path);
 
-        return definition(ServiceClient::class)
-            ->setFactory([envConfigProfile($client['envConfig']), 'toServiceClient'])
+        return definition(ServiceClient::class)->setFactory([envConfigProfile($client['envConfig']), 'toServiceClient'])
             ->addMethodCall('withContext', [grpcContext($client['grpcContext'])], true)
         ;
     }
@@ -164,8 +162,7 @@ function grpcClient(array $client, string $path): Definition
  */
 function envConfigProfile(array $envConfig): Definition
 {
-    return (new Definition('Temporal\Common\EnvConfig\Client\ConfigProfile'))
-        ->setFactory(['Temporal\Common\EnvConfig\ConfigClient', 'load'])
+    return (new Definition('Temporal\Common\EnvConfig\Client\ConfigProfile'))->setFactory(['Temporal\Common\EnvConfig\ConfigClient', 'load'])
         ->setArguments([$envConfig['profile'], $envConfig['configFile']])
     ;
 }
@@ -184,8 +181,7 @@ function grpcInterceptorPipeline(Definition $serviceClient, array $interceptors)
 
     // Added last: the pipeline is bound to the client instance it is created for
     $serviceClient->addMethodCall('withInterceptorPipeline', [
-        definition('Temporal\Internal\Interceptor\Pipeline')
-            ->setFactory([definition(SimplePipelineProvider::class, [array_map(reference(...), $interceptors)]), 'getPipeline'])
+        definition('Temporal\Internal\Interceptor\Pipeline')->setFactory([definition(SimplePipelineProvider::class, [array_map(reference(...), $interceptors)]), 'getPipeline'])
             ->setArguments([GrpcClientInterceptor::class]),
     ], true);
 }
@@ -373,8 +369,7 @@ function connectionSummary(array $client): string
  */
 function grpcContext(array $rawContext): Definition
 {
-    $context = definition(ContextInterface::class)
-        ->setFactory([Context::class, 'default'])
+    $context = definition(ContextInterface::class)->setFactory([Context::class, 'default'])
         ->addMethodCall('withTimeout', [$rawContext['timeout']['value'], $rawContext['timeout']['format']], true)
     ;
 

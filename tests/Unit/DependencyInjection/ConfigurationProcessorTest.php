@@ -12,6 +12,10 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\Test\Unit\DependencyInjection;
 
 use function PHPUnit\Framework\assertArrayHasKey;
+use function PHPUnit\Framework\assertArrayNotHasKey;
+use function PHPUnit\Framework\assertEquals;
+use function PHPUnit\Framework\assertIsArray;
+use function PHPUnit\Framework\assertNull;
 use function PHPUnit\Framework\assertSame;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -31,19 +35,18 @@ final class ConfigurationProcessorTest extends TestCase
         $config = $this->process([]);
 
         foreach (['clients', 'scheduleClients'] as $key) {
-            self::assertIsArray($config[$key]);
+            assertIsArray($config[$key]);
             assertSame(['default'], array_keys($config[$key]));
 
             $client = $config[$key]['default'];
 
-            self::assertIsArray($client);
+            assertIsArray($client);
             assertSame('default', $client['namespace']);
             assertSame('%env(TEMPORAL_ADDRESS)%', $client['address']);
             assertSame('temporal.data_converter', $client['dataConverter']);
             assertSame([], $client['interceptors']);
-            self::assertNull($client['apiKey']);
-
-            self::assertIsArray($client['grpcContext']);
+            assertNull($client['apiKey']);
+            assertIsArray($client['grpcContext']);
             assertArrayHasKey('retryOptions', $client['grpcContext']);
             assertArrayHasKey('metadata', $client['grpcContext']);
             assertArrayHasKey('options', $client['grpcContext']);
@@ -59,8 +62,8 @@ final class ConfigurationProcessorTest extends TestCase
             ['scheduleClients' => ['bar' => ['namespace' => 'bar']]],
         ]);
 
-        self::assertIsArray($config['clients']);
-        self::assertIsArray($config['scheduleClients']);
+        assertIsArray($config['clients']);
+        assertIsArray($config['scheduleClients']);
         assertSame(['foo'], array_keys($config['clients']));
         assertSame(['bar'], array_keys($config['scheduleClients']));
     }
@@ -73,8 +76,8 @@ final class ConfigurationProcessorTest extends TestCase
             ['clients' => ['foo' => ['namespace' => 'foo']]],
         ]);
 
-        self::assertIsArray($config['clients']);
-        self::assertIsArray($config['scheduleClients']);
+        assertIsArray($config['clients']);
+        assertIsArray($config['scheduleClients']);
         assertSame(['foo'], array_keys($config['clients']));
         assertSame(['default'], array_keys($config['scheduleClients']));
     }
@@ -86,6 +89,7 @@ final class ConfigurationProcessorTest extends TestCase
     public static function backoffCoefficientKeyDataProvider(): iterable
     {
         yield 'camelCase' => ['backoffCoefficient'];
+
         yield 'deprecated snake_case' => ['backoff_coefficient'];
     }
 
@@ -95,9 +99,9 @@ final class ConfigurationProcessorTest extends TestCase
     {
         $retryOptions = $this->processGrpcContext(['retryOptions' => [$key => 1.5]])['retryOptions'];
 
-        self::assertIsArray($retryOptions);
+        assertIsArray($retryOptions);
         assertSame(1.5, $retryOptions['backoffCoefficient']);
-        self::assertArrayNotHasKey('backoff_coefficient', $retryOptions);
+        assertArrayNotHasKey('backoff_coefficient', $retryOptions);
     }
 
 
@@ -105,13 +109,13 @@ final class ConfigurationProcessorTest extends TestCase
     {
         $retryOptions = $this->processGrpcContext([])['retryOptions'];
 
-        self::assertIsArray($retryOptions);
-        self::assertNull($retryOptions['initialInterval']);
-        self::assertNull($retryOptions['maximumInterval']);
-        self::assertNull($retryOptions['backoffCoefficient']);
-        self::assertNull($retryOptions['maximumAttempts']);
-        self::assertNull($retryOptions['congestionInitialInterval']);
-        self::assertNull($retryOptions['maximumJitterCoefficient']);
+        assertIsArray($retryOptions);
+        assertNull($retryOptions['initialInterval']);
+        assertNull($retryOptions['maximumInterval']);
+        assertNull($retryOptions['backoffCoefficient']);
+        assertNull($retryOptions['maximumAttempts']);
+        assertNull($retryOptions['congestionInitialInterval']);
+        assertNull($retryOptions['maximumJitterCoefficient']);
     }
 
 
@@ -129,9 +133,13 @@ final class ConfigurationProcessorTest extends TestCase
     public static function invalidGrpcContextDataProvider(): iterable
     {
         yield 'jitter is 1' => [['retryOptions' => ['maximumJitterCoefficient' => 1.0]]];
+
         yield 'negative jitter' => [['retryOptions' => ['maximumJitterCoefficient' => -0.1]]];
+
         yield 'backoff below 1' => [['retryOptions' => ['backoffCoefficient' => 0.5]]];
+
         yield 'negative attempts' => [['retryOptions' => ['maximumAttempts' => -1]]];
+
         yield 'invalid congestion interval' => [['retryOptions' => ['congestionInitialInterval' => 'soon']]];
     }
 
@@ -154,12 +162,19 @@ final class ConfigurationProcessorTest extends TestCase
     public static function invalidConfigurationDataProvider(): iterable
     {
         yield 'zero timeout' => [['clients' => ['default' => ['namespace' => 'default', 'grpcContext' => ['timeout' => ['value' => 0]]]]], 'Should be greater than or equal to 1'];
+
         yield 'empty identity' => [['clients' => ['default' => ['namespace' => 'default', 'identity' => '']]], 'cannot contain an empty value'];
+
         yield 'missing worker factory' => [['pool' => ['workerFactory' => 'App\\MissingFactory']], 'workerFactory class "App\\\\MissingFactory" not found'];
+
         yield 'invalid date interval' => [['workers' => ['default' => ['taskQueue' => 'default', 'workerStopTimeout' => 'soon']]], 'Failed parse date-interval'];
+
         yield 'exception interceptor without retryable errors' => [['workers' => ['default' => ['taskQueue' => 'default', 'exceptionInterceptor' => ['retryable' => []]]]], '"exceptionInterceptor" must be a service id'];
+
         yield 'exception interceptor with a non-throwable' => [['workers' => ['default' => ['taskQueue' => 'default', 'exceptionInterceptor' => ['retryableErrors' => ['stdClass']]]]], '"exceptionInterceptor" must be a service id'];
+
         yield 'cloud client without api key' => [['cloudClient' => ['enabled' => true]], '"cloudClient.apiKey" is required'];
+
         yield 'empty activity mocker' => [['pool' => ['testing' => ['activityMocker' => '']]], 'cannot contain an empty value'];
     }
 
@@ -192,8 +207,8 @@ final class ConfigurationProcessorTest extends TestCase
     {
         $config = $this->process([['pool' => ['testing' => ['activityMocker' => '@app.activity_cache']]]]);
 
-        self::assertIsArray($config['pool']);
-        self::assertIsArray($config['pool']['testing']);
+        assertIsArray($config['pool']);
+        assertIsArray($config['pool']['testing']);
         assertSame('app.activity_cache', $config['pool']['testing']['activityMocker']);
     }
 
@@ -204,7 +219,9 @@ final class ConfigurationProcessorTest extends TestCase
     public static function invalidConnectionsDataProvider(): iterable
     {
         yield 'repeated' => [['default', 'default'], 'Should not be repeated connection'];
+
         yield 'not found' => [['missing'], 'Not found connections: missing'];
+
         yield 'empty' => [[], 'Please set connection name.'];
     }
 
@@ -239,10 +256,10 @@ final class ConfigurationProcessorTest extends TestCase
             'tls'       => ['serverName' => 'temporal.local'],
         ]]]]);
 
-        self::assertIsArray($config['clients']);
-        self::assertIsArray($config['clients']['default']);
-        self::assertArrayNotHasKey('clientKey', $config['clients']['default']);
-        self::assertEquals([
+        assertIsArray($config['clients']);
+        assertIsArray($config['clients']['default']);
+        assertArrayNotHasKey('clientKey', $config['clients']['default']);
+        assertEquals([
             'enabled'    => null,
             'rootCa'     => null,
             'clientKey'  => 'key.pem',
@@ -265,7 +282,7 @@ final class ConfigurationProcessorTest extends TestCase
     {
         $config = $this->process([]);
 
-        self::assertIsArray($config['pool']);
+        assertIsArray($config['pool']);
         assertSame('temporal.data_converter', $config['pool']['dataConverter']);
         assertSame('%env(default:temporal.rr_rpc_default:RR_RPC)%', $config['pool']['roadrunnerRPC']);
     }
@@ -297,14 +314,23 @@ final class ConfigurationProcessorTest extends TestCase
     public static function invalidWorkerDataProvider(): iterable
     {
         yield 'negative concurrency' => [['maxConcurrentActivityExecutionSize' => -1]];
+
         yield 'string concurrency' => [['maxConcurrentActivityExecutionSize' => 'many']];
+
         yield 'negative task queue rate' => [['taskQueueActivitiesPerSecond' => -0.5]];
+
         yield 'unknown panic policy' => [['workflowPanicPolicy' => 'Panic']];
+
         yield 'versioning without version' => [['deploymentOptions' => ['useVersioning' => true]]];
+
         yield 'deployment name without build id' => [['deploymentOptions' => ['deploymentName' => 'billing']]];
+
         yield 'versioning with build id versioning' => [['deploymentOptions' => ['useVersioning' => true, 'deploymentName' => 'billing', 'buildId' => '1'], 'useBuildIDForVersioning' => true, 'buildID' => '1']];
+
         yield 'build id versioning with session worker' => [['useBuildIDForVersioning' => true, 'buildID' => '1', 'enableSessionWorker' => true]];
+
         yield 'unknown versioning behavior' => [['deploymentOptions' => ['defaultVersioningBehavior' => 'Latest']]];
+
         yield 'negative nexus pollers' => [['maxConcurrentNexusTaskPollers' => -1]];
     }
 
@@ -315,7 +341,9 @@ final class ConfigurationProcessorTest extends TestCase
     public static function workflowPanicPolicyDataProvider(): iterable
     {
         yield 'default' => [null, 'BlockWorkflow'];
+
         yield 'string' => ['FailWorkflow', 'FailWorkflow'];
+
         yield 'enum' => [WorkflowPanicPolicy::FailWorkflow, 'FailWorkflow'];
     }
 
@@ -338,9 +366,9 @@ final class ConfigurationProcessorTest extends TestCase
     {
         $config = $this->process([['clients' => ['default' => ['namespace' => 'default', 'grpcContext' => $grpcContext]]]]);
 
-        self::assertIsArray($config['clients']);
-        self::assertIsArray($config['clients']['default']);
-        self::assertIsArray($config['clients']['default']['grpcContext']);
+        assertIsArray($config['clients']);
+        assertIsArray($config['clients']['default']);
+        assertIsArray($config['clients']['default']['grpcContext']);
 
         return $config['clients']['default']['grpcContext'];
     }
@@ -355,8 +383,8 @@ final class ConfigurationProcessorTest extends TestCase
     {
         $config = $this->process([['workers' => ['default' => ['taskQueue' => 'default', ...$worker]]]]);
 
-        self::assertIsArray($config['workers']);
-        self::assertIsArray($config['workers']['default']);
+        assertIsArray($config['workers']);
+        assertIsArray($config['workers']['default']);
 
         return $config['workers']['default'];
     }

@@ -26,8 +26,7 @@ final class CustomJsonConverter implements PayloadConverterInterface
 
     public function toPayload($value): Payload
     {
-        return (new Payload())
-            ->setMetadata([EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType()])
+        return (new Payload())->setMetadata([EncodingKeys::METADATA_ENCODING_KEY => $this->getEncodingType()])
             ->setData('"custom"')
         ;
     }

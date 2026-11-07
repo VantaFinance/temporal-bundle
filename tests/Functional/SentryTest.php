@@ -53,7 +53,9 @@ final class SentryTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -74,8 +76,11 @@ final class SentryTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition): void {
             $kernel->addTestBundle(MonologBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/monolog.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition) implements CompilerPass {
@@ -105,7 +110,9 @@ final class SentryTest extends KernelTestCase
     public static function notFoundHubDataProvider(): iterable
     {
         yield ['temporal.sentry_default.interceptor'];
+
         yield ['temporal.sentry_foo.interceptor'];
+
         yield ['temporal.sentry_bar.interceptor'];
     }
 
@@ -122,9 +129,13 @@ final class SentryTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasActivityInterceptor, &$hasWorkflowOutboundInterceptor, &$hasStackTraceBuilder): void {
             $kernel->addTestBundle(SentryBundle::class);
+
             $kernel->addTestBundle(MonologBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/sentry.yaml');
 
             $kernel->addTestCompilerPass(new class($hasActivityInterceptor, $hasWorkflowOutboundInterceptor, $hasStackTraceBuilder) implements CompilerPass {
@@ -161,9 +172,13 @@ final class SentryTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$sentryUseWorkerPipeline, &$withoutSentryWorkerPipeline): void {
             $kernel->addTestBundle(SentryBundle::class);
+
             $kernel->addTestBundle(MonologBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_use_specific_sentry_worker.yaml');
 
 
@@ -188,8 +203,6 @@ final class SentryTest extends KernelTestCase
             new Reference('temporal.sentry_workflow_outbound_calls.interceptor'),
             new Reference('temporal.sentry_activity_inbound.interceptor'),
         ], $sentryUseWorkerPipeline->getArgument(0));
-
-
         assertInstanceOf(Definition::class, $withoutSentryWorkerPipeline);
         assertEquals(SimplePipelineProvider::class, $withoutSentryWorkerPipeline->getClass());
         assertEmpty($withoutSentryWorkerPipeline->getArgument(0));
@@ -208,9 +221,13 @@ final class SentryTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$sentryUseWorkerPipeline, &$withoutSentryWorkerPipeline): void {
             $kernel->addTestBundle(SentryBundle::class);
+
             $kernel->addTestBundle(MonologBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_use_global_sentry.yaml');
 
 
@@ -239,8 +256,6 @@ final class SentryTest extends KernelTestCase
         assertInstanceOf(Definition::class, $sentryUseWorkerPipeline);
         assertEquals(SimplePipelineProvider::class, $sentryUseWorkerPipeline->getClass());
         assertEquals($expectedIntegrations, $sentryUseWorkerPipeline->getArgument(0));
-
-
         assertInstanceOf(Definition::class, $withoutSentryWorkerPipeline);
         assertEquals(SimplePipelineProvider::class, $withoutSentryWorkerPipeline->getClass());
         assertEquals($expectedIntegrations, $withoutSentryWorkerPipeline->getArgument(0));

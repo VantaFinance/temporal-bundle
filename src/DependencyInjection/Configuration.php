@@ -160,6 +160,7 @@ use Vanta\Integration\Temporal\Sentry\SentryWorkflowOutboundCallsInterceptor;
  *
  * @phpstan-type RawConfiguration array{
  *  defaultClient: non-empty-string,
+ *  migrations: array{enabled: bool, client: ?non-empty-string, timeout: positive-int, paths: array<string, string>},
  *  cloudClient: array{enabled: bool, address: non-empty-string, apiKey: ?non-empty-string, apiVersion: ?non-empty-string},
  *  defaultScheduleClient: non-empty-string,
  *  defaultWorker: non-empty-string,
@@ -383,6 +384,18 @@ final class Configuration implements BundleConfiguration
             ->fixXmlConfig('worker', 'workers')
             ->fixXmlConfig('scheduleClient', 'scheduleClients')
             ->children()
+                ->arrayNode('migrations')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('enabled')->defaultFalse()->end()
+                        ->scalarNode('client')->defaultNull()->cannotBeEmpty()->end()
+                        ->integerNode('timeout')->defaultValue(60)->min(1)->end()
+                        ->arrayNode('paths')
+                            ->useAttributeAsKey('namespace')
+                            ->scalarPrototype()->cannotBeEmpty()->end()
+                        ->end()
+                    ->end()
+                ->end()
                 ->scalarNode('defaultClient')
                     ->defaultValue('default')
                 ->end()
@@ -1415,6 +1428,7 @@ final class Configuration implements BundleConfiguration
                     ->end()
                 ->end()
             ->end()
-        ->end();
+        ->end()
+        ;
     }
 }

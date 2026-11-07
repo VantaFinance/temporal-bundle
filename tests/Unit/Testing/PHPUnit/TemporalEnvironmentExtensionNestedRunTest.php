@@ -47,6 +47,7 @@ final class TemporalEnvironmentExtensionNestedRunTest extends TestCase
             $root,
             timeout: 120,
         );
+
         $process->run();
 
         $output = $process->getOutput() . $process->getErrorOutput();
@@ -60,6 +61,7 @@ final class TemporalEnvironmentExtensionNestedRunTest extends TestCase
         assertSame(6, substr_count($log, ': Test environment stopped'), $log);
 
         $alive = new Process(['pgrep', '-fl', 'tests/Unit/Testing/PHPUnit/Fixture/nested/rr.yaml|--port 17236']);
+
         $alive->run();
 
         assertSame('', trim($alive->getOutput()), 'Fake servers left running: ' . $alive->getOutput());

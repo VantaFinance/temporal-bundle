@@ -24,6 +24,7 @@ final class TestWorkflowBundle extends Bundle
         $container->register(NullWorkflowHandler::class)
             ->setAutoconfigured(true)
         ;
+
         $container->register(AssignWorkflowHandler::class)
             ->setAutoconfigured(true)
         ;

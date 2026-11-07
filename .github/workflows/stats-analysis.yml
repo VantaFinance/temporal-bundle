@@ -31,9 +31,4 @@ jobs:
           dependency-versions: ${{ matrix.dependencies }}
           composer-options: --optimize-autoloader
 
-      # bamarni forwards --prefer-lowest to vendor-bin too: analyse the lowest dependencies with current tools
-      - name: Update tools
-        if: matrix.dependencies == 'lowest'
-        run: composer bin tools update --no-interaction
-
       - run: vendor/bin/phpstan --error-format=github

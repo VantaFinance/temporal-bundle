@@ -46,7 +46,9 @@ final class FeatureFlagsTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -111,6 +113,7 @@ final class FeatureFlagsTest extends KernelTestCase
     {
         return self::bootKernel(['config' => static function (TestKernel $kernel) use ($configFile): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/' . $configFile);
         }]);
     }

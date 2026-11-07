@@ -16,6 +16,7 @@ use Nyholm\BundleTest\TestKernel;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertFalse;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertIsArray;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -53,7 +54,9 @@ final class TestingMocksTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -66,6 +69,7 @@ final class TestingMocksTest extends KernelTestCase
 
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel) use (&$pipeline): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing.yaml');
 
             $kernel->addTestCompilerPass(new class($pipeline) implements CompilerPass {
@@ -94,7 +98,7 @@ final class TestingMocksTest extends KernelTestCase
         assertInstanceOf(self::WORKFLOW_MOCKER, $container->get(self::WORKFLOW_MOCKER)); // @phpstan-ignore argument.type
         assertInstanceOf('Temporal\Testing\SearchAttributeMocker', $container->get('temporal.testing.search_attribute_mocker')); // @phpstan-ignore argument.type
 
-        self::assertIsArray($pipeline);
+        assertIsArray($pipeline);
         assertEquals([
             new Reference('temporal.testing.mock_child_workflow.interceptor'),
             new Reference('temporal.testing.mock_side_effect.interceptor'),
@@ -114,6 +118,7 @@ final class TestingMocksTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$result): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing_time_locking.yaml');
 
             $kernel->addTestCompilerPass(new class($result) implements CompilerPass {
@@ -135,7 +140,7 @@ final class TestingMocksTest extends KernelTestCase
             });
         }]);
 
-        self::assertIsArray($result['pipeline']);
+        assertIsArray($result['pipeline']);
         assertEquals(new Reference('temporal.testing.time_locking.interceptor'), end($result['pipeline']));
         assertEquals(new Reference('temporal.testing.default.testService'), $result['testService']);
     }

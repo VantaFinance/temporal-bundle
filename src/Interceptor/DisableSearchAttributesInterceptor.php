@@ -46,7 +46,9 @@ final class DisableSearchAttributesInterceptor implements WorkflowOutboundReques
 
         // understand and forgive 🥺, used because of lastID
         $reflection = new ReflectionObject($request);
-        $reflection->getProperty('options')->setValue($request, $newOptions);
+        $reflection->getProperty('options')
+            ->setValue($request, $newOptions)
+        ;
 
         return $next($request);
     }

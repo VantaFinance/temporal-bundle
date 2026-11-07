@@ -48,7 +48,9 @@ final class DebugCommandTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -107,10 +109,12 @@ final class DebugCommandTest extends KernelTestCase
     {
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel) use ($configFile): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/' . $configFile);
         }]);
 
         $tester = new CommandTester((new Application($kernel))->find($command));
+
         $tester->execute($input);
 
         return $tester->getDisplay();

@@ -48,7 +48,9 @@ final class WorkerOptionsMappingTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -96,6 +98,7 @@ final class WorkerOptionsMappingTest extends KernelTestCase
 
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_sdk_2_20_worker_options.yaml');
         }]);
 
@@ -105,6 +108,7 @@ final class WorkerOptionsMappingTest extends KernelTestCase
 
         /** @phpstan-ignore property.notFound */
         assertTrue($worker->getOptions()->disablePayloadErrorLimit);
+
         /** @phpstan-ignore property.notFound */
         assertSame(2, $worker->getOptions()->maxEagerActivityReservationsPerWorkflowTask);
     }
@@ -119,6 +123,7 @@ final class WorkerOptionsMappingTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
         }]);
     }
