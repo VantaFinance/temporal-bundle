@@ -44,7 +44,7 @@ Declare workflows and activities as Symfony services, configure workers, and ins
 
 - PHP >= 8.2
 - Symfony >= 6.4 (`^6.4 || ^7 || ^8`)
-- temporal/sdk >= 2.16 and RoadRunner, in one of the lines:
+- temporal/sdk >= 2.16 with a compatible RoadRunner version:
 
 | temporal/sdk  | RoadRunner server | RoadRunner PHP packages              | Notes                                               |
 |---------------|-------------------|--------------------------------------|-----------------------------------------------------|
@@ -52,12 +52,12 @@ Declare workflows and activities as Symfony services, configure workers, and ins
 | 2.16 – 2.19   | 3.x               | `spiral/roadrunner*`                 | works; every worker logs a version-checker warning  |
 | >= 2.20       | 3.x               | `roadrunner/*` (replace `spiral/*`)  | needs Carbon 3                                      |
 
-Options below marked `SDK >= x` need that temporal/sdk version. If you set one on an older SDK, the container build fails
-and names the version to install. Options you leave unset are not passed to the SDK.
+Options marked `SDK >= x` require that temporal/sdk version. Setting one on an older SDK fails the container build
+with the required version in the error message. Unset options are not passed to the SDK.
 
 ## Installation
 
-1. Connect recipes
+1. Add the recipe endpoint
 
 ```bash
 composer config --json extra.symfony.endpoint '["https://raw.githubusercontent.com/VantaFinance/temporal-bundle/main/.recipie/index.json", "flex://defaults"]'
@@ -86,7 +86,7 @@ more.
 
 ## Starting a workflow
 
-The default client (`defaultClient`) is autowired as `Temporal\Client\WorkflowClientInterface`. Another client is
+The default client (`defaultClient`) is autowired as `Temporal\Client\WorkflowClientInterface`. Named clients are
 injected by argument name, `$<name>WorkflowClient` (for example `$barWorkflowClient` for the client `bar`).
 
 ```php
@@ -121,8 +121,8 @@ final class Greeter
 }
 ```
 
-The task queue must match the `taskQueue` of the worker that runs the workflow. `start()` returns once Temporal
-accepts the workflow; `getResult()` waits for it to finish, so skip it when the caller does not need the result.
+The task queue must match the worker's `taskQueue`. `start()` returns once Temporal accepts the workflow.
+Call `getResult()` only if the caller needs to wait for completion.
 
 ## Assign worker
 
@@ -227,8 +227,8 @@ application. HTTP and Temporal run in two RoadRunner processes, each with its ow
 | `.rr.http.yaml`     | `Roadrunner\Integration\Symfony\Http\Runtime\HttpRuntime`        |
 | `.rr.temporal.yaml` | `Vanta\Integration\Symfony\Temporal\Runtime\TemporalRuntime`     |
 
-Both processes start `php public/index.php`. With `HttpRuntime` the kernel serves HTTP requests, with
-`TemporalRuntime` it polls Temporal. Install both bundles through Flex with both recipe endpoints:
+Both processes start `php public/index.php`. `HttpRuntime` serves HTTP requests; `TemporalRuntime` polls Temporal.
+Install both bundles through Flex with both recipe endpoints:
 
 ```bash
 composer config --json extra.symfony.endpoint '["https://raw.githubusercontent.com/roadrunner-symfony/recipes/main/index.json", "https://raw.githubusercontent.com/VantaFinance/temporal-bundle/main/.recipie/index.json", "flex://defaults"]'
@@ -266,8 +266,8 @@ vendor/bin/dload get rr:^3 temporal      # temporal/sdk >= 2.20
 vendor/bin/dload get rr:^2025 temporal   # temporal/sdk 2.16 - 2.19
 ```
 
-The recipe files `.rr.temporal.yaml` and `.rr.temporal.testing.yaml` work on both versions. If you move your own
-RoadRunner config to RoadRunner 3, change these parts:
+The recipe files `.rr.temporal.yaml` and `.rr.temporal.testing.yaml` work on both versions. When upgrading your own
+configuration to RoadRunner 3, check the following settings:
 
 - **Logs.** RoadRunner 3 ignores `logs.file_logger_options` and `logs.encoding`. Write the log file with `logs.output`,
   relative to the working directory (`-w`). RoadRunner 2025 reads `file_logger_options` before `output`, so keep only
@@ -311,7 +311,8 @@ temporal:
 ```
 
 With `tls.enabled: ~` (the default), configuring `apiKey`, a certificate, or `serverName` enables TLS.
-The decision is made when the container is built: an `apiKey` pointing to an empty env variable still turns TLS on. For a local server without TLS, set `tls.enabled: false`.
+TLS is selected at container build time: an `apiKey` env reference enables it even if the variable resolves to an empty
+value. Set `tls.enabled: false` for a local server without TLS.
 
 `clientKey` and `clientPem` at the client level still work but are deprecated. Move them to `tls.clientKey` and
 `tls.clientPem`.
@@ -354,8 +355,8 @@ temporal:
       # namespace: overrides the profile namespace
 ```
 
-With `envConfig.enabled` you cannot set `address`, `apiKey` or `tls`: the profile provides them. The SDK reads the
-`TEMPORAL_*` variables with `getenv()`, so they must be real process env variables; values from `.env` files are seen
+When `envConfig.enabled` is set, the profile supplies `address`, `apiKey` and `tls`; these options cannot be set explicitly.
+The SDK reads `TEMPORAL_*` variables with `getenv()`, so they must be real process env variables; values from `.env` files are seen
 only when Symfony Dotenv runs with `usePutenv`. Reading a TOML file needs `composer require internal/toml`.
 
 ## Worker options
@@ -425,14 +426,13 @@ temporal:
       readOnlyWorkflowCallbacks: false
 ```
 
-The flags are static, so they stay set for the rest of the PHP process, including other kernels booted in the same
-PHPUnit run.
+Flags remain set for the lifetime of the PHP process, including other kernels booted in the same PHPUnit run.
 
 ## Plugins
 
 SDK >= 2.18. The bundle registers every service that implements `Temporal\Plugin\PluginInterface` (for example by
-extending `Temporal\Plugin\AbstractPlugin`) in every workflow client, schedule client and the worker factory. Each of
-them gets a separate plugin registry, so the SDK never sees the same plugin name twice.
+extending `Temporal\Plugin\AbstractPlugin`) in every workflow client, schedule client and the worker factory.
+Each consumer has a separate plugin registry, preventing duplicate plugin names in the SDK.
 
 Use `#[AsPlugin]` to select clients and the worker factory. `workers: true` applies to the shared factory, not a named
 worker; `scheduleClients` accepts schedule-client names. An empty attribute keeps global registration.
@@ -452,7 +452,7 @@ final class TracingPlugin extends AbstractPlugin
 }
 ```
 
-Plugins can also be listed in the configuration:
+To register plugins through configuration:
 
 ```yaml
 temporal:
@@ -467,9 +467,9 @@ temporal:
 
 ## Data conversion and payload limits
 
-By default `temporal.data_converter` serializes payloads to JSON with the Symfony Serializer. On SDK >= 2.20 your
-normalizers receive the serialization context (namespace, workflow id) in the serializer context under the
-`temporal_serialization_context` key.
+By default, `temporal.data_converter` serializes payloads to JSON with Symfony Serializer. On SDK >= 2.20,
+normalizers receive the Temporal namespace and workflow ID under `temporal_serialization_context` in the serializer
+context.
 
 ```yaml
 temporal:
@@ -500,7 +500,7 @@ temporal:
 `interceptors` of a client or worker and `pool.globalInterceptors` take both workflow interceptors and gRPC
 interceptors (`Temporal\Interceptor\GrpcClientInterceptor`). gRPC interceptors run on the connection of every client
 and schedule client; the others run in the client and worker pipelines. Schedule clients take only gRPC interceptors.
-If your interceptor service is built by a factory, set its `class`, so that the bundle can tell the two kinds apart.
+For an interceptor created by a factory, set the service's `class` so the bundle can identify its type.
 
 ## Additional clients
 
@@ -511,8 +511,8 @@ Each workflow client `<name>` also provides:
 | `Temporal\Client\ActivityCompletionClientInterface $<name>ActivityCompletionClient` |          |
 | `Temporal\Client\GRPC\OperatorClientInterface $<name>OperatorClient`                | >= 2.18  |
 
-The default client's ones are also autowired by the interface alone, unless your application already defines a service
-with that id.
+For the default client, these services are autowired by interface alone unless the application already defines a
+service with that ID.
 
 SDK >= 2.19 adds a client for the Temporal Cloud Ops API, autowired as `Temporal\Client\GRPC\CloudClientInterface`:
 
@@ -591,7 +591,7 @@ VAR_DUMPER_FORMAT=server VAR_DUMPER_SERVER=127.0.0.1:9912 \
 
 Set the port variables in the shell or Compose `.env` file if a port is busy. Internal ports stay unchanged.
 Monolog and mail delivery need their own application configuration; adding the service does not reroute them.
-Captured data is temporary and is lost when Buggregator restarts. Check startup errors with:
+Buggregator loses captured data on restart. Check startup errors with:
 
 ```bash
 docker compose -f .docker/docker-compose-temporal.yml logs buggregator
@@ -601,9 +601,9 @@ docker compose -f .docker/docker-compose-temporal.yml logs buggregator
 
 **A workflow or activity is not registered** (`ActivityNotRegisteredError`, unknown workflow type). Run
 `bin/console debug:temporal:workflows` and `bin/console debug:temporal:activities` to see which worker has which class.
-The class needs `#[WorkflowInterface]` or `#[ActivityInterface]` and must be an autoconfigured service. The worker
-comes from `#[AssignWorker]` or, without it, from `defaultWorker` (see [Assign worker](#assign-worker)). Start the workflow with that worker's
-`taskQueue`.
+The class needs `#[WorkflowInterface]` or `#[ActivityInterface]` and must be an autoconfigured service. The worker is
+selected by `#[AssignWorker]` or, when the attribute is absent, by `defaultWorker` (see [Assign worker](#assign-worker)).
+Start the workflow with that worker's `taskQueue`.
 
 **The configuration is not what you expect.** `bin/console debug:config temporal` prints the resolved configuration;
 `bin/console debug:temporal:workers` and `bin/console debug:temporal:clients` show worker options and client
@@ -759,8 +759,8 @@ final class GreetingWorkflowTest extends TemporalTestCase
 ```
 
 The attribute finds `temporal` and `rr` in `PATH` or the project root and uses `.rr.temporal.testing.yaml` from that root.
-The RoadRunner worker inherits
-`APP_ENV=test` and the `.env.test` values from the PHPUnit process, so it boots your kernel in the `test` environment.
+The RoadRunner worker inherits `APP_ENV=test` and the `.env.test` values from PHPUnit, and boots the kernel in the
+`test` environment.
 
 4. Run it:
 
@@ -791,7 +791,7 @@ asynchronous state, poll with `awaitWithTimeout()` or `waitWithTime()` (both tak
 
 ### Mocking child workflows, side effects and search attributes
 
-SDK >= 2.18. In test mode you can also mock child workflows, side effects and search attribute updates.
+SDK >= 2.18 supports mocks for child workflows, side effects and search attribute updates in test mode.
 `TemporalTestCase` and `TemporalTestingTools` give you `getWorkflowMocker()` and `getSearchAttributeMocker()`; both are
 also autowired as `Temporal\Testing\WorkflowMocker` and `Temporal\Testing\SearchAttributeMocker`. They keep their
 expectations in the same storage as the activity mocker.
@@ -809,7 +809,7 @@ public function testParentWithMockedChild(): void
 }
 ```
 
-The following parameters configure test mode:
+Test-mode settings:
 
 - `pool.testing.enabled` — activate test mode
 - `pool.testing.activityMocker` — which ActivityMocker to use. Default value: `rr_kv`. Allowed values:
@@ -825,8 +825,8 @@ The following parameters configure test mode:
 
 ### Lifecycle per test
 
-`#[WithTemporalEnvironment]` can be put on a test class (applies to every test, also inherited by subclasses) or on a
-test method (overrides the class attribute). All arguments are optional:
+Apply `#[WithTemporalEnvironment]` to a test class to cover every test, including subclasses, or to a method to
+override the class settings. All arguments are optional:
 
 | Argument              | Default                       | Meaning                                                                                       |
 |-----------------------|-------------------------------|-----------------------------------------------------------------------------------------------|
@@ -862,7 +862,7 @@ Its `current()` method returns the running environment, or `null` without the at
 PHPUnit reports extension startup exceptions as warnings; rethrowing them makes the test fail.
 `TemporalTestCase` already rethrows startup failures. See [Codeception setup](#testing-workflows-with-codeception).
 
-To manage the servers yourself, leave the attribute out and start an environment in your own hooks:
+For manual lifecycle control, omit the attribute and start the environment in your test hooks:
 
 ```php
 use Vanta\Integration\Symfony\Temporal\Testing\Server\RoadRunnerServer;
@@ -922,7 +922,7 @@ poll when asserting on them.
 
 #### Temporal server options
 
-Override how `temporal server start-dev` is started — the namespace, dynamic config values, or any other CLI flag:
+Set the namespace, dynamic configuration, or other CLI flags for `temporal server start-dev`:
 
 ```php
 use Vanta\Integration\Symfony\Temporal\Testing\Attribute\WithTemporalEnvironment;
@@ -970,7 +970,7 @@ extensions:
             logFile: var/log/test-environment.log   # optional
 ```
 
-The suite needs the `Symfony` and `Asserts` modules plus a small helper module (below):
+Enable the `Symfony` and `Asserts` modules and the helper defined below:
 
 ```yaml
 actor: FunctionalTester
@@ -1063,8 +1063,8 @@ Behaviour:
   shutdown hook, so an explicit `stop()` is optional.
 - `TemporalTestEnvironment` starts servers in order and stops them all at once. If one fails to start, the already
   started servers are stopped and the original exception is rethrown.
-- Server output goes to `logFile`, never to a pipe, so a chatty server cannot block. Without `logFile` it goes to a
-  file in the system temp dir that is removed after a successful stop.
+- Server output is written to `logFile` rather than a pipe, so output cannot fill a pipe buffer and block the server.
+  When `logFile` is omitted, output goes to a system temp file removed after a successful stop.
 - `configFile` may be relative; it is resolved with `realpath()`.
 
 Limitations:

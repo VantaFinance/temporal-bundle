@@ -15,7 +15,7 @@
   "is_contrib": false,
   "_links": {
     "repository": "github.com/VantaFinance/temporal-bundle/.recipie",
-    "origin_template": "github.com/VantaFinance/temporal-bundle/.recipie/{version}:0.5",
+    "origin_template": "github.com/VantaFinance/temporal-bundle/.recipie/{version}:main",
     "recipe_template": "https://raw.githubusercontent.com/VantaFinance/temporal-bundle/main/.recipie/{version}/manifest.json"
   }
 }
