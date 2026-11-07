@@ -56,7 +56,9 @@ final class DoctrineTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -73,8 +75,11 @@ final class DoctrineTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasDefinition): void {
             $kernel->addTestBundle(DoctrineBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
             $kernel->addTestCompilerPass(new class($hasDefinition) implements CompilerPass {
@@ -113,8 +118,11 @@ final class DoctrineTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasFinalizerDefinition, &$hasDefinition, &$hasArgument, &$firstArgument, &$innerArguments): void {
             $kernel->addTestBundle(DoctrineBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
             $kernel->addTestCompilerPass(new class($hasFinalizerDefinition) implements CompilerPass {
@@ -167,6 +175,7 @@ final class DoctrineTest extends KernelTestCase
     public static function registerDoctrinePingFinalizersDataProvider(): iterable
     {
         yield ['temporal.doctrine_ping_connection_default.finalizer', [new Reference('doctrine'), 'default', referenceLogger()]];
+
         yield ['temporal.doctrine_ping_connection_customer.finalizer', [new Reference('doctrine'), 'customer', referenceLogger()]];
     }
 
@@ -185,8 +194,11 @@ final class DoctrineTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition): void {
             $kernel->addTestBundle(DoctrineBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_finalizers.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition) implements CompilerPass {
@@ -240,8 +252,11 @@ final class DoctrineTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($entityManager, $workerId): void {
             $kernel->addTestBundle(DoctrineBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_use_specific_doctrine_worker.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
 
@@ -310,6 +325,7 @@ final class DoctrineTest extends KernelTestCase
     public static function doctrineEntityManagers(): iterable
     {
         yield ['default', 'temporal.doctrine_with_default_use.worker'];
+
         yield ['customer', 'temporal.doctrine_with_customer_use.worker'];
     }
 
@@ -326,8 +342,11 @@ final class DoctrineTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($workerId): void {
             $kernel->addTestBundle(DoctrineBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_use_global_doctrine.yaml');
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
 
 
@@ -373,6 +392,7 @@ final class DoctrineTest extends KernelTestCase
     public static function workersWithDoctrine(): iterable
     {
         yield ['temporal.doctrine_use.worker'];
+
         yield ['temporal.without_doctrine.worker'];
     }
 
@@ -393,8 +413,11 @@ final class DoctrineTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($pathTemporalConfig): void {
             $kernel->addTestBundle(DoctrineBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . $pathTemporalConfig);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/doctrine.yaml');
         }]);
     }
@@ -406,23 +429,29 @@ final class DoctrineTest extends KernelTestCase
     public static function temporalInvalidConfigurationDoctrine(): iterable
     {
         yield ['/Framework/Config/temporal_use_global_doctrine_invalid_config.yaml', invalidConfiguration('temporal.pool.useGlobalDoctrineIntegration', 'Invalid configuration for path "temporal.pool.useGlobalDoctrineIntegration": Please set entity-manager name.')];
+
         yield ['/Framework/Config/temporal_use_global_doctrine_not_found_entity_manager.yaml', invalidConfiguration('temporal.pool.useGlobalDoctrineIntegration', 'Invalid configuration for path "temporal.pool.useGlobalDoctrineIntegration": Not found entity managers: spiral, test')];
+
         yield ['/Framework/Config/temporal_use_global_doctrine_repeated_entity_manager.yaml', invalidConfiguration('temporal.pool.useGlobalDoctrineIntegration', 'Invalid configuration for path "temporal.pool.useGlobalDoctrineIntegration": Should not be repeated entity-manager')];
+
         yield ['/Framework/Config/temporal_use_global_doctrine.yaml', invalidConfiguration('temporal.pool.useGlobalDoctrineIntegration', 'Invalid configuration for path "temporal.pool.useGlobalDoctrineIntegration": Install dependencies `composer req orm`'), static function (): void {
             InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
                 return false;
             });
         }];
+
         yield ['/Framework/Config/temporal_use_global_doctrine.yaml', invalidConfiguration('temporal.pool.useGlobalDoctrineIntegration', 'Invalid configuration for path "temporal.pool.useGlobalDoctrineIntegration": Install dependencies `composer req temporal-doctrine`'), static function (): void {
             InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
                 return $package == 'doctrine/doctrine-bundle';
             });
         }];
+
         yield ['/Framework/Config/temporal_use_specific_doctrine_worker.yaml', invalidConfiguration('temporal.pool.useGlobalDoctrineIntegration', 'Invalid configuration for path "temporal.workers.doctrine_with_default_use.useDoctrineIntegration": Install dependencies `composer req orm`'), static function (): void {
             InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
                 return false;
             });
         }];
+
         yield ['/Framework/Config/temporal_use_specific_doctrine_worker.yaml', invalidConfiguration('temporal.pool.gavno', 'Invalid configuration for path "temporal.workers.doctrine_with_default_use.useDoctrineIntegration": Install dependencies `composer req temporal-doctrine`'), static function (): void {
             InstalledVersions::setHandler(static function (string $package, string $class, array $parentPackages): bool {
                 return $package == 'doctrine/doctrine-bundle';
@@ -439,6 +468,7 @@ final class DoctrineTest extends KernelTestCase
 function invalidConfiguration(string $path, string $message): InvalidConfigurationException
 {
     $e = new InvalidConfigurationException($message);
+
     $e->setPath($path);
 
     return $e;

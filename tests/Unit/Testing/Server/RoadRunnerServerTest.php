@@ -113,6 +113,7 @@ final class RoadRunnerServerTest extends TestCase
 
         try {
             $server->start();
+
             self::fail('ServerStartFailed expected');
         } catch (ServerStartFailed $e) {
             assertStringContainsString('fake-rr', $e->getMessage());
@@ -131,6 +132,7 @@ final class RoadRunnerServerTest extends TestCase
 
         try {
             $server->start();
+
             self::fail('ServerStartFailed expected');
         } catch (ServerStartFailed $e) {
             assertStringContainsString('did not become ready within 0.5 seconds', $e->getMessage());
@@ -177,8 +179,11 @@ final class RoadRunnerServerTest extends TestCase
         $server = $this->server($this->config('rr.yaml'), $logger);
 
         $server->start();
+
         $server->stop();
+
         $server->start();
+
         $server->stop();
 
         assertSame(2, $logger->count('info', 'Starting RoadRunner'));
@@ -210,6 +215,7 @@ final class RoadRunnerServerTest extends TestCase
 
         try {
             $this->server($config)->start();
+
             self::fail('ServerStartFailed expected');
         } catch (ServerStartFailed $e) {
             assertStringContainsString('already answering', $e->getMessage());
@@ -223,6 +229,7 @@ final class RoadRunnerServerTest extends TestCase
         $path = (string) getenv('PATH');
 
         putenv('PATH=' . dirname(Fixture::binary('fake-rr')) . PATH_SEPARATOR . $path);
+
         $_SERVER['PATH'] = $_ENV['PATH'] = (string) getenv('PATH');
 
         try {
@@ -240,6 +247,7 @@ final class RoadRunnerServerTest extends TestCase
             $server->stop();
         } finally {
             putenv('PATH=' . $path);
+
             $_SERVER['PATH'] = $_ENV['PATH'] = $path;
         }
     }
@@ -281,6 +289,7 @@ final class RoadRunnerServerTest extends TestCase
 
         try {
             $this->server($this->config('fail-exit.yaml'))->start();
+
             self::fail('ServerStartFailed expected');
         } catch (ServerStartFailed $e) {
             assertStringContainsString('boom on startup', $e->getMessage());
@@ -309,10 +318,13 @@ final class RoadRunnerServerTest extends TestCase
         }
 
         $environment = new TemporalTestEnvironment(...$servers);
+
         $environment->start();
 
         $startedAt = microtime(true);
+
         $environment->stop();
+
         $elapsed = microtime(true) - $startedAt;
 
         assertFalse($environment->isRunning());
@@ -325,6 +337,7 @@ final class RoadRunnerServerTest extends TestCase
         $logger = new CollectingLogger();
 
         mkdir($this->directory . '/second');
+
         file_put_contents($this->directory . '/second/rr.yaml', "version: '3'\n");
 
         $second = new RoadRunnerServer(
@@ -336,8 +349,11 @@ final class RoadRunnerServerTest extends TestCase
         );
 
         $first->start();
+
         $second->start();
+
         $second->stop();
+
         $first->stop();
 
         // Starting a server per test must not pile up one shutdown function per instance

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\Test\Unit\Interceptor;
 
+use function PHPUnit\Framework\assertIsArray;
 use function PHPUnit\Framework\assertNotNull;
 use function PHPUnit\Framework\assertNull;
 use function PHPUnit\Framework\assertSame;
@@ -113,7 +114,7 @@ final class DisableSearchAttributesInterceptorTest extends TestCase
         $options = $request->getOptions();
 
         assertSame('ChildWorkflow', $options['name'] ?? null);
-        self::assertIsArray($options['options'] ?? null);
+        assertIsArray($options['options'] ?? null);
         assertSame('queue', $options['options']['TaskQueue'] ?? null);
         assertNull($options['options']['SearchAttributes']);
     }

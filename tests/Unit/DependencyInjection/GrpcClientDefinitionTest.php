@@ -52,11 +52,17 @@ final class GrpcClientDefinitionTest extends TestCase
     public static function tlsDataProvider(): iterable
     {
         yield 'nothing' => [[], null, 'create'];
+
         yield 'api key' => [[], '%env(TEMPORAL_API_KEY)%', 'createSSL'];
+
         yield 'api key, tls disabled' => [['enabled' => false], 'key', 'create'];
+
         yield 'tls enabled' => [['enabled' => true], null, 'createSSL'];
+
         yield 'root ca' => [['rootCa' => 'ca.pem'], null, 'createSSL'];
+
         yield 'client certificate' => [['clientKey' => 'key.pem', 'clientPem' => 'cert.pem'], null, 'createSSL'];
+
         yield 'certificates, tls disabled' => [['enabled' => false, 'clientKey' => 'key.pem', 'clientPem' => 'cert.pem'], null, 'create'];
     }
 
@@ -139,13 +145,15 @@ final class GrpcClientDefinitionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        $container->setDefinition('context', grpcContext([ // @phpstan-ignore argument.type
+        $container
+            ->setDefinition('context', grpcContext([ // @phpstan-ignore argument.type
             'timeout'  => ['value' => 5, 'format' => 'seconds'],
             'options'  => [],
             'metadata' => [],
             ...$grpcContext,
             'retryOptions' => [...self::RETRY_OPTIONS, ...($grpcContext['retryOptions'] ?? [])],
-        ]))->setPublic(true);
+        ]))
+            ->setPublic(true);
 
         $container->compile();
 

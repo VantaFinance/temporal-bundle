@@ -47,7 +47,7 @@ final readonly class MigrationGenerator
         $handle = @fopen($path, 'x');
 
         if ($handle === false) {
-            $this->logger->error('[FIX] Cannot create Temporal migration file', ['path' => $path]);
+            $this->logger->error('Cannot create Temporal migration file', ['path' => $path]);
             throw MigrationException::cannotCreateFile($path);
         }
 

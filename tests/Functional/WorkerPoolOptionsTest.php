@@ -49,7 +49,9 @@ final class WorkerPoolOptionsTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -62,6 +64,7 @@ final class WorkerPoolOptionsTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$definitions): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_pool_options.yaml');
 
             $kernel->addTestCompilerPass(new class($definitions) implements CompilerPass {
@@ -93,7 +96,6 @@ final class WorkerPoolOptionsTest extends KernelTestCase
         assertInstanceOf(Definition::class, $exceptionInterceptor);
         assertEquals(ExceptionInterceptor::class, $exceptionInterceptor->getClass());
         assertEquals([[DomainException::class]], $exceptionInterceptor->getArguments());
-
         assertEquals('custom_kv', $definitions['temporal.testing.rr_kv.activity_cache']->getArgument(1));
     }
 
@@ -132,6 +134,7 @@ final class WorkerPoolOptionsTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($configFile): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/' . $configFile);
         }]);
     }

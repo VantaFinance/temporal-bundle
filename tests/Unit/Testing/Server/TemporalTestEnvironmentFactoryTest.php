@@ -49,6 +49,7 @@ final class TemporalTestEnvironmentFactoryTest extends TestCase
         Fixture::removeDirectory($this->directory);
 
         @unlink(sprintf('%s/fake-temporal-%d.ready', sys_get_temp_dir(), $this->port));
+
         @unlink(sprintf('%s/fake-temporal-%d.args', sys_get_temp_dir(), $this->port));
     }
 
@@ -108,6 +109,7 @@ final class TemporalTestEnvironmentFactoryTest extends TestCase
     public static function serversWithoutSearchAttributes(): iterable
     {
         yield 'time skipping' => [TemporalServerType::TimeSkipping];
+
         yield 'external' => [TemporalServerType::External];
     }
 
@@ -144,6 +146,7 @@ final class TemporalTestEnvironmentFactoryTest extends TestCase
         assertStringContainsString('"--namespace","billing"', $arguments);
         assertStringContainsString('"--dynamic-config-value","frontend.enableUpdateWorkflowExecution=true"', $arguments);
         assertStringContainsString('"--dynamic-config-value","limit.maxIDLength=300"', $arguments);
+
         // extra arguments come last, so they override the built-in "--log-level error"
         assertStringEndsWith('"--log-level","warn"]', $arguments);
     }
@@ -155,7 +158,9 @@ final class TemporalTestEnvironmentFactoryTest extends TestCase
     {
         foreach ([TemporalServerType::TimeSkipping, TemporalServerType::External] as $temporal) {
             yield $temporal->value . ' namespace' => [new WithTemporalEnvironment(temporal: $temporal, temporalNamespace: 'billing')];
+
             yield $temporal->value . ' dynamic config' => [new WithTemporalEnvironment(temporal: $temporal, temporalDynamicConfig: ['a.b' => true])];
+
             yield $temporal->value . ' arguments' => [new WithTemporalEnvironment(temporal: $temporal, temporalArguments: ['--log-level', 'warn'])];
         }
     }
@@ -176,6 +181,7 @@ final class TemporalTestEnvironmentFactoryTest extends TestCase
         }
 
         symlink(Fixture::binary('fake-temporal'), $this->directory . '/temporal');
+
         symlink(Fixture::binary('fake-rr'), $this->directory . '/rr');
 
         $environment = TemporalTestEnvironmentFactory::fromAttribute(new WithTemporalEnvironment(

@@ -25,3 +25,18 @@ parameters:
 			identifiers: [class.notFound, method.notFound, argument.type]
 			paths:
 				- tests/Unit/DataConverter/SerializationContextAwareSymfonyConverterTest.php
+
+		# Migrations are opt-in and reject SDK < 2.18 before loading the Operator client.
+		-
+			message: '#Temporal\\Client\\GRPC\\OperatorClient(?:Interface)?#'
+			identifier: class.notFound
+			paths:
+				- src/DependencyInjection/Compiler/MigrationCompilerPass.php
+				- src/Migration/MigrationRunner.php
+				- src/Migration/MigrationRpcContext.php
+				- src/Migration/NamespaceBuilder.php
+				- src/Migration/Scheme.php
+				- src/Migration/SearchAttributeBuilder.php
+				- tests/Unit/Migration/*
+				- tests/E2e/MigrationTest.php
+				- tests/E2e/Migration/*

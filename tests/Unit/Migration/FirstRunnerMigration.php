@@ -19,7 +19,9 @@ final class FirstRunnerMigration implements Migration
     public function up(Scheme $scheme): void
     {
         MigrationRunnerTest::$calls[] = 'first-up';
+
         $scheme->operatorClient();
+
         $scheme->serviceClient();
     }
 

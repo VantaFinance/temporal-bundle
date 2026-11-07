@@ -49,7 +49,9 @@ final class GrpcInterceptorTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -62,6 +64,7 @@ final class GrpcInterceptorTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$pipelines): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_grpc_interceptors.yaml');
 
             $kernel->addTestCompilerPass(new class($pipelines) implements CompilerPass {
@@ -110,6 +113,7 @@ final class GrpcInterceptorTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_invalid_schedule_interceptor.yaml');
         }]);
     }

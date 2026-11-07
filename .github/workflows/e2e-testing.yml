@@ -98,4 +98,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: vendor/bin/dload get --force --no-ansi --no-interaction 'temporal:^1'
       - name: Verify migration module and production container
-        run: vendor/bin/phpunit tests/Unit/Migration tests/Functional/MigrationIntegrationTest.php tests/E2e/MigrationTest.php
+        run: vendor/bin/phpunit tests/Unit/Migration tests/Functional/MigrationIntegrationTest.php tests/E2e/MigrationTest.php tests/E2e/Migration

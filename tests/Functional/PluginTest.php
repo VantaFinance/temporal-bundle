@@ -14,6 +14,7 @@ namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 use Nyholm\BundleTest\TestKernel;
 
 use function PHPUnit\Framework\assertEquals;
+use function PHPUnit\Framework\assertStringEndsWith;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -48,7 +49,9 @@ final class PluginTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -73,6 +76,7 @@ final class PluginTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$arguments): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_plugins.yaml');
 
             $kernel->addTestCompilerPass(new class($arguments) implements CompilerPass {
@@ -111,6 +115,7 @@ final class PluginTest extends KernelTestCase
         assertEquals([$global, new Reference('app.client_plugin')], $arguments['default']);
         assertEquals([$global, $scoped], $arguments['foo']);
         assertEquals([$global], $arguments['schedule']);
+
         // The plugins of temporal.pool.client reach the workers through the client
         assertEquals([$scoped], $arguments['workers']);
         assertEquals(new Reference('temporal.default.client'), $arguments['workerFactoryClient']);
@@ -126,6 +131,7 @@ final class PluginTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_plugin_service.yaml');
         }]);
     }
@@ -142,6 +148,7 @@ final class PluginTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$result): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing_transcript.yaml');
 
             $kernel->addTestCompilerPass(new class($result) implements CompilerPass {
@@ -164,6 +171,6 @@ final class PluginTest extends KernelTestCase
         }]);
 
         assertEquals([new Reference('temporal.testing.transcript_plugin')], $result['plugins']);
-        self::assertStringEndsWith('/var/log/transcript.log', (string) $result['path']); // @phpstan-ignore cast.string
+        assertStringEndsWith('/var/log/transcript.log', (string) $result['path']); // @phpstan-ignore cast.string
     }
 }

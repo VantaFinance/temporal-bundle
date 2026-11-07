@@ -12,6 +12,10 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\Test\Unit\Migration;
 
 use LogicException;
+
+use function PHPUnit\Framework\assertSame;
+use function PHPUnit\Framework\assertStringContainsString;
+
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -33,14 +37,18 @@ final class MigrationCommandTest extends TestCase
 
         try {
             $generate = new CommandTester(new MigrationGenerateCommand(new MigrationGenerator($paths)));
-            self::assertSame(0, $generate->execute(['name' => 'Create namespace']));
+
+            assertSame(0, $generate->execute(['name' => 'Create namespace']));
+
             $migrate = new CommandTester(new MigrationMigrateCommand(new MigrationDiscovery($paths), static function (): MigrationRunner {
                 throw new LogicException('Clients must remain unconstructed.');
             }, 'test', 'billing'));
+
             $migrate->setInputs(['no']);
-            self::assertSame(0, $migrate->execute([], ['interactive' => true]));
-            self::assertStringContainsString('Cancelled', $migrate->getDisplay());
-            self::assertSame(2, $migrate->execute(['direction' => 'invalid']));
+
+            assertSame(0, $migrate->execute([], ['interactive' => true]));
+            assertStringContainsString('Cancelled', $migrate->getDisplay());
+            assertSame(2, $migrate->execute(['direction' => 'invalid']));
         } finally {
             foreach (glob($directory . '/*') ?: [] as $file) {
                 unlink($file);

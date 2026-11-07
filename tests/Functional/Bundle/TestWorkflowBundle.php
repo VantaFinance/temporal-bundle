@@ -21,14 +21,18 @@ final class TestWorkflowBundle extends Bundle
 {
     public function build(ContainerBuilder $container): void
     {
-        $container->register(NullWorkflowHandler::class)
-            ->setAutoconfigured(true)
-        ;
-        $container->register(AssignWorkflowHandler::class)
+        $container
+            ->register(NullWorkflowHandler::class)
             ->setAutoconfigured(true)
         ;
 
-        $container->register(AssignWorkflowHandlerV2::class)
+        $container
+            ->register(AssignWorkflowHandler::class)
+            ->setAutoconfigured(true)
+        ;
+
+        $container
+            ->register(AssignWorkflowHandlerV2::class)
             ->setAutoconfigured(true)
         ;
     }

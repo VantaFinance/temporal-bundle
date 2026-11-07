@@ -52,7 +52,9 @@ final class ClientSdk220OptionsTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -77,6 +79,7 @@ final class ClientSdk220OptionsTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$definitions): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_client_sdk_2_20_options.yaml');
 
             $kernel->addTestCompilerPass(new class($definitions) implements CompilerPass {
@@ -102,7 +105,6 @@ final class ClientSdk220OptionsTest extends KernelTestCase
 
         assertEquals([self::PAYLOAD_LIMIT_OPTIONS, 'new'], $limits->getFactory());
         assertEquals([['withPayloadSizeWarning', [1024], true]], $limits->getMethodCalls());
-
         assertEquals([self::PAYLOAD_LIMIT_OPTIONS, 'disabled'], $this->payloadLimits($definitions['scheduleClient'])->getFactory());
     }
 
@@ -116,6 +118,7 @@ final class ClientSdk220OptionsTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_client_sdk_2_20_options.yaml');
         }]);
     }
@@ -130,6 +133,7 @@ final class ClientSdk220OptionsTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_client_sdk_2_20_options.yaml');
         }]);
     }

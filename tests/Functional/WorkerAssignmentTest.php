@@ -51,6 +51,7 @@ final class WorkerAssignmentTest extends KernelTestCase
     {
         /** @var TestKernel $kernel */
         $kernel = parent::createKernel($options);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -172,11 +173,14 @@ final class WorkerAssignmentTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($services, $config, $workers, $registrations): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(static function (ContainerBuilder $container) use ($services, $config): void {
                 $container->loadFromExtension('temporal', $config);
 
                 foreach ($services as $id => $class) {
-                    $container->register(is_int($id) ? $class : $id, $class)->setAutoconfigured(true);
+                    $container
+                        ->register(is_int($id) ? $class : $id, $class)
+                        ->setAutoconfigured(true);
                 }
             });
 

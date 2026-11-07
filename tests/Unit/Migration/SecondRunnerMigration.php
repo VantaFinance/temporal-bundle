@@ -21,7 +21,9 @@ final class SecondRunnerMigration implements Migration
         MigrationRunnerTest::$calls[] = 'second-up';
 
         if (MigrationRunnerTest::$fail) {
-            $scheme->searchAttributes()->keyword('Unapplied');
+            $scheme
+                ->searchAttributes()
+                ->keyword('Unapplied');
         }
     }
 

@@ -29,6 +29,7 @@ final class MigrationKernel extends Kernel
     public function registerBundles(): iterable
     {
         yield new FrameworkBundle();
+
         yield new TemporalBundle();
     }
 
@@ -45,6 +46,7 @@ final class MigrationKernel extends Kernel
     protected function configureContainer(ContainerConfigurator $container): void
     {
         $container->extension('framework', ['secret' => 'migration-test', 'test' => true]);
+
         $container->extension('temporal', [
             'clients'    => ['default' => ['address' => $this->address, 'namespace' => $this->namespace]],
             'migrations' => ['enabled' => true, 'paths' => ['RuntimeMigrations' . str_replace('-', '', basename($this->directory)) => $this->directory . '/migrations']],

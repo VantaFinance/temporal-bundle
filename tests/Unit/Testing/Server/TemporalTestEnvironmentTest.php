@@ -64,6 +64,7 @@ final class TemporalTestEnvironmentTest extends TestCase
 
         try {
             $environment->start();
+
             self::fail('ServerStartFailed expected');
         } catch (ServerStartFailed $e) {
             assertSame($failure, $e);
@@ -86,6 +87,7 @@ final class TemporalTestEnvironmentTest extends TestCase
 
         try {
             $environment->stop();
+
             self::fail('RuntimeException expected');
         } catch (RuntimeException $e) {
             assertSame($first, $e);
@@ -100,6 +102,7 @@ final class TemporalTestEnvironmentTest extends TestCase
         $environment = new TemporalTestEnvironment($this->server('a'), $stopped);
 
         $environment->start();
+
         $stopped->stop();
 
         assertFalse($environment->isRunning());
@@ -111,14 +114,18 @@ final class TemporalTestEnvironmentTest extends TestCase
         $environment = new TemporalTestEnvironment($this->server('a'));
 
         $environment->start();
+
         $environment->stop();
 
         $logger     = new CollectingLogger();
         $withLogger = (new TemporalTestEnvironment($this->server('b')))->withLogger($logger);
 
         $withLogger->start();
+
         $withLogger->stop();
+
         $withLogger->start();
+
         $withLogger->stop();
 
         assertSame(0, $logger->count('debug', 'Registered shutdown hook for test environment'));
@@ -158,6 +165,7 @@ final class TemporalTestEnvironmentTest extends TestCase
                 }
 
                 $this->journal->append('stop ' . $this->name);
+
                 $this->running = false;
 
                 if ($this->stopFailure != null) {

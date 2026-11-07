@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Vanta\Integration\Symfony\Temporal\Test\Unit\DependencyInjection;
 
 use function PHPUnit\Framework\assertFalse;
+use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -35,14 +36,11 @@ final class SdkFeatureTest extends TestCase
     {
         assertTrue(SdkFeature::hasClass(WorkerOptions::class));
         assertFalse(SdkFeature::hasClass('Temporal\NotExists'));
-
         assertTrue(SdkFeature::hasMethod(WorkerOptions::class, 'withTaskQueueActivitiesPerSecond'));
         assertFalse(SdkFeature::hasMethod(WorkerOptions::class, 'withBackoff_coefficient'));
         assertFalse(SdkFeature::hasMethod('Temporal\NotExists', 'withAnything'));
-
         assertTrue(SdkFeature::hasProperty(FeatureFlags::class, 'warnOnWorkflowUnfinishedHandlers'));
         assertFalse(SdkFeature::hasProperty(FeatureFlags::class, 'notExists'));
-
         assertTrue(SdkFeature::hasParameter(WorkflowClient::class, 'create', 'serviceClient'));
         assertFalse(SdkFeature::hasParameter(WorkflowClient::class, 'create', 'notExists'));
         assertFalse(SdkFeature::hasParameter(WorkflowClient::class, 'notExists', 'serviceClient'));
@@ -52,8 +50,11 @@ final class SdkFeatureTest extends TestCase
     public function testRequirePassesWhenFeatureExists(): void
     {
         SdkFeature::requireClass(WorkerOptions::class, 'temporal.workers.default', '2.16');
+
         SdkFeature::requireMethod(WorkerOptions::class, 'withIdentity', 'temporal.workers.default.identity', '2.16');
+
         SdkFeature::requireProperty(FeatureFlags::class, 'workflowDeferredHandlerStart', 'temporal.pool.featureFlags.workflowDeferredHandlerStart', '2.11');
+
         SdkFeature::requireParameter(WorkflowClient::class, 'create', 'serviceClient', 'temporal.clients.default', '2.16');
 
         $this->addToAssertionCount(4);
@@ -74,8 +75,7 @@ final class SdkFeatureTest extends TestCase
         assertFalse(SdkFeature::hasMethod(WorkerOptions::class, 'withIdentity'));
         assertFalse(SdkFeature::hasProperty(FeatureFlags::class, 'workflowDeferredHandlerStart'));
         assertFalse(SdkFeature::hasParameter(WorkflowClient::class, 'create', 'logger'));
-
-        self::assertSame([
+        assertSame([
             ['class', WorkerOptions::class, null, null],
             ['method', WorkerOptions::class, 'withIdentity', null],
             ['property', FeatureFlags::class, 'workflowDeferredHandlerStart', null],

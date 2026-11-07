@@ -18,6 +18,7 @@ use function PHPUnit\Framework\assertArrayNotHasKey;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
+use function PHPUnit\Framework\assertIsArray;
 use function PHPUnit\Framework\assertStringContainsString;
 use function PHPUnit\Framework\assertTrue;
 
@@ -65,7 +66,9 @@ final class ClientTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -82,6 +85,7 @@ final class ClientTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasDefault, &$hasFoo, &$hasBar, &$hasCloud): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($hasDefault, $hasFoo, $hasBar, $hasCloud) implements CompilerPass {
@@ -119,6 +123,7 @@ final class ClientTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasDefault, &$hasFoo, &$hasBar, &$hasCloud): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($hasDefault, $hasFoo, $hasBar, $hasCloud) implements CompilerPass {
@@ -159,6 +164,7 @@ final class ClientTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$def): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition, $def) implements CompilerPass {
@@ -199,6 +205,7 @@ final class ClientTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel) use (&$context): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_without_pool.yaml');
 
                 $kernel->addTestCompilerPass(new class($context) implements CompilerPass {
@@ -221,6 +228,7 @@ final class ClientTest extends KernelTestCase
 
         assertInstanceOf(Definition::class, $context);
         assertEquals([Context::class, 'default'], $context->getFactory());
+
         // No withMetadata() / withRetryOptions(): the SDK defaults stay
         assertEquals([['withTimeout', [5, 'seconds'], true]], $context->getMethodCalls());
     }
@@ -233,6 +241,7 @@ final class ClientTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel) use (&$result): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
                 $kernel->addTestCompilerPass(new class($result) implements CompilerPass {
@@ -296,6 +305,7 @@ final class ClientTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel) use (&$cloudClient): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_cloud_client.yaml');
 
                 $kernel->addTestCompilerPass(new class($cloudClient) implements CompilerPass {
@@ -333,6 +343,7 @@ final class ClientTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel) use (&$serviceClient, &$options, &$scheduleClient): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_env_config.yaml');
 
                 $kernel->addTestCompilerPass(new class($serviceClient, $options, $scheduleClient) implements CompilerPass {
@@ -356,26 +367,28 @@ final class ClientTest extends KernelTestCase
         ]);
 
         assertInstanceOf(Definition::class, $serviceClient);
+
         $factory = $serviceClient->getFactory();
 
-        self::assertIsArray($factory);
+        assertIsArray($factory);
         assertInstanceOf(Definition::class, $factory[0]);
         assertEquals(['Temporal\Common\EnvConfig\ConfigClient', 'load'], $factory[0]->getFactory());
         assertEquals('prod', $factory[0]->getArgument(0));
         assertEquals('toServiceClient', $factory[1]);
-
         assertInstanceOf(Definition::class, $options);
+
         $factory = $options->getFactory();
 
-        self::assertIsArray($factory);
+        assertIsArray($factory);
         assertEquals('toClientOptions', $factory[1]);
+
         // The profile namespace stays: no withNamespace()
         assertEquals([], array_filter($options->getMethodCalls(), static fn (array $call): bool => $call[0] == 'withNamespace'));
-
         assertInstanceOf(Definition::class, $scheduleClient);
+
         $factory = $scheduleClient->getFactory();
 
-        self::assertIsArray($factory);
+        assertIsArray($factory);
         assertEquals('toServiceClient', $factory[1]);
     }
 
@@ -390,6 +403,7 @@ final class ClientTest extends KernelTestCase
         try {
             self::bootKernel(['config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_env_config.yaml');
             }]);
         } finally {
@@ -408,6 +422,7 @@ final class ClientTest extends KernelTestCase
         try {
             self::bootKernel(['config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_env_config.yaml');
             }]);
         } finally {
@@ -425,6 +440,7 @@ final class ClientTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel) use (&$cloudDef, &$defaultDef, &$cloudArgument): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
                 $kernel->addTestCompilerPass(new class($cloudDef, $defaultDef, $cloudArgument) implements CompilerPass {
@@ -447,7 +463,6 @@ final class ClientTest extends KernelTestCase
         ]);
 
         assertEquals(new Reference('temporal.cloud.service_client'), $cloudArgument);
-
         assertInstanceOf(Definition::class, $cloudDef);
         assertEquals([ServiceClient::class, 'createSSL'], $cloudDef->getFactory());
         assertStringContainsString('TEMPORAL_CLIENT_KEY_PATH', (string) $cloudDef->getArgument(2)); // @phpstan-ignore cast.string
@@ -466,8 +481,11 @@ final class ClientTest extends KernelTestCase
     public static function registerClientOptionsDataProvider(): iterable
     {
         yield ['temporal.default.client', ['withNamespace' => 'default', 'withIdentity' => 'default_x', 'withQueryRejectionCondition' => 0]];
+
         yield ['temporal.foo.client', ['withNamespace' => 'foo', 'withIdentity' => 'foo_x', 'withQueryRejectionCondition' => 1]];
+
         yield ['temporal.bar.client', ['withNamespace' => 'bar', 'withIdentity' => 'bar_x', 'withQueryRejectionCondition' => 2]];
+
         yield ['temporal.cloud.client', ['withNamespace' => 'cloud', 'withIdentity' => 'cloud_x', 'withQueryRejectionCondition' => 2]];
     }
 
@@ -478,6 +496,7 @@ final class ClientTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use (&$hasAlias, &$aliasId): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($hasAlias, $aliasId) implements CompilerPass {

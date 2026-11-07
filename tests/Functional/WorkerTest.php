@@ -106,7 +106,9 @@ final class WorkerTest extends KernelTestCase
          * @var TestKernel $kernel
          */
         $kernel = parent::createKernel($options);
+
         $kernel->addTestBundle(TemporalBundle::class);
+
         $kernel->handleOptions($options);
 
         return $kernel;
@@ -117,6 +119,7 @@ final class WorkerTest extends KernelTestCase
     {
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
         }]);
 
@@ -133,6 +136,7 @@ final class WorkerTest extends KernelTestCase
         assertCount(3, $runtime);
 
         $factory = $container->get('temporal.worker_factory');
+
         assertInstanceOf(\Temporal\WorkerFactory::class, $factory);
     }
 
@@ -140,6 +144,7 @@ final class WorkerTest extends KernelTestCase
     {
         $kernel = self::bootKernel(['config' => static function (TestKernel $kernel): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_without_pool.yaml');
         }]);
 
@@ -158,8 +163,11 @@ final class WorkerTest extends KernelTestCase
         $custom = ['temporal.default.worker' => 'app.worker_logger', 'temporal.bar.worker' => 'app.global_logger'];
 
         yield 'custom loggers without monolog' => [false, 'temporal_with_loggers.yaml', $custom];
+
         yield 'custom loggers with monolog' => [true, 'temporal_with_loggers.yaml', $custom];
+
         yield 'default logger without monolog' => [false, 'temporal_without_pool.yaml', ['temporal.default.worker' => null]];
+
         yield 'default logger with monolog' => [true, 'temporal_without_pool.yaml', ['temporal.default.worker' => 'monolog.logger.temporal']];
     }
 
@@ -176,10 +184,12 @@ final class WorkerTest extends KernelTestCase
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($monolog, $configFile, $expected, &$loggers): void {
             if ($monolog) {
                 $kernel->addTestBundle(MonologBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/monolog.yaml');
             }
 
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/' . $configFile);
 
             $kernel->addTestCompilerPass(new class(array_keys($expected), $loggers) implements CompilerPass {
@@ -196,6 +206,7 @@ final class WorkerTest extends KernelTestCase
                 public function process(ContainerBuilder $container): void
                 {
                     $container->register('app.global_logger', NullLogger::class);
+
                     $container->register('app.worker_logger', NullLogger::class);
 
                     foreach ($this->ids as $id) {
@@ -215,6 +226,7 @@ final class WorkerTest extends KernelTestCase
         $kernel = self::bootKernel([
             'config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_factory.yaml');
             },
         ]);
@@ -231,6 +243,7 @@ final class WorkerTest extends KernelTestCase
         assertCount(3, $runtime);
 
         $factory = $container->get('temporal.worker_factory');
+
         assertInstanceOf(WorkerFactory::class, $factory);
     }
 
@@ -239,6 +252,7 @@ final class WorkerTest extends KernelTestCase
         $kernel = self::bootKernel([
             'config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing.yaml');
             },
         ]);
@@ -246,6 +260,7 @@ final class WorkerTest extends KernelTestCase
         $container = $kernel->getContainer();
 
         $factory = $container->get('temporal.worker_factory');
+
         assertInstanceOf(WorkerFactory::class, $factory);
 
         /** @var Runtime $runtime */
@@ -263,6 +278,7 @@ final class WorkerTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_testing_missing_activity_mocker.yaml');
             },
         ]);
@@ -277,6 +293,7 @@ final class WorkerTest extends KernelTestCase
         self::bootKernel([
             'config' => static function (TestKernel $kernel): void {
                 $kernel->addTestBundle(TemporalBundle::class);
+
                 $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_invalid_factory.yaml');
             },
         ]);
@@ -295,6 +312,7 @@ final class WorkerTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$def): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition, $def) implements CompilerPass {
@@ -454,6 +472,7 @@ final class WorkerTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$argument): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition, $argument) implements CompilerPass {
@@ -486,7 +505,9 @@ final class WorkerTest extends KernelTestCase
     public static function registerWorkerTaskQueueDataProvider(): iterable
     {
         yield ['temporal.default.worker', 'default'];
+
         yield ['temporal.foo.worker', 'foo'];
+
         yield ['temporal.bar.worker', 'bar'];
     }
 
@@ -505,7 +526,9 @@ final class WorkerTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$calls, &$taggedWorkflowIds): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestBundle(TestWorkflowBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition, $calls, $taggedWorkflowIds) implements CompilerPass {
@@ -555,7 +578,9 @@ final class WorkerTest extends KernelTestCase
     public static function registerWorkflowDataProvider(): iterable
     {
         yield ['temporal.default.worker', [NullWorkflowHandler::class]];
+
         yield ['temporal.foo.worker', [AssignWorkflowHandler::class]];
+
         yield ['temporal.bar.worker', [AssignWorkflowHandlerV2::class]];
     }
 
@@ -573,7 +598,9 @@ final class WorkerTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$calls): void {
             $kernel->addTestBundle(TestActivityBundle::class);
+
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition, $calls) implements CompilerPass {
@@ -637,6 +664,7 @@ final class WorkerTest extends KernelTestCase
 
         self::bootKernel(['config' => static function (TestKernel $kernel) use ($id, &$hasDefinition, &$definitionClass, &$actualArguments): void {
             $kernel->addTestBundle(TemporalBundle::class);
+
             $kernel->addTestConfig(__DIR__ . '/Framework/Config/temporal_with_custom_finalizers.yaml');
 
             $kernel->addTestCompilerPass(new class($id, $hasDefinition, $definitionClass, $actualArguments) implements CompilerPass {
@@ -675,6 +703,7 @@ final class WorkerTest extends KernelTestCase
             [new Reference('test.temporal.finalizer.dummy1'), new Reference('test.temporal.finalizer.dummy2'), new Reference('temporal.framework.finalizer')],
             referenceLogger(),
         ]];
+
         yield ['temporal.foo.worker.finalizer', [
             [new Reference('test.temporal.finalizer.dummy2'), new Reference('temporal.framework.finalizer')],
             referenceLogger(),

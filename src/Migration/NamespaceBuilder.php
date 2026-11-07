@@ -143,16 +143,27 @@ final class NamespaceBuilder
                     $request->setUpdateInfo($info->setData($this->data));
                 }
 
-                $this->rpc->serviceClient()->UpdateNamespace($request);
+                try {
+                    $this->rpc->serviceClient()->UpdateNamespace($request);
+                } catch (ServiceClientException $exception) {
+                    // Describe reads persistence before the namespace cache used by Update catches up.
+                    if ($exception->getCode() !== StatusCode::NOT_FOUND) {
+                        throw $exception;
+                    }
+
+                    $this->logger->debug('Waiting for Temporal namespace update visibility', ['namespace' => $this->namespace]);
+
+                    return false;
+                }
                 $updated = true;
-                $this->logger->info('[FIX] Updated declared Temporal namespace settings', ['namespace' => $this->namespace]);
+                $this->logger->info('Updated declared Temporal namespace settings', ['namespace' => $this->namespace]);
             }
 
             return false;
         }, 'namespace readiness: ' . $this->namespace, 60, 1.0);
         $this->rpc->markEnsured($this->namespace);
         $this->pending = false;
-        $this->logger->debug('[FIX] Verified declared Temporal namespace settings', ['namespace' => $this->namespace]);
+        $this->logger->debug('Verified declared Temporal namespace settings', ['namespace' => $this->namespace]);
     }
 
     public function delete(): void
@@ -161,20 +172,28 @@ final class NamespaceBuilder
             throw MigrationException::cannotDeleteWithPendingSettings();
         }
 
-        if ($this->describe() === null) {
-            return;
-        }
-
-        try {
-            $request = (new DeleteNamespaceRequest())->setNamespace($this->namespace);
-            $this->rpc->operatorClient()->DeleteNamespace($request);
-        } catch (ServiceClientException $exception) {
-            if ($exception->getCode() !== StatusCode::NOT_FOUND) {
-                throw $exception;
+        $this->rpc->observe(function (): bool {
+            if ($this->describe() === null) {
+                return true;
             }
-        }
 
-        $this->logger->info('Requested Temporal namespace deletion', ['namespace' => $this->namespace]);
+            try {
+                $request = (new DeleteNamespaceRequest())->setNamespace($this->namespace);
+                $this->rpc->operatorClient()->DeleteNamespace($request);
+            } catch (ServiceClientException $exception) {
+                if ($exception->getCode() !== StatusCode::NOT_FOUND) {
+                    throw $exception;
+                }
+
+                $this->logger->debug('Waiting for Temporal namespace deletion visibility', ['namespace' => $this->namespace]);
+
+                return false;
+            }
+
+            $this->logger->info('Requested Temporal namespace deletion', ['namespace' => $this->namespace]);
+
+            return true;
+        }, 'namespace deletion request: ' . $this->namespace, 60, 1.0);
     }
 
     /** @internal */

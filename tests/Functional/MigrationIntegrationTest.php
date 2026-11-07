@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\Test\Functional;
 
+use function PHPUnit\Framework\assertSame;
+use function PHPUnit\Framework\assertStringContainsString;
+
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -41,24 +44,34 @@ final class MigrationIntegrationTest extends TestCase
         try {
             $application = new Application($kernel);
             $generate    = new CommandTester($application->find('temporal:migrations:generate'));
-            self::assertSame(0, $generate->execute(['name' => 'Initial']));
+
+            assertSame(0, $generate->execute(['name' => 'Initial']));
+
             $migrate = new CommandTester($application->find('temporal:migrations:migrate'));
+
             $migrate->setInputs(['no']);
-            self::assertSame(0, $migrate->execute([], ['interactive' => true]));
-            self::assertStringContainsString('Cancelled', $migrate->getDisplay());
+
+            assertSame(0, $migrate->execute([], ['interactive' => true]));
+            assertStringContainsString('Cancelled', $migrate->getDisplay());
+
             $kernel->shutdown();
 
             $namespace = 'RuntimeMigrations' . str_replace('-', '', basename($directory));
             $file      = $directory . '/migrations/Migration20990101000000.php';
+
             file_put_contents($file, '<?php declare(strict_types=1); namespace ' . $namespace . '; final class Migration20990101000000 implements \\Vanta\\Integration\\Symfony\\Temporal\\Migration\\Migration { public function up(\\Vanta\\Integration\\Symfony\\Temporal\\Migration\\Scheme $scheme): void {} public function down(\\Vanta\\Integration\\Symfony\\Temporal\\Migration\\Scheme $scheme): void {} }');
+
             $kernel      = new MigrationKernel($directory, '127.0.0.1:1', 'default');
             $application = new Application($kernel);
             $migrate     = new CommandTester($application->find('temporal:migrations:migrate'));
+
             $migrate->setInputs(['no']);
-            self::assertSame(0, $migrate->execute([], ['interactive' => true]));
-            self::assertStringContainsString('20990101000000', $migrate->getDisplay());
+
+            assertSame(0, $migrate->execute([], ['interactive' => true]));
+            assertStringContainsString('20990101000000', $migrate->getDisplay());
         } finally {
             $kernel->shutdown();
+
             (new Filesystem())->remove($directory);
         }
     }

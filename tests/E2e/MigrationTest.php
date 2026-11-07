@@ -11,6 +11,11 @@ declare(strict_types=1);
 
 namespace Vanta\Integration\Symfony\Temporal\Test\E2e;
 
+use function PHPUnit\Framework\assertArrayHasKey;
+use function PHPUnit\Framework\assertArrayNotHasKey;
+use function PHPUnit\Framework\assertSame;
+use function PHPUnit\Framework\assertStringContainsString;
+
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -52,9 +57,12 @@ final class MigrationTest extends TestCase
 
         try {
             $server->start();
+
             mkdir($directory . '/migrations', 0o777, true);
+
             $phpNamespace = 'RuntimeMigrations' . str_replace('-', '', basename($directory));
             $rawNamespace = $namespace . '-raw';
+
             $this->writeMigration($directory, $phpNamespace, '20260101000000', sprintf(<<<'PHP'
                 $request = (new RegisterNamespaceRequest())
                     ->setNamespace(%s)
@@ -96,43 +104,53 @@ final class MigrationTest extends TestCase
             $list        = static fn (string $name) => $operator->ListSearchAttributes((new ListSearchAttributesRequest())->setNamespace($name))->getCustomAttributes();
 
             foreach (['up', 'up', 'down', 'down', 'up'] as $direction) {
-                self::assertSame(0, $command->execute(['direction' => $direction], ['interactive' => false]), $command->getDisplay());
+                assertSame(0, $command->execute(['direction' => $direction], ['interactive' => false]), $command->getDisplay());
+
                 $attributes = $list($namespace);
 
                 if ($direction === 'up') {
-                    self::assertSame(IndexedValueType::INDEXED_VALUE_TYPE_KEYWORD, $attributes['CustomerId']);
-                    self::assertSame(IndexedValueType::INDEXED_VALUE_TYPE_INT, $attributes['OrderNumber']);
-                    self::assertArrayNotHasKey('OtherId', iterator_to_array($attributes));
-                    self::assertArrayHasKey('OtherId', iterator_to_array($list($namespace . '-other')));
+                    assertSame(IndexedValueType::INDEXED_VALUE_TYPE_KEYWORD, $attributes['CustomerId']);
+                    assertSame(IndexedValueType::INDEXED_VALUE_TYPE_INT, $attributes['OrderNumber']);
+                    assertArrayNotHasKey('OtherId', iterator_to_array($attributes));
+                    assertArrayHasKey('OtherId', iterator_to_array($list($namespace . '-other')));
                 } else {
-                    self::assertArrayNotHasKey('CustomerId', iterator_to_array($attributes));
-                    self::assertSame($namespace, $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($namespace))->getNamespaceInfo()?->getName());
+                    assertArrayNotHasKey('CustomerId', iterator_to_array($attributes));
+                    assertSame($namespace, $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($namespace))->getNamespaceInfo()?->getName());
                 }
             }
-            self::assertSame($rawNamespace, $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($rawNamespace))->getNamespaceInfo()?->getName());
-            $service->UpdateNamespace((new UpdateNamespaceRequest())->setNamespace($namespace)->setUpdateInfo(
-                (new UpdateNamespaceInfo())
+
+            assertSame($rawNamespace, $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($rawNamespace))->getNamespaceInfo()?->getName());
+
+            $service->UpdateNamespace((new UpdateNamespaceRequest())
+                ->setNamespace($namespace)
+                ->setUpdateInfo(
+                    (new UpdateNamespaceInfo())
                     ->setDescription('preserved description')
                     ->setOwnerEmail('owner@example.com')
                     ->setData(['team' => 'old', 'unmanaged' => 'preserved']),
-            ));
-            $service->UpdateNamespace((new UpdateNamespaceRequest())->setNamespace($namespace)->setUpdateInfo(
-                (new UpdateNamespaceInfo())
+                ));
+
+            $service->UpdateNamespace((new UpdateNamespaceRequest())
+                ->setNamespace($namespace)
+                ->setUpdateInfo(
+                    (new UpdateNamespaceInfo())
                     ->setDescription('')
                     ->setOwnerEmail('')
                     ->setData(['team' => 'billing', 'added' => 'new']),
-            ));
+                ));
 
             $metadata = $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($namespace))->getNamespaceInfo();
-            self::assertSame('preserved description', $metadata->getDescription());
-            self::assertSame('owner@example.com', $metadata->getOwnerEmail());
-            self::assertSame('billing', $metadata->getData()['team']);
-            self::assertSame('preserved', $metadata->getData()['unmanaged']);
-            self::assertSame('new', $metadata->getData()['added']);
+
+            assertSame('preserved description', $metadata->getDescription());
+            assertSame('owner@example.com', $metadata->getOwnerEmail());
+            assertSame('billing', $metadata->getData()['team']);
+            assertSame('preserved', $metadata->getData()['unmanaged']);
+            assertSame('new', $metadata->getData()['added']);
 
             // A newly added file is discovered by the warmed container. Fail after a real mutation,
             // then replay the complete catalog successfully on a fresh command invocation.
             $failureMarker = $directory . '/allow-replay';
+
             $this->writeMigration($directory, $phpNamespace, '20260101000003', sprintf(<<<'PHP'
                 $scheme->namespace()->retention(new DateInterval('P2D'))->ensure();
                 $scheme->searchAttributes()->keyword('PartialId')->apply();
@@ -141,19 +159,24 @@ final class MigrationTest extends TestCase
                     throw new RuntimeException('injected partial failure');
                 }
                 PHP, var_export($failureMarker, true)), "\$scheme->searchAttributes()->remove('PartialId')->apply();");
-            self::assertSame(1, $command->execute([], ['interactive' => false]));
-            self::assertStringContainsString('Partial effects may remain', $command->getDisplay());
+
+            assertSame(1, $command->execute([], ['interactive' => false]));
+            assertStringContainsString('Partial effects may remain', $command->getDisplay());
+
             touch($failureMarker);
-            self::assertSame(0, $command->execute([], ['interactive' => false]), $command->getDisplay());
-            self::assertArrayHasKey('PartialId', iterator_to_array($list($namespace)));
+
+            assertSame(0, $command->execute([], ['interactive' => false]), $command->getDisplay());
+            assertArrayHasKey('PartialId', iterator_to_array($list($namespace)));
+
             $state = $service->DescribeNamespace((new DescribeNamespaceRequest())->setNamespace($namespace));
-            self::assertSame('Billing workflows', $state->getNamespaceInfo()?->getDescription());
-            self::assertSame('platform@example.com', $state->getNamespaceInfo()->getOwnerEmail());
-            self::assertSame('managed', $state->getNamespaceInfo()->getData()['team']);
-            self::assertSame('', $state->getNamespaceInfo()->getData()['empty']);
-            self::assertSame('preserved', $state->getNamespaceInfo()->getData()['unmanaged']);
-            self::assertSame('new', $state->getNamespaceInfo()->getData()['added']);
-            self::assertSame(172800, (int) $state->getConfig()?->getWorkflowExecutionRetentionTtl()?->getSeconds());
+
+            assertSame('Billing workflows', $state->getNamespaceInfo()?->getDescription());
+            assertSame('platform@example.com', $state->getNamespaceInfo()->getOwnerEmail());
+            assertSame('managed', $state->getNamespaceInfo()->getData()['team']);
+            assertSame('', $state->getNamespaceInfo()->getData()['empty']);
+            assertSame('preserved', $state->getNamespaceInfo()->getData()['unmanaged']);
+            assertSame('new', $state->getNamespaceInfo()->getData()['added']);
+            assertSame(172800, (int) $state->getConfig()?->getWorkflowExecutionRetentionTtl()?->getSeconds());
 
             // Explicit deletion is exercised only in its own final fixture.
             $this->writeMigration($directory, $phpNamespace, '20260101000004', sprintf(<<<'PHP'
@@ -161,10 +184,12 @@ final class MigrationTest extends TestCase
                 $scheme->namespace(%1$s)->delete();
                 PHP, var_export($namespace . '-other', true)));
 
-            self::assertSame(0, $command->execute([], ['interactive' => false]), $command->getDisplay());
+            assertSame(0, $command->execute([], ['interactive' => false]), $command->getDisplay());
         } finally {
             $kernel->shutdown();
+
             $server->stop();
+
             (new Filesystem())->remove($directory);
         }
     }
