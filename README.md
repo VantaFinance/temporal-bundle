@@ -26,6 +26,7 @@ Declare workflows and activities as Symfony services, configure workers, and ins
 - [Data conversion and payload limits](#data-conversion-and-payload-limits)
 - [Interceptors](#interceptors)
 - [Additional clients](#additional-clients)
+- [Temporal migrations](#temporal-migrations)
 - [Replaying workflows](#replaying-workflows)
 - [Debug commands](#debug-commands)
 - [Buggregator](#buggregator)
@@ -524,6 +525,106 @@ temporal:
     # address: saas-api.tmprl.cloud:443
     # apiVersion: '2024-10-01-00'
 ```
+
+## Temporal migrations
+
+Manage namespaces and search attributes with PHP migrations. Requires SDK >= 2.18.
+Every run executes all migration files; execution history is not stored.
+
+Enable migrations and choose a directory:
+
+```yaml
+# config/packages/temporal.yaml
+temporal:
+  migrations:
+    enabled: true
+    paths:
+      'App\TemporalMigrations': '%kernel.project_dir%/temporal-migrations'
+    # client: default  # Defaults to temporal.defaultClient
+    # timeout: 60      # Seconds per migration method
+```
+
+Migrations use the selected client's connection and default Temporal namespace.
+Configure that client directly; `envConfig` profiles are unsupported for migrations.
+
+Generate a migration:
+
+```bash
+php bin/console temporal:migrations:generate 'Create billing attributes'
+```
+
+The command creates the directory and a `MigrationYYYYMMDDHHMMSS.php` file.
+With multiple directories, pass `--namespace='App\TemporalMigrations'` to choose the PHP namespace.
+
+Implement `Migration` with `up()` and `down()`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\TemporalMigrations;
+
+use DateInterval;
+use Vanta\Integration\Symfony\Temporal\Migration\Migration;
+use Vanta\Integration\Symfony\Temporal\Migration\Scheme;
+
+final class Migration20261107000000 implements Migration
+{
+    public function up(Scheme $scheme): void
+    {
+        $scheme->namespace('billing')
+            ->description('Billing workflows')
+            ->ownerEmail('platform@example.com')
+            ->data(['team' => 'billing'])
+            ->retention(new DateInterval('P7D'))
+            ->ensure();
+
+        $scheme->searchAttributes('billing')
+            ->keyword('CustomerId')
+            ->integer('OrderNumber')
+            ->apply();
+    }
+
+    public function down(Scheme $scheme): void
+    {
+        $scheme->searchAttributes('billing')
+            ->remove('OrderNumber')
+            ->remove('CustomerId')
+            ->apply();
+    }
+}
+```
+
+`ensure()` creates a namespace or updates its declared settings. Creating one requires retention.
+Omitted settings and undeclared `data` keys stay unchanged. Description and owner email must be nonempty.
+Use fixed retention intervals such as `P7D` or `PT24H`; years and months are unsupported.
+
+Search attributes support `text()`, `keyword()`, `keywordList()`, `integer()`, `double()`,
+`boolean()`, `datetime()`, and `remove()`. Finish declarations with `apply()`.
+Existing attributes with the requested type and already absent removals need no changes.
+Use a new name to change an attribute's type.
+
+Omit the namespace argument to use the client's default. Each builder selects its own namespace.
+For other administration operations, use `$scheme->serviceClient()` or `$scheme->operatorClient()`.
+Explicit namespace deletion is available through `$scheme->namespace('billing')->delete()` and can destroy workflow data.
+
+Run migrations:
+
+```bash
+php bin/console temporal:migrations:migrate
+php bin/console temporal:migrations:migrate up --no-interaction
+php bin/console temporal:migrations:migrate down --no-interaction
+```
+
+`up` runs all files in timestamp order; `down` runs them in reverse.
+Write both directions so the entire set can run repeatedly, including any raw client calls.
+On failure, execution stops and earlier changes remain. Fix the cause, then rerun.
+There is no automatic rollback; `down` performs only the actions you write and can remove pre-existing attributes.
+Run one migration command at a time for each Temporal target.
+
+With SQL visibility, custom attributes belong to a namespace. Elasticsearch shares them across an index,
+so removing one can affect other namespaces. Temporal Cloud provisioning uses a separate API.
 
 ## Replaying workflows
 

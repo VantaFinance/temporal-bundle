@@ -74,3 +74,28 @@ jobs:
           name: var-${{ strategy.job-index }}
           path: var/
           retention-days: 2
+  migrations:
+    runs-on: ubuntu-latest
+    name: Temporal migrations (SDK ${{ matrix.sdk }}, SQL visibility)
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: ['~2.18.0', '^2.20']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: grpc, protobuf, pcntl, sockets, intl
+      - name: Install selected SDK
+        env:
+          SKIP_TOOLS_INSTALL: 1
+        run: |
+          composer require "temporal/sdk:${{ matrix.sdk }}" --no-update --no-interaction
+          composer update --no-interaction --no-progress
+      - name: Download Temporal CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: vendor/bin/dload get --force --no-ansi --no-interaction 'temporal:^1'
+      - name: Verify migration module and production container
+        run: vendor/bin/phpunit tests/Unit/Migration tests/Functional/MigrationIntegrationTest.php tests/E2e/MigrationTest.php
