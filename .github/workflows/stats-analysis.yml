@@ -31,9 +31,4 @@ jobs:
           dependency-versions: ${{ matrix.dependencies }}
           composer-options: --optimize-autoloader
 
-      # Analyse the lowest application dependencies with the latest supported tools
-      - name: Update tools
-        if: matrix.dependencies == 'lowest'
-        run: composer bin tools update --no-interaction
-
       - run: vendor/bin/phpstan --error-format=github
